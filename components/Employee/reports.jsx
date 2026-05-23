@@ -350,7 +350,6 @@ export function Reports() {
                 <thead className="bg-muted/40 border-b border-border">
                   <tr>
                     <th className="px-6 py-3 text-left font-semibold text-foreground">Timestamp</th>
-                    <th className="px-6 py-3 text-left font-semibold text-foreground">Invoice ID</th>
                     <th className="px-6 py-3 text-left font-semibold text-foreground">Product Title</th>
                     <th className="px-6 py-3 text-left font-semibold text-foreground">Category Class</th>
                     <th className="px-6 py-3 text-center font-semibold text-foreground">Quantity</th>
@@ -358,7 +357,6 @@ export function Reports() {
                     <th className="px-6 py-3 text-right font-semibold text-foreground">Expense (৳)</th>
                     <th className="px-6 py-3 text-right font-semibold text-foreground">Net Profit (৳)</th>
                     <th className="px-6 py-3 text-right font-semibold text-foreground">Commission (৳)</th>
-                    <th className="px-6 py-3 text-left font-semibold text-foreground">Channel</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -368,7 +366,6 @@ export function Reports() {
                         <td className="px-6 py-4 text-foreground whitespace-nowrap">
                           {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </td>
-                        <td className="px-6 py-4 font-mono font-medium text-foreground">{item.invoiceNumber}</td>
                         <td className="px-6 py-4 text-foreground max-w-45 truncate" title={item.productName}>{item.productName}</td>
                         <td className="px-6 py-4">
                           <span className="px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground font-medium">
@@ -380,7 +377,6 @@ export function Reports() {
                         <td className="px-6 py-4 text-right text-muted-foreground">{item.expenseCost.toLocaleString()}</td>
                         <td className="px-6 py-4 text-right font-medium text-emerald-600">৳{item.netProfit.toLocaleString()}</td>
                         <td className="px-6 py-4 text-right font-medium text-primary">৳{item.commission.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-foreground whitespace-nowrap">{item.paymentMethod || 'N/A'}</td>
                       </tr>
                     ))
                   ) : (
