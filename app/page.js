@@ -1,5 +1,5 @@
 "use client";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -15,13 +15,20 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const isLoggedIn = !!session;
+  React.useEffect(() => {
+    if (isLoggedIn) {
+      router.push("/dashboard");
+    }
+  }, [isLoggedIn, router]);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({ mode: "onBlur" });
-
-  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
