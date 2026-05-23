@@ -404,8 +404,18 @@ const handleDelete = async (id) => {
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Sale Date & Time</p>
                   <p className="text-sm font-semibold text-foreground">
-                    {selectedSale.createdAt && selectedSale.createdAt.$date ? new Date(selectedSale.createdAt.$date).toLocaleString('en-US') : 'N/A'}
-                  </p>
+{
+  selectedSale.createdAt
+    ? new Date(selectedSale.createdAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "N/A"
+}                      </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Payment Method</p>

@@ -281,14 +281,15 @@ const handleDelete = async (id) => {
                       className="border-b border-border hover:bg-muted/30 transition-colors"
                     >
                       <td className="px-6 py-4 text-sm text-foreground whitespace-nowrap">
-                        {sale.createdAt && sale.createdAt.$date 
-                          ? new Date(sale.createdAt.$date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })
-                          : 'N/A'}
-                      </td>
+{
+  sale.createdAt
+    ? new Date(sale.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "N/A"
+}                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-foreground">{sale.invoiceNumber}</td>
                       <td className="px-6 py-4 text-sm text-foreground max-w-50 truncate">{sale.productName}</td>
                       <td className="px-6 py-4 text-sm">
@@ -418,8 +419,18 @@ const handleDelete = async (id) => {
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Sale Date & Time</p>
                   <p className="text-sm font-semibold text-foreground">
-                    {selectedSale.createdAt && selectedSale.createdAt.$date ? new Date(selectedSale.createdAt.$date).toLocaleString('en-US') : 'N/A'}
-                  </p>
+{
+  selectedSale.createdAt
+    ? new Date(selectedSale.createdAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "N/A"
+}                    </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Payment Method</p>
