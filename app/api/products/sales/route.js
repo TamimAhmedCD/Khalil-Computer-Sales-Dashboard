@@ -264,21 +264,20 @@ export async function GET(request) {
     const category = searchParams.get("category");
     const searchTerm = searchParams.get("search") || "";
 
-    // ✅ ডিফল্ট ফিল্টার "today" থেকে বদলে "all" করা হয়েছে যাতে কোনো ফিল্টারিং না থাকে
-    const dateFilter = searchParams.get("dateFilter") || "all";
+    // 🔄 "all" অপশনটি পুরোপুরি রিমুভ করা হয়েছে। এখন ডিফল্ট ফিল্টার হিসেবে "today" থাকবে।
+    const dateFilter = searchParams.get("dateFilter") || "today";
     const customStartDate = searchParams.get("customStartDate");
     const customEndDate = searchParams.get("customEndDate");
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    // 🔒 সেলার আইডি কোয়েরি ফিক্সড রাখা হয়েছে
+    // 🔒 সেলার আইডি কোয়েরি ফিক্সড রাখা হয়েছে
     let query = { sellerId: userId };
 
     if (category) {
-      query.categoryName = category;
+      query.categoryId = new ObjectId(category);
     }
-
     // ৪. সার্চ ফিল্টার (প্রোডাক্ট নেম বা ইনভয়েস নাম্বার)
     if (searchTerm) {
       query.$or = [
@@ -287,42 +286,41 @@ export async function GET(request) {
       ];
     }
 
-    // ৫. ডেট ফিল্টারিং লজিক (শুধুমাত্র "all" ছাড়া বাকি কেসগুলোতে কোয়েরিতে createdAt যুক্ত হবে)
-    if (dateFilter !== "all") {
-      const today = new Date();
-      let startDate = new Date(today);
-      let endDate = new Date(today);
+    // ৫. ডেট ফিল্টারিং লজিক (ইউজারকে অবশ্যই ডেট ভিত্তিক ফিল্টারের মধ্য দিয়েই ডাটা দেখতে হবে)
+    const today = new Date();
+    let startDate = new Date(today);
+    let endDate = new Date(today);
 
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
 
-      switch (dateFilter) {
-        case "yesterday":
-          startDate.setDate(today.getDate() - 1);
-          endDate.setDate(today.getDate() - 1);
-          break;
-        case "week":
-          startDate.setDate(today.getDate() - today.getDay());
-          break;
-        case "month":
-          startDate.setMonth(today.getMonth(), 1);
-          break;
-        case "custom":
-          if (customStartDate && customEndDate) {
-            startDate = new Date(customStartDate);
-            startDate.setHours(0, 0, 0, 0);
-            endDate = new Date(customEndDate);
-            endDate.setHours(23, 59, 59, 999);
-          }
-          break;
-        case "today":
-        default:
-          break;
-      }
-
-      // কন্ডিশন ম্যাচ করলে কোয়েরিতে ডেট রেঞ্জ অবজেক্ট পুশ হবে
-      query.createdAt = { $gte: startDate, $lte: endDate };
+    switch (dateFilter) {
+      case "yesterday":
+        startDate.setDate(today.getDate() - 1);
+        endDate.setDate(today.getDate() - 1);
+        break;
+      case "week":
+        startDate.setDate(today.getDate() - today.getDay());
+        break;
+      case "month":
+        startDate.setMonth(today.getMonth(), 1);
+        break;
+      case "custom":
+        if (customStartDate && customEndDate) {
+          startDate = new Date(customStartDate);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(customEndDate);
+          endDate.setHours(23, 59, 59, 999);
+        }
+        break;
+      case "today":
+      default:
+        // ডিফল্টভাবে আজকের (today) ডেট রেঞ্জ সেট করাই আছে
+        break;
     }
+
+    // কোয়েরিতে ডেট রেঞ্জ অবজেক্ট যুক্ত করা হলো (যা এখন বাধ্যতামূলক)
+    query.createdAt = { $gte: startDate, $lte: endDate };
 
     // ৬. নির্দিষ্ট ইউজারের সেলস লিস্ট নিয়ে আসা
     const sales = await salesCollection
@@ -334,7 +332,7 @@ export async function GET(request) {
 
     const totalSalesCount = await salesCollection.countDocuments(query);
 
-    // ৭. শুধু ঐ ইউজারের ডেটার ওপর ভিত্তি করে এগ্রিগেশন (Summary) বের করা
+    // ७. শুধু ঐ ইউজারের ডেটার ওপর ভিত্তি করে এগ্রিগেশন (Summary) বের করা
     const summaryData = await salesCollection
       .aggregate([
         { $match: query },

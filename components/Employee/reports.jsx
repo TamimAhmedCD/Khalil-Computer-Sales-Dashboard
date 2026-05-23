@@ -30,6 +30,8 @@ import {
   FileDown, Download, Printer, TrendingUp, DollarSign, 
   Zap, ChevronLeft, ChevronRight 
 } from 'lucide-react';
+import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 
 const PAYMENT_COLORS = ['#1f83d2', '#55a6d6', '#34d399', '#a78bfa'];
 
@@ -41,7 +43,7 @@ export function Reports() {
   const [loading, setLoading] = useState(true);
   
   // ✅ Changed default state from 'today' to 'all' to show all data by default
-  const [dateFilter, setDateFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('today');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,6 +152,14 @@ export function Reports() {
       .slice(0, 5);
   }, [sales]);
 
+    const { data: categories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await axios.get("/api/products/categories");
+      return data?.data || [];
+    },
+  });
+  console.log(categories)
   return (
     <div className="min-h-screen">
       <div className="space-y-8">
@@ -168,7 +178,6 @@ export function Reports() {
               </SelectTrigger>
               <SelectContent>
                 {/* Default select option changed to All Time */}
-                <SelectItem value="all">All Time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="week">This Week</SelectItem>
@@ -322,16 +331,17 @@ export function Reports() {
               onChange={(e) => handleFilterChange('search', e.target.value)}
               className="bg-background border-border text-foreground"
             />
-            <Select value={categoryFilter} onValueChange={(val) => handleFilterChange('category', val)}>
-              <SelectTrigger className="bg-background border-border text-foreground">
+            <Select disabled={loadingCategories} value={categoryFilter} onValueChange={(val) => handleFilterChange('category', val)}>
+              <SelectTrigger className="bg-background border-border text-foreground w-full">
                 <SelectValue placeholder="Select Category Name" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="DCR">DCR</SelectItem>
-                <SelectItem value="Khajna Payment">Khajna Payment</SelectItem>
-                <SelectItem value="Namjari">Namjari</SelectItem>
-                <SelectItem value="Khajna Nibondon">Khajna Nibondon</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="flex items-center justify-end text-sm font-medium text-muted-foreground px-2">

@@ -32,7 +32,10 @@ export default function RootLayout({ children }) {
         "h-full antialiased",
       )}
     >
-      <body className="h-full transition-colors duration-500 bg-white dark:bg-[#09090b]">
+      <body
+        className="h-full transition-colors duration-500 bg-white dark:bg-[#09090b]"
+        cz-shortcut-listen="true"
+      >
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {/* DYNAMIC TECHNICAL BACKGROUND 
@@ -43,11 +46,11 @@ export default function RootLayout({ children }) {
               <div
                 className="fixed inset-0 -z-10 h-full w-full 
                 /* Light Mode Pattern */
-                bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:32px_32px] 
+                bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[32px_32px] 
                 /* Dark Mode Pattern */
                 dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] 
                 /* Fade effect towards edges */
-                [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
+                mask-[radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
               />
 
               <div className="relative z-10">
