@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const hindSiliguri = Hind_Siliguri({
+  variable: "--font-hind-siliguri",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 export const metadata = {
   title: "Khalil Computer | Shop Management Portal",
   description: "Secure management system for Khalil Computer Shop",
@@ -29,6 +34,7 @@ export default function RootLayout({ children }) {
       className={cn(
         geistSans.variable,
         geistMono.variable,
+        hindSiliguri.variable,
         "h-full antialiased",
       )}
     >
