@@ -36,15 +36,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-// 1. Next.js এর useParams হুক ইমপোর্ট করা হয়েছে URL থেকে ID নেওয়ার জন্য
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
+// 🔄 ১. স্কিমা আপডেট: ব্যাকএন্ড রুলস অনুযায়ী শুধু রিকোয়ার্ড ফিল্ড রাখা হয়েছে (সেলার ডিটেইলস ব্যাকএন্ড সেশন থেকে আসবে)
 const formSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
   productName: z.string().min(2, "Product or service name is required"),
-  categoryId: z.string().min(1, "Please select a category"),
+  categoryId: z.string().min(1, "Please select a category"), // 🔄 categoryId tracking
   quantity: z
     .number({ invalid_type_error: "Quantity is required" })
     .min(1, "Minimum quantity is 1"),
@@ -67,7 +67,6 @@ const mandatoryCategories = [
   "Khajna Payment",
   "Namjari",
   "Khajna Nibondon",
-  "Ticket Payment",
 ];
 
 const bdtFormatter = new Intl.NumberFormat("en-BD", {
@@ -76,28 +75,15 @@ const bdtFormatter = new Intl.NumberFormat("en-BD", {
   minimumFractionDigits: 0,
 });
 
-// 2. props থেকে saleData সম্পূর্ণ রিমুভ করা হয়েছে
-export default function UpdateSalesForm({ onSuccess }) {
-  const route = useRouter();
+export default function DailySalesForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [invoiceNumber] = useState(
+    `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+  );
 
-  // 3. URL থেকে সরাসরি ডাইনামিক id নেওয়া হচ্ছে (যেমন: /sales/[id])
-  const params = useParams();
-  const saleId = params?.id;
+  const router = useRouter();
 
-  // 4. API থেকে সরাসরি নির্দিষ্ট ID এর ডেটা ফেচ করার কুয়েরি
-  const { data: saleData, isLoading: loadingSaleData } = useQuery({
-    queryKey: ["sale", saleId],
-    queryFn: async () => {
-      if (!saleId) return null;
-      const { data } = await axios.get(`/api/products/sales/${saleId}`);
-      // আপনার API রেসপন্স এর স্ট্রাকচার অনুযায়ী data?.data অথবা শুধু data রিটার্ন করুন
-      return data?.data || data;
-    },
-    enabled: !!saleId, // ID না পাওয়া পর্যন্ত এই API কল হবে না
-  });
-  console.log(saleData);
   // Fetch Categories
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["categories"],
@@ -122,7 +108,7 @@ export default function UpdateSalesForm({ onSuccess }) {
       paymentMethod: "",
       paidAmount: 0,
       note: "",
-      invoiceNumber: "",
+      invoiceNumber: invoiceNumber,
     },
   });
 
@@ -131,47 +117,16 @@ export default function UpdateSalesForm({ onSuccess }) {
     watch,
     setValue,
     handleSubmit,
+    reset,
     trigger,
     setError,
     clearErrors,
-    reset,
     formState: { errors, isValid },
   } = form;
 
   const watchedFields = watch();
 
-  // 5. API থেকে ডেটা সফলভাবে আসার পর ফর্মের ইনপুটগুলো আপডেট করা হচ্ছে
-  useEffect(() => {
-    if (saleData) {
-      reset({
-        customerName: saleData.customerName || "",
-        customerPhone: saleData.customerPhone || "",
-        productName: saleData.productName || "",
-        quantity: saleData.quantity || 1,
-        totalPrice: saleData.total || saleData.totalPrice || 0,
-        expenseCost: saleData.expenseCost || 0,
-        paymentMethod: saleData.paymentMethod || "",
-        paidAmount: saleData.paidAmount || 0,
-        note: saleData.note || "",
-        invoiceNumber: saleData.invoiceNumber || "",
-        categoryId: watchedFields.categoryId,
-      });
-    }
-  }, [saleData, reset, watchedFields.categoryId]);
-
-  // DB থেকে আসা ক্যাটাগরি নামের সাথে ক্যাটাগরি লিস্টের ID ম্যাপ করা
-  useEffect(() => {
-    if (categories.length > 0 && saleData?.category) {
-      const matchedCategory = categories.find(
-        (cat) => cat.name.toLowerCase() === saleData.category.toLowerCase(),
-      );
-      if (matchedCategory) {
-        setValue("categoryId", matchedCategory._id, { shouldValidate: true });
-      }
-    }
-  }, [categories, saleData, setValue]);
-
-  // একটিভ ক্যাটাগরির অবজেক্ট বের করা
+  // 🔍 আইডি দিয়ে ম্যাপ করে একটিভ ক্যাটাগরির অবজেক্ট বের করা
   const selectedCategoryObj = useMemo(() => {
     return categories.find((c) => c._id === watchedFields.categoryId);
   }, [watchedFields.categoryId, categories]);
@@ -182,6 +137,7 @@ export default function UpdateSalesForm({ onSuccess }) {
 
   // Real-time Complex Validation logic
   useEffect(() => {
+    // ক) কাস্টমার ডাটা ভ্যালিডেশন
     if (isClientDetailsRequired) {
       if (
         !watchedFields.customerName ||
@@ -210,6 +166,7 @@ export default function UpdateSalesForm({ onSuccess }) {
       clearErrors(["customerName", "customerPhone"]);
     }
 
+    // খ) প্রাইস বনাম কোয়ান্টিটি
     if (watchedFields.totalPrice < watchedFields.quantity) {
       setError("totalPrice", {
         type: "custom",
@@ -219,6 +176,7 @@ export default function UpdateSalesForm({ onSuccess }) {
       clearErrors("totalPrice");
     }
 
+    // গ) খরচ বনাম প্রাইস
     if (watchedFields.expenseCost > watchedFields.totalPrice) {
       setError("expenseCost", {
         type: "custom",
@@ -228,6 +186,7 @@ export default function UpdateSalesForm({ onSuccess }) {
       clearErrors("expenseCost");
     }
 
+    // ঘ) পেইড বনাম প্রাইস
     if (watchedFields.paidAmount > watchedFields.totalPrice) {
       setError("paidAmount", {
         type: "custom",
@@ -286,6 +245,24 @@ export default function UpdateSalesForm({ onSuccess }) {
     setValue,
   ]);
 
+  // Sync Drafts
+  useEffect(() => {
+    const saved = localStorage.getItem("sales_draft");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.keys(parsed).forEach((key) =>
+        setValue(key, parsed[key], { shouldValidate: true }),
+      );
+    }
+  }, [setValue]);
+
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      localStorage.setItem("sales_draft", JSON.stringify(value));
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const handlePreSubmit = (e) => {
     e.preventDefault();
     trigger();
@@ -302,19 +279,32 @@ export default function UpdateSalesForm({ onSuccess }) {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      // 6. ডাইনামিক saleId দিয়ে ডেটা আপডেট পাঠানো হচ্ছে
-      const response = await axios.patch(`/api/products/sales/${saleId}`, data);
+      // 🔄 ব্যাকএন্ড এখন সেশন থেকে ডিরেক্ট ইউজার রিড করে, তাই বডিতে এক্সট্রা ডেটা যাবে না
+      const response = await axios.post("/api/products/sales", data);
       toast.success(
-        response.data.message || "Transaction successfully updated!",
+        response.data.message || "Transaction successfully captured!",
       );
+      localStorage.removeItem("sales_draft");
+      reset({
+        customerName: "",
+        customerPhone: "",
+        productName: "",
+        categoryId: "",
+        quantity: 1,
+        totalPrice: 0,
+        expenseCost: 0,
+        paymentMethod: "",
+        paidAmount: 0,
+        note: "",
+        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      });
       setShowConfirm(false);
-      if (onSuccess) onSuccess();
-      route.push("/employee/sales");
     } catch (error) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Update failed");
+      toast.error(error?.response?.data?.message || "Submission failed");
     } finally {
       setIsSubmitting(false);
+      router.push("/admin/sales"); // Redirect to sales history after submission
     }
   };
 
@@ -335,38 +325,26 @@ export default function UpdateSalesForm({ onSuccess }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isValid, errors]);
 
-  // 7. API থেকে মেইন ডেটা লোড হওয়ার সময়ের ক্লিয়ার ইন্ডিকেটর স্টেট
-  if (loadingSaleData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <div className="text-center space-y-2">
-          <div className="w-6 h-6 border-2 border-zinc-900 border-t-transparent dark:border-white dark:border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs font-medium text-zinc-500 tracking-wider">
-            Fetching transaction from server...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
+      {/* 📱 মোবাইল ফ্রেন্ডলি প্যাডিং: ছোট ফোনে py-4, বড় স্ক্রিনে py-10 */}
       <div className="max-w-350 mx-auto px-4 py-4 md:py-10 pb-24 md:pb-10">
         <form
           onSubmit={handlePreSubmit}
           className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start"
         >
-          {/* Header */}
+          {/* Header - Mobile Responsive Flex */}
           <header className="col-span-12 flex flex-col sm:flex-row sm:items-center justify-between pb-4 md:pb-8 border-b border-zinc-200 dark:border-zinc-800 gap-4">
             <div>
               <div className="flex items-center gap-2 text-blue-600 font-semibold mb-1 uppercase tracking-widest text-[9px] md:text-[10px]">
                 <ShieldCheck size={14} /> Secured Sales Portal
               </div>
               <h1 className="text-2xl md:text-4xl font-semibold tracking-tight">
-                Update Transaction
+                New Transaction
               </h1>
             </div>
 
+            {/* Top Buttons - Desktop view only (Hidden on Mobile bottom sheet triggers it instead) */}
             <div className="hidden sm:flex items-center gap-3">
               <Button
                 size="lg"
@@ -375,7 +353,7 @@ export default function UpdateSalesForm({ onSuccess }) {
                 onClick={() => reset()}
                 className="px-8 h-12 rounded-xl"
               >
-                Reset
+                Discard
               </Button>
               <Button
                 type="submit"
@@ -386,7 +364,7 @@ export default function UpdateSalesForm({ onSuccess }) {
               >
                 {!isValid || Object.keys(errors).length > 0
                   ? "Awaiting Parameters"
-                  : "Update Sale (Ctrl+Enter)"}
+                  : "Review Sale (Ctrl+Enter)"}
               </Button>
             </div>
           </header>
@@ -495,6 +473,7 @@ export default function UpdateSalesForm({ onSuccess }) {
                     )}
                   </div>
 
+                  {/* Qty and Price Split Grid (Mobile Friendly - Side by side even on small device) */}
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-8 space-y-1.5">
                       <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
@@ -544,6 +523,7 @@ export default function UpdateSalesForm({ onSuccess }) {
               </div>
               <Card className="shadow-sm rounded-xl md:rounded-2xl">
                 <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
+                  {/* Grid fields responsive breakdown */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
@@ -592,11 +572,11 @@ export default function UpdateSalesForm({ onSuccess }) {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
+                      <label className="text-[10px] md:text-[11px] font-bold uppercase text-emerald-500">
                         Amount Paid *
                       </label>
                       <Input
-                        className="h-11 md:h-10"
+                        className="h-11 md:h-10 border-emerald-200 focus:ring-emerald-500/20"
                         type="number"
                         step="any"
                         {...register("paidAmount", { valueAsNumber: true })}
@@ -625,7 +605,7 @@ export default function UpdateSalesForm({ onSuccess }) {
             </section>
           </main>
 
-          {/* Right Invoice Card */}
+          {/* Right/Bottom Invoice Side Card - Mobile Friendly Flow */}
           <aside className="col-span-12 lg:col-span-4 lg:sticky lg:top-8 space-y-6">
             <Card className="bg-zinc-900 text-zinc-100 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl">
               <div className="p-5 md:p-8 space-y-6 md:space-y-8">
@@ -634,9 +614,7 @@ export default function UpdateSalesForm({ onSuccess }) {
                     <p className="text-[9px] md:text-[10px] uppercase font-bold opacity-40">
                       Invoice Reference
                     </p>
-                    <h3 className="font-mono text-xs">
-                      {watchedFields.invoiceNumber}
-                    </h3>
+                    <h3 className="font-mono text-xs">{invoiceNumber}</h3>
                   </div>
                   <Receipt size={18} className="opacity-40" />
                 </div>
@@ -686,6 +664,7 @@ export default function UpdateSalesForm({ onSuccess }) {
                   </div>
                 </div>
 
+                {/* Main Submit Inside Card (Standard View Button) */}
                 <Button
                   type="submit"
                   disabled={
@@ -695,13 +674,13 @@ export default function UpdateSalesForm({ onSuccess }) {
                 >
                   {!isValid || Object.keys(errors).length > 0
                     ? "Form Incomplete"
-                    : "Update Sale"}
+                    : "Complete Sale"}
                 </Button>
               </div>
             </Card>
           </aside>
 
-          {/* Mobile Floating Bottom Bar */}
+          {/* 📱 Mobile Only Floating Bottom Bar (স্ক্রিনের নিচে ফিক্সড থাকবে সহজে প্রেস করার জন্য) */}
           <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex gap-2 z-50">
             <Button
               type="button"
@@ -709,7 +688,7 @@ export default function UpdateSalesForm({ onSuccess }) {
               onClick={() => reset()}
               className="w-1/3 h-12 rounded-xl text-xs"
             >
-              Reset
+              Discard
             </Button>
             <Button
               type="submit"
@@ -720,7 +699,7 @@ export default function UpdateSalesForm({ onSuccess }) {
             >
               {!isValid || Object.keys(errors).length > 0
                 ? "Awaiting Input"
-                : "Review Updates"}
+                : "Review Sale"}
             </Button>
           </div>
         </form>
@@ -729,13 +708,13 @@ export default function UpdateSalesForm({ onSuccess }) {
         <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
           <AlertDialogContent className="w-[90%] max-w-100 rounded-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Updates?</AlertDialogTitle>
+              <AlertDialogTitle>Confirm Transaction?</AlertDialogTitle>
               <AlertDialogDescription>
-                You are about to update this transaction record to{" "}
+                You are about to record a sale valued at{" "}
                 <strong className="text-zinc-900 dark:text-zinc-100">
                   {bdtFormatter.format(calculations.total)}
                 </strong>
-                . The changes will sync instantly.
+                . This entry will log into your cloud reports instantly.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex flex-row gap-2 mt-4">
@@ -747,7 +726,7 @@ export default function UpdateSalesForm({ onSuccess }) {
                 onClick={handleSubmit(onSubmit)}
                 className="w-1/2 bg-emerald-600 hover:bg-emerald-700 rounded-xl"
               >
-                {isSubmitting ? "Updating..." : "Confirm"}
+                {isSubmitting ? "Processing..." : "Confirm"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

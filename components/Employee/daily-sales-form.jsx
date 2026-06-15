@@ -304,7 +304,7 @@ export default function DailySalesForm() {
       toast.error(error?.response?.data?.message || "Submission failed");
     } finally {
       setIsSubmitting(false);
-      router.push("/employee/sales-list"); // Redirect to sales history after submission
+      router.push("/employee/sales"); // Redirect to sales history after submission
     }
   };
 

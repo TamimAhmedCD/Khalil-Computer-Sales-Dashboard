@@ -127,7 +127,7 @@ export function SalesList() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-foreground">My Sales</h1>
-          <Link href="/employee/sales">
+          <Link href="/employee/sales/add">
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 cursor-pointer">
               <Plus className="h-4 w-4" />
               Add New Sale

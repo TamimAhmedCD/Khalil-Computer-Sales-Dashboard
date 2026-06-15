@@ -63,8 +63,8 @@ export default function Home() {
       {/* --- LEFT SIDE: Visual Branding (Stealth Pro Look) --- */}
       <div className="hidden lg:flex flex-1 relative bg-zinc-950 items-center justify-center p-16 overflow-hidden border-r border-zinc-800/50">
         {/* Subtle White Glows - Replaces Primary Colors */}
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-white/[0.03] blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-white/[0.02] blur-[100px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-white/3 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-white/2 blur-[100px] rounded-full" />
 
         <div className="relative z-10 max-w-lg">
           <div className="h-20 w-20 bg-white rounded-[1.5rem] flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.15)] mb-10 rotate-6">

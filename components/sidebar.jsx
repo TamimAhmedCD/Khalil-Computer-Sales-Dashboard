@@ -27,7 +27,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, cloneElement } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 export function Sidebar({ isCollapsed, setIsCollapsed }) {
   const { data: session } = useSession();
@@ -47,15 +54,15 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
 
   const adminMainNavLinks = [
     { href: "/admin/dashboard", label: "Dashboard", icon: <Home /> },
-    { href: "/admin/sales", label: "Sales Entry", icon: <ListPlus /> },
-    { href: "/admin/sales-list", label: "Sales List", icon: <List /> },
+    { href: "/admin/sales/add", label: "Sales Entry", icon: <ListPlus /> },
+    { href: "/admin/sales", label: "Sales List", icon: <List /> },
     { href: "/admin/reports", label: "Reports", icon: <FileText /> },
   ];
 
   const employeeMainNavLinks = [
     { href: "/employee/dashboard", label: "Dashboard", icon: <Home /> },
-    { href: "/employee/sales", label: "Add Sales", icon: <Plus /> },
-    { href: "/employee/sales-list", label: "Sales List", icon: <List /> },
+    { href: "/employee/sales/add", label: "Add Sales", icon: <Plus /> },
+    { href: "/employee/sales", label: "Sales List", icon: <List /> },
     { href: "/employee/reports", label: "My Reports", icon: <ClipboardList /> },
   ];
 
@@ -93,7 +100,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
-              <Link key={link.href} href={link.href} onClick={() => setIsMobileOpen(false)}>
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMobileOpen(false)}
+              >
                 <div
                   title={!showFullSidebar ? link.label : ""}
                   className={cn(
@@ -101,7 +112,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
                     !showFullSidebar ? "justify-center p-3" : "gap-4 px-4 py-3",
                     isActive
                       ? "bg-black dark:bg-white text-white dark:text-black shadow-lg"
-                      : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 hover:text-black dark:hover:text-white"
+                      : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 hover:text-black dark:hover:text-white",
                   )}
                 >
                   {isActive && showFullSidebar && (
@@ -109,10 +120,12 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
                   )}
 
                   {/* FIXED: Removed JSON.stringify. Using cloneElement to pass size safely */}
-                  <span className={cn(
-                    "shrink-0 transition-transform duration-300 group-hover:scale-110",
-                    isActive ? "scale-110" : "scale-100"
-                  )}>
+                  <span
+                    className={cn(
+                      "shrink-0 transition-transform duration-300 group-hover:scale-110",
+                      isActive ? "scale-110" : "scale-100",
+                    )}
+                  >
                     {cloneElement(link.icon, { size: 18 })}
                   </span>
 
@@ -152,21 +165,32 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
         className={cn(
           "fixed left-0 top-0 h-screen flex flex-col transition-all duration-500 z-40",
           " border-r",
-          isMobileOpen ? "w-72 translate-x-0" : cn(isCollapsed ? "w-20" : "w-64", "-translate-x-full md:translate-x-0")
+          isMobileOpen
+            ? "w-72 translate-x-0"
+            : cn(
+                isCollapsed ? "w-20" : "w-64",
+                "-translate-x-full md:translate-x-0",
+              ),
         )}
       >
-        <div className={cn(
-          "h-16 flex items-center border-b border-zinc-100 dark:border-zinc-800/50 px-6 shrink-0",
-          !showFullSidebar ? "justify-center" : "justify-between"
-        )}>
+        <div
+          className={cn(
+            "h-16 flex items-center border-b border-zinc-100 dark:border-zinc-800/50 px-6 shrink-0",
+            !showFullSidebar ? "justify-center" : "justify-between",
+          )}
+        >
           {showFullSidebar && (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-black dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg rotate-3">
                 <Cpu className="text-white dark:text-black w-6 h-6" />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-sm font-black text-black dark:text-white tracking-tighter leading-none">KHALIL</h1>
-                <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] mt-0.5">COMPUTER</span>
+                <h1 className="text-sm font-black text-black dark:text-white tracking-tighter leading-none">
+                  KHALIL
+                </h1>
+                <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] mt-0.5">
+                  COMPUTER
+                </span>
               </div>
             </div>
           )}
@@ -176,27 +200,38 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl text-zinc-400"
             >
-              {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {isCollapsed ? (
+                <ChevronRight size={18} />
+              ) : (
+                <ChevronLeft size={18} />
+              )}
             </button>
           )}
         </div>
 
         <nav className="flex-1 overflow-y-auto py-8 no-scrollbar">
           {renderNavSection("Main Terminal", mainLinks)}
-          {(role === "admin" || role === "superAdmin") && renderNavSection("Management", adminNavLinks)}
+          {(role === "admin" || role === "superAdmin") &&
+            renderNavSection("Management", adminNavLinks)}
           {renderNavSection("System", settingsNavLinks)}
         </nav>
 
-        <div className={cn(
-          "p-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-auto",
-          !showFullSidebar && "flex justify-center"
-        )}>
+        <div
+          className={cn(
+            "p-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-auto",
+            !showFullSidebar && "flex justify-center",
+          )}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className={cn(
-                "flex items-center gap-3 rounded-2xl transition-all outline-none group w-full",
-                !showFullSidebar ? "justify-center p-1" : "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800/50"
-              )}>
+              <button
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl transition-all outline-none group w-full",
+                  !showFullSidebar
+                    ? "justify-center p-1"
+                    : "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800/50",
+                )}
+              >
                 {/* Avatar Squircle */}
                 <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black font-black text-sm shadow-xl transition-transform group-hover:scale-95 group-hover:rotate-3 shrink-0">
                   {session?.user?.name?.charAt(0).toUpperCase() || "K"}
@@ -227,20 +262,28 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
               className="w-60 p-2 rounded-2xl bg-white dark:bg-[#09090b] border-zinc-200 dark:border-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             >
               <DropdownMenuLabel className="px-3 py-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Staff Terminal</p>
-                <p className="text-sm font-bold text-black dark:text-white mt-1 truncate">{session?.user?.email}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
+                  Staff Terminal
+                </p>
+                <p className="text-sm font-bold text-black dark:text-white mt-1 truncate">
+                  {session?.user?.email}
+                </p>
               </DropdownMenuLabel>
 
               <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
 
               <DropdownMenuItem className="flex items-center gap-3 p-3 rounded-xl cursor-pointer focus:bg-zinc-100 dark:focus:bg-zinc-900 transition-colors group/item">
                 <User className="w-4 h-4 text-zinc-500 group-hover/item:text-black dark:group-hover/item:text-white transition-colors" />
-                <span className="text-xs font-bold uppercase tracking-tight">Profile Terminal</span>
+                <span className="text-xs font-bold uppercase tracking-tight">
+                  Profile Terminal
+                </span>
               </DropdownMenuItem>
 
               <DropdownMenuItem className="flex items-center gap-3 p-3 rounded-xl cursor-pointer focus:bg-zinc-100 dark:focus:bg-zinc-900 transition-colors group/item">
                 <Settings className="w-4 h-4 text-zinc-400 group-hover/item:text-black dark:group-hover/item:text-white transition-colors" />
-                <span className="text-xs font-bold uppercase tracking-tight">System Settings</span>
+                <span className="text-xs font-bold uppercase tracking-tight">
+                  System Settings
+                </span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
@@ -250,7 +293,9 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
                 className="flex items-center gap-3 p-3 rounded-xl cursor-pointer text-red-500 focus:bg-red-50 dark:focus:bg-red-500/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-xs font-black uppercase tracking-widest">Terminate Session</span>
+                <span className="text-xs font-black uppercase tracking-widest">
+                  Terminate Session
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
