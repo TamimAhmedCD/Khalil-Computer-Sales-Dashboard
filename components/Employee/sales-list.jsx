@@ -24,7 +24,6 @@ import {
   Trash,
 } from "lucide-react";
 import Link from "next/link";
-import { useDeleteSale } from "@/lib/hooks/sales/useDeleteSale";
 import { toast } from "sonner";
 
 // Next.js কম্পাইলার ফ্রেন্ডলি পিওর জাভাস্ক্রিপ্ট ফেচিং ফাংশন

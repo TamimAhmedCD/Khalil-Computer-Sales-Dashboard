@@ -168,9 +168,19 @@ export async function POST(req) {
 
     // 📊 ৮. ক্যালকুলেশনস
     const total = totalPrice;
-    const totalExpense = expenseCost;
-    const netProfit = total - totalExpense;
-    const commission = (netProfit * commissionRate) / 100;
+    const rawExpense = expenseCost; // অন্যান্য মূল খরচ
+
+    // ১. কমিশনের পরিমাণ বের করে পূর্ণসংখ্যা করা
+    const commission = Math.round((total * commissionRate) / 100);
+
+    // ২. মূল খরচ এবং কমিশন যোগ করে মোট খরচ (Total Expense) বের করা
+    const totalExpense = rawExpense + commission;
+
+    // ৩. মোট টাকা থেকে সব খরচ (কমিশনসহ) বাদ দিয়ে Net Profit বের করা
+    const netProfit = Math.round(total - totalExpense);
+
+    // ৪. কাস্টমার যদি শুধু প্রোডাক্টের দাম দিয়ে থাকে, তবে বাকি (Due) হিসাব:
+    // [এখানে 'total' থেকে 'paidAmount' বাদ দেওয়া হয়েছে। যদি কমিশন কাস্টমারের কাছ থেকে আদায়যোগ্য বকেয়া হয়, তবে total এর জায়গায় (total + commission) হতে পারে। তবে সাধারণত due = total - paidAmount-ই হয়।]
     const due = Math.max(total - paidAmount, 0);
 
     // 💾 ৯. সেলস রেকর্ড ইনসার্ট (ভবিষ্যতের রিপোর্টের জন্য আইডি ও নাম দুটিই সেভ রাখছি)

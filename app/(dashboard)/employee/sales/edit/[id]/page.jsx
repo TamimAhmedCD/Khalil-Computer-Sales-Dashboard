@@ -97,7 +97,6 @@ export default function UpdateSalesForm({ onSuccess }) {
     },
     enabled: !!saleId, // ID না পাওয়া পর্যন্ত এই API কল হবে না
   });
-  console.log(saleData);
   // Fetch Categories
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["categories"],

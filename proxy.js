@@ -5,8 +5,6 @@ export default auth((req) => {
   const user = req.auth?.user;
   const { pathname } = req.nextUrl;
 
-  console.log(user);
-
   // Not logged in
   if (!user) {
     return NextResponse.redirect(new URL("/", req.url));

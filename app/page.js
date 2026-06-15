@@ -17,7 +17,6 @@ import { useState, useEffect } from "react";
 export default function Home() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  console.log(session);
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       router.replace("/dashboard");

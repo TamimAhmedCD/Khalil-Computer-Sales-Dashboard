@@ -211,14 +211,24 @@ export default function DailySalesForm() {
   // Memoized calculations
   const calculations = useMemo(() => {
     const total = Number(watchedFields.totalPrice) || 0;
-    const totalExpense = Number(watchedFields.expenseCost) || 0;
+    const initialExpense = Number(watchedFields.expenseCost) || 0; // আগের মূল খরচ
     const paid = Number(watchedFields.paidAmount) || 0;
 
-    const netProfit = total - totalExpense;
+    // ১. আগের খরচের ওপর ভিত্তি করে প্রাথমিক লাভ (যার ওপর কমিশন হিসাব হবে)
     const commPct = selectedCategoryObj?.commission || 0;
-    const commission = (netProfit * commPct) / 100;
+
+    // ২. কমিশন হিসাব এবং রাউন্ড করা
+    const commission = Math.round((total * commPct) / 100);
+
+    // ৩. আগের মূল খরচের সাথে কমিশন যোগ করে ফাইনাল totalExpense বের করা
+    const totalExpense = initialExpense + commission;
+
+    // ৪. মোট টাকা থেকে ফাইনাল খরচ (কমিশনসহ) বাদ দিয়ে Net Profit বের করা
+    const netProfit = Math.round(total - totalExpense);
+
     const due = Math.max(total - paid, 0);
 
+    // সবশেষে অবজেক্টে আপডেট হওয়া ভ্যালুগুলো রিটার্ন করা
     return { total, totalExpense, netProfit, commPct, commission, due };
   }, [
     watchedFields.totalPrice,

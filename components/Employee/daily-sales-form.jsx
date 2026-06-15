@@ -216,7 +216,7 @@ export default function DailySalesForm() {
 
     const netProfit = total - totalExpense;
     const commPct = selectedCategoryObj?.commission || 0;
-    const commission = (netProfit * commPct) / 100;
+    const commission = (total * commPct) / 100;
     const due = Math.max(total - paid, 0);
 
     return { total, totalExpense, netProfit, commPct, commission, due };
