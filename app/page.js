@@ -1,6 +1,5 @@
 "use client";
 import { signIn, useSession } from "next-auth/react";
-import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Cpu,
@@ -13,16 +12,17 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const isLoggedIn = !!session;
-  React.useEffect(() => {
-    if (isLoggedIn) {
-      router.push("/dashboard");
+  const { data: session, status } = useSession();
+  console.log(session);
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/dashboard");
     }
-  }, [isLoggedIn, router]);
+  }, [status, router, session?.user]);
 
   const {
     register,
