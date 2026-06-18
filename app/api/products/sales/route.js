@@ -24,7 +24,7 @@ export async function POST(req) {
       categoryId, // 🔄 ড্রপডাউন থেকে এখন ক্যাটাগরি নামের বদলে আইডি আসবে
       quantity,
       totalPrice,
-      expenseCost,
+      rawExpense,
       paymentMethod,
       paidAmount,
       note,
@@ -38,14 +38,14 @@ export async function POST(req) {
 
     quantity = Number(quantity);
     totalPrice = Number(totalPrice);
-    expenseCost = Number(expenseCost || 0);
+    rawExpense = Number(rawExpense || 0);
     paidAmount = Number(paidAmount || 0);
 
     // ❌ ২. বেসিক রিকোয়ার্ড ফিল্ড ভ্যালিডেশন
     if (
       !invoiceNumber ||
       !productName ||
-      !categoryId || // 🔄 category এর জায়গায় এখন categoryId চেক হবে
+      !categoryId || // 🔄 category এর জায়গায় এখন categoryId চেক হবে
       !quantity ||
       !totalPrice
     ) {
@@ -76,7 +76,7 @@ export async function POST(req) {
     }
 
     // ❌ ৪. মাইনাস বা জিরো ভ্যালু প্রোটেকশন
-    if (quantity <= 0 || totalPrice < 0 || expenseCost < 0 || paidAmount < 0) {
+    if (quantity <= 0 || totalPrice < 0 || rawExpense < 0 || paidAmount < 0) {
       return Response.json(
         {
           success: false,
@@ -86,7 +86,7 @@ export async function POST(req) {
       );
     }
 
-    // ❌ ৫. বিজনেস লজিক ভ্যালিডেশনস
+    // ❌ ৫. বিজনেস লজিক ভ্যালিডেশনs
     if (totalPrice < quantity) {
       return Response.json(
         {
@@ -97,7 +97,7 @@ export async function POST(req) {
       );
     }
 
-    if (expenseCost > totalPrice) {
+    if (rawExpense > totalPrice) {
       return Response.json(
         {
           success: false,
@@ -168,7 +168,6 @@ export async function POST(req) {
 
     // 📊 ৮. ক্যালকুলেশনস
     const total = totalPrice;
-    const rawExpense = expenseCost; // অন্যান্য মূল খরচ
 
     // ১. কমিশনের পরিমাণ বের করে পূর্ণসংখ্যা করা
     const commission = Math.round((total * commissionRate) / 100);
@@ -195,7 +194,7 @@ export async function POST(req) {
       categoryName: categoryData.name, // 🔄 ক্যাটাগরি স্ন্যাপশট নাম
       quantity,
       totalPrice,
-      expenseCost,
+      rawExpense,
       paymentMethod,
       paidAmount,
       note: note || "",

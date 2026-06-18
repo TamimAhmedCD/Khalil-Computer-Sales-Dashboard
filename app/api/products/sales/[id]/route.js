@@ -41,79 +41,90 @@ export async function GET(request, { params }) {
   }
 }
 // Update sale
-export async function PATCH(request, { params }) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
+// export async function PATCH(request, { params }) {
+//   try {
+//     const { id } = await params;
+//     const body = await request.json();
 
-    const client = await clientPromise;
-    const db = client.db("products");
-    const salesCollection = db.collection("sales");
+//     const client = await clientPromise;
+//     const db = client.db("products");
+//     const salesCollection = db.collection("sales");
 
-    // 🔥 Prevent updating restricted fields
-    const allowedFields = {
-      productName: body.productName,
-      categoryName: body.categoryName,
-      quantity: body.quantity,
-      totalPrice: body.totalPrice,
-      expenseCost: body.expenseCost,
-      paymentMethod: body.paymentMethod,
-      paidAmount: body.paidAmount,
-      note: body.note,
-    };
+//     // 🔥 Prevent updating restricted fields
+//     const allowedFields = {
+//       productName: body.productName,
+//       categoryName: body.categoryName,
+//       quantity: body.quantity,
+//       totalPrice: body.totalPrice,
+//       rawExpense: body.rawExpense,
+//       paymentMethod: body.paymentMethod,
+//       paidAmount: body.paidAmount,
+//       note: body.note,
+//     };
 
-    // remove undefined fields
-    Object.keys(allowedFields).forEach(
-      (key) => allowedFields[key] === undefined && delete allowedFields[key],
-    );
+//     // remove undefined fields
+//     Object.keys(allowedFields).forEach(
+//       (key) => allowedFields[key] === undefined && delete allowedFields[key],
+//     );
 
-    // 🔥 Recalculate profit if needed
-    if (allowedFields.totalPrice || allowedFields.expenseCost) {
-      const sale = await salesCollection.findOne({
-        _id: new ObjectId(id),
-      });
+//     // 🔥 Recalculate profit if needed
+//     if (allowedFields.totalPrice || allowedFields.rawExpense) {
+//       const sale = await salesCollection.findOne({
+//         _id: new ObjectId(id),
+//       });
 
-      const totalPrice = allowedFields.totalPrice ?? sale.totalPrice;
-      const expenseCost = allowedFields.expenseCost ?? sale.expenseCost;
+//       const totalPrice = allowedFields.totalPrice ?? sale.totalPrice;
+//       const initialExpense = allowedFields.rawExpense ?? sale.rawExpense; // আগের মূল খরচ
 
-      allowedFields.netProfit = totalPrice - expenseCost;
-      allowedFields.commission = (totalPrice - expenseCost) * 0.33; // example rule
-    }
+//       // ২. কমিশন হিসাব এবং রাউন্ড করা (example rule: 33%)
+//       const commission = Math.round(totalPrice * 0.33);
 
-    const result = await salesCollection.updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $set: {
-          ...allowedFields,
-          updatedAt: new Date(),
-        },
-      },
-    );
+//       // ৩. মূল খরচের সাথে কমিশন যোগ করে ফাইনাল rawExpense তৈরি (যেহেতু কমিশনও একটা খরচ)
+//       const finalExpense = initialExpense + commission;
 
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { success: false, message: "Sale not found" },
-        { status: 404 },
-      );
-    }
+//       // ৪. সলিড বা পূর্ণসংখ্যায় Net Profit বের করা (খরচ ও কমিশন বাদে)
+//       const netProfit = Math.round(totalPrice - finalExpense);
 
-    const updatedSale = await salesCollection.findOne({
-      _id: new ObjectId(id),
-    });
+//       // অবজেক্টে ভ্যালুগুলো অ্যাসাইন করা
+//       allowedFields.commission = commission;
+//       allowedFields.rawExpense = finalExpense; // ডেটাবেজে কমিশনসহ মোট খরচ সেভ হবে
+//       allowedFields.netProfit = netProfit;
+//     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Sale updated successfully",
-      data: updatedSale,
-    });
-  } catch (error) {
-    console.error("UPDATE SALE ERROR:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
-    );
-  }
-}
+//     const result = await salesCollection.updateOne(
+//       { _id: new ObjectId(id) },
+//       {
+//         $set: {
+//           ...allowedFields,
+//           updatedAt: new Date(),
+//         },
+//       },
+//     );
+
+//     if (result.matchedCount === 0) {
+//       return NextResponse.json(
+//         { success: false, message: "Sale not found" },
+//         { status: 404 },
+//       );
+//     }
+
+//     const updatedSale = await salesCollection.findOne({
+//       _id: new ObjectId(id),
+//     });
+
+//     return NextResponse.json({
+//       success: true,
+//       message: "Sale updated successfully",
+//       data: updatedSale,
+//     });
+//   } catch (error) {
+//     console.error("UPDATE SALE ERROR:", error);
+//     return NextResponse.json(
+//       { success: false, error: error.message },
+//       { status: 500 },
+//     );
+//   }
+// }
 // DELETE sale
 export async function DELETE(request, { params }) {
   try {

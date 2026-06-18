@@ -51,7 +51,7 @@ const formSchema = z.object({
   totalPrice: z
     .number({ invalid_type_error: "Total price is required" })
     .min(0, "Price cannot be negative"),
-  expenseCost: z
+  rawExpense: z
     .number({ invalid_type_error: "Expense is required" })
     .min(0, "Expense cannot be negative"),
   paymentMethod: z.string().min(1, "Please select a payment method"),
@@ -117,7 +117,7 @@ export default function UpdateSalesForm({ onSuccess }) {
       categoryId: "",
       quantity: 1,
       totalPrice: 0,
-      expenseCost: 0,
+      rawExpense: 0,
       paymentMethod: "",
       paidAmount: 0,
       note: "",
@@ -148,7 +148,7 @@ export default function UpdateSalesForm({ onSuccess }) {
         productName: saleData.productName || "",
         quantity: saleData.quantity || 1,
         totalPrice: saleData.total || saleData.totalPrice || 0,
-        expenseCost: saleData.expenseCost || 0,
+        rawExpense: saleData.rawExpense || 0,
         paymentMethod: saleData.paymentMethod || "",
         paidAmount: saleData.paidAmount || 0,
         note: saleData.note || "",
@@ -218,13 +218,13 @@ export default function UpdateSalesForm({ onSuccess }) {
       clearErrors("totalPrice");
     }
 
-    if (watchedFields.expenseCost > watchedFields.totalPrice) {
-      setError("expenseCost", {
+    if (watchedFields.rawExpense > watchedFields.totalPrice) {
+      setError("rawExpense", {
         type: "custom",
-        message: "Expense cost cannot exceed Total Price",
+        message: "Raw expense cannot exceed Total Price",
       });
     } else {
-      clearErrors("expenseCost");
+      clearErrors("rawExpense");
     }
 
     if (watchedFields.paidAmount > watchedFields.totalPrice) {
@@ -238,7 +238,7 @@ export default function UpdateSalesForm({ onSuccess }) {
   }, [
     watchedFields.quantity,
     watchedFields.totalPrice,
-    watchedFields.expenseCost,
+    watchedFields.rawExpense,
     watchedFields.paidAmount,
     watchedFields.customerName,
     watchedFields.customerPhone,
@@ -251,18 +251,28 @@ export default function UpdateSalesForm({ onSuccess }) {
   // Memoized calculations
   const calculations = useMemo(() => {
     const total = Number(watchedFields.totalPrice) || 0;
-    const totalExpense = Number(watchedFields.expenseCost) || 0;
+    const initialExpense = Number(watchedFields.rawExpense) || 0; // আগের মূল খরচ
     const paid = Number(watchedFields.paidAmount) || 0;
 
-    const netProfit = total - totalExpense;
+    // ১. আগের খরচের ওপর ভিত্তি করে প্রাথমিক লাভ (যার ওপর কমিশন হিসাব হবে)
     const commPct = selectedCategoryObj?.commission || 0;
-    const commission = (netProfit * commPct) / 100;
+
+    // ২. কমিশন হিসাব এবং রাউন্ড করা
+    const commission = Math.round((total * commPct) / 100);
+
+    // ৩. আগের মূল খরচের সাথে কমিশন যোগ করে ফাইনাল totalExpense বের করা
+    const totalExpense = initialExpense + commission;
+
+    // ৪. মোট টাকা থেকে ফাইনাল খরচ (কমিশনসহ) বাদ দিয়ে Net Profit বের করা
+    const netProfit = Math.round(total - totalExpense);
+
     const due = Math.max(total - paid, 0);
 
+    // সবশেষে অবজেক্টে আপডেট হওয়া ভ্যালুগুলো রিটার্ন করা
     return { total, totalExpense, netProfit, commPct, commission, due };
   }, [
     watchedFields.totalPrice,
-    watchedFields.expenseCost,
+    watchedFields.rawExpense,
     watchedFields.paidAmount,
     selectedCategoryObj,
   ]);
@@ -580,12 +590,12 @@ export default function UpdateSalesForm({ onSuccess }) {
                         className="h-11 md:h-10"
                         type="number"
                         step="any"
-                        {...register("expenseCost", { valueAsNumber: true })}
+                        {...register("rawExpense", { valueAsNumber: true })}
                         placeholder="0"
                       />
-                      {errors.expenseCost && (
+                      {errors.rawExpense && (
                         <p className="text-xs text-red-500 mt-1">
-                          {errors.expenseCost.message}
+                          {errors.rawExpense.message}
                         </p>
                       )}
                     </div>

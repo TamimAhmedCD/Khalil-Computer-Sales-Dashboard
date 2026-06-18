@@ -338,7 +338,7 @@ export function SalesList() {
                           >
                             <Eye className="h-4 w-4 text-foreground" />
                           </Button>
-                          <Link href={`/employee/sales/edit/${sale._id}`}>
+                          {/* <Link href={`/employee/sales/edit/${sale._id}`}>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -346,7 +346,7 @@ export function SalesList() {
                             >
                               <Edit2 className="h-4 w-4 text-foreground" />
                             </Button>
-                          </Link>
+                          </Link> */}
                           <Button
                             variant="destructive"
                             size="sm"
@@ -584,8 +584,8 @@ export function SalesList() {
                     </span>
                     <span className="font-medium text-destructive">
                       ৳
-                      {selectedSale.expenseCost
-                        ? selectedSale.expenseCost.toLocaleString()
+                      {selectedSale.rawExpense
+                        ? selectedSale.rawExpense.toLocaleString()
                         : 0}
                     </span>
                   </div>
@@ -594,7 +594,7 @@ export function SalesList() {
                     <span className="font-medium text-destructive">
                       ৳
                       {selectedSale.totalExpense
-                        ? selectedSale.totalExpense.toLocaleString()
+                        ? selectedSale.totalExpense
                         : 0}
                     </span>
                   </div>
