@@ -16,15 +16,15 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import {
   FileDown,
@@ -56,7 +56,6 @@ export function Reports() {
   });
   const [loading, setLoading] = useState(true);
 
-  // ✅ Changed default state from 'today' to 'all' to show all data by default
   const [dateFilter, setDateFilter] = useState("today");
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -66,7 +65,21 @@ export function Reports() {
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
 
-  // --- Live API Sync Effect ---
+  // --- 📊 Dedicated 7-Day Chart Data Fetching ---
+  const { data: chartRawData = [] } = useQuery({
+    queryKey: ["salesChartData"],
+    queryFn: async () => {
+      try {
+        const response = await axios.get("/api/products/sales?dateFilter=week");
+        return response.data?.success ? response.data.data : [];
+      } catch (err) {
+        console.error("Failed to load chart metrics:", err);
+        return [];
+      }
+    },
+  });
+
+  // --- Live Table/Summary API Sync Effect ---
   useEffect(() => {
     async function fetchSalesData() {
       try {
@@ -79,7 +92,6 @@ export function Reports() {
         if (searchTerm) params.append("search", searchTerm);
         if (categoryFilter !== "all") params.append("category", categoryFilter);
 
-        // Only attach date bounds if the user actively wants a custom block
         if (dateFilter === "custom" && customStartDate && customEndDate) {
           params.append("customStartDate", customStartDate);
           params.append("customEndDate", customEndDate);
@@ -131,7 +143,6 @@ export function Reports() {
   const handleFilterChange = (type, value) => {
     if (type === "date") {
       setDateFilter(value);
-      // Clean up custom dates if user switches away from custom
       if (value !== "custom") {
         setCustomStartDate("");
         setCustomEndDate("");
@@ -142,47 +153,71 @@ export function Reports() {
     setCurrentPage(1);
   };
 
-  // --- Chart Calculations ---
+  // --- Modified Chart Calculations ---
   const chartSalesData = useMemo(() => {
     const dailyMap = {};
 
-    sales.forEach((item) => {
-      const formattedDate = new Date(item.createdAt).toLocaleDateString(
-        "en-US",
-        { month: "short", day: "numeric" },
-      );
-      if (!dailyMap[formattedDate]) {
-        dailyMap[formattedDate] = {
-          date: formattedDate,
-          sales: 0,
-          profit: 0,
-          commission: 0,
-        };
+    // Initialize last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - i);
+
+      const key = date.toISOString().split("T")[0];
+
+      dailyMap[key] = {
+        date: date.toLocaleDateString("en-US", {
+          weekday: "short",
+        }),
+        sales: 0,
+        profit: 0,
+        commission: 0,
+      };
+    }
+
+    // Add actual sales data
+    chartRawData.forEach((item) => {
+      const dateSource = item.createdAt || item.date;
+
+      const dateObj = new Date(dateSource);
+
+      if (isNaN(dateObj.getTime())) return;
+
+      dateObj.setHours(0, 0, 0, 0);
+
+      const key = dateObj.toISOString().split("T")[0];
+
+      if (dailyMap[key]) {
+        dailyMap[key].sales += Number(item.totalPrice || 0);
+        dailyMap[key].profit += Number(item.netProfit || 0);
+        dailyMap[key].commission += Number(item.commission || 0);
       }
-      dailyMap[formattedDate].sales += item.totalPrice;
-      dailyMap[formattedDate].profit += item.netProfit;
-      dailyMap[formattedDate].commission += item.commission;
     });
 
-    return Object.values(dailyMap).reverse();
-  }, [sales]);
+    return Object.values(dailyMap);
+  }, [chartRawData]);
+
+  useEffect(() => {
+    console.log("Chart Raw Data:", chartRawData);
+    console.log("Chart Processed Data:", chartSalesData);
+  }, [chartRawData, chartSalesData]);
 
   const paymentBreakdown = useMemo(() => {
     const methods = {};
-    sales.forEach((item) => {
+    chartRawData.forEach((item) => {
       const field = item.paymentMethod || "Unspecified";
-      methods[field] = (methods[field] || 0) + item.totalPrice;
+      methods[field] = (methods[field] || 0) + (item.totalPrice || 0);
     });
     return Object.keys(methods).map((key) => ({
       name: key,
       value: methods[key],
     }));
-  }, [sales]);
+  }, [chartRawData]);
 
   const topProducts = useMemo(() => {
     const productMap = {};
 
-    sales.forEach((item) => {
+    chartRawData.forEach((item) => {
       if (!productMap[item.productName]) {
         productMap[item.productName] = {
           name: item.productName,
@@ -190,14 +225,18 @@ export function Reports() {
           sales: 0,
         };
       }
-      productMap[item.productName].quantity += item.quantity;
-      productMap[item.productName].sales += item.totalPrice;
+      productMap[item.productName].quantity += item.quantity || 0;
+      productMap[item.productName].sales += item.totalPrice || 0;
     });
 
-    return Object.values(productMap)
-      .sort((a, b) => b.sales - a.sales)
-      .slice(0, 5);
-  }, [sales]);
+    const sorted = Object.values(productMap).sort((a, b) => b.sales - a.sales);
+    const maxSales = sorted[0]?.sales || 1;
+
+    return sorted.slice(0, 5).map((p) => ({
+      ...p,
+      percentage: Math.min(Math.round((p.sales / maxSales) * 105), 100),
+    }));
+  }, [chartRawData]);
 
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["categories"],
@@ -206,6 +245,7 @@ export function Reports() {
       return data?.data || [];
     },
   });
+
   return (
     <div className="min-h-screen">
       <div className="space-y-8">
@@ -229,7 +269,6 @@ export function Reports() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {/* Default select option changed to All Time */}
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="week">This Week</SelectItem>
@@ -313,7 +352,7 @@ export function Reports() {
               </p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-green- green-600" />
+              <TrendingUp className="h-6 w-6 text-green-600" />
             </div>
           </Card>
 
@@ -334,126 +373,177 @@ export function Reports() {
 
         {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-card p-6 rounded-lg border border-border">
+          {/* Sales Overview */}
+          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Sales Chart
+              Sales Overview (Last 7 Days)
             </h3>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartSalesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="date" stroke="#6b7280" />
                 <YAxis stroke="#6b7280" />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                  }}
+                />
                 <Legend />
                 <Line
                   type="monotone"
                   dataKey="sales"
                   stroke="#1f83d2"
                   strokeWidth={2}
-                  name="Total Sales"
+                  dot={{ fill: "#1f83d2" }}
+                  name="Sales"
                 />
               </LineChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="bg-card p-6 rounded-lg border border-border">
+          {/* Profit Overview */}
+          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Profit Overview
+              Profit Overview (Last 7 Days)
             </h3>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartSalesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="date" stroke="#6b7280" />
                 <YAxis stroke="#6b7280" />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                  }}
+                />
                 <Legend />
-                <Bar dataKey="profit" fill="#34d399" name="Net Profit" />
+                <Bar dataKey="profit" fill="#1f83d2" name="Profit" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="bg-card p-6 rounded-lg border border-border">
+          {/* Commission Overview */}
+          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Payment Methods
+              Commission Overview (Last 7 Days)
             </h3>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={paymentBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {paymentBreakdown.map((entry, idx) => (
-                      <Cell
-                        key={`cell-${idx}`}
-                        fill={PAYMENT_COLORS[idx % PAYMENT_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="w-full space-y-2">
-                {paymentBreakdown.map((item, idx) => (
-                  <div
-                    key={item.name}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{
-                          backgroundColor:
-                            PAYMENT_COLORS[idx % PAYMENT_COLORS.length],
-                        }}
-                      />
-                      <span className="text-foreground font-medium">
-                        {item.name}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground">
-                      ৳{item.value.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartSalesData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="commission"
+                  stroke="#55a6d6"
+                  strokeWidth={2}
+                  dot={{ fill: "#55a6d6" }}
+                  name="Commission"
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </Card>
 
-          <Card className="bg-card p-6 rounded-lg border border-border">
+          {/* Payment Breakdown */}
+          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Top Volume Performance
+              Payment Breakdown (Last 7 Days)
             </h3>
-            <div className="space-y-4">
-              {topProducts.map((prod, idx) => (
-                <div key={idx} className="flex flex-col gap-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-foreground">
-                      {prod.name}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {prod.quantity} Units Sold (৳{prod.sales.toLocaleString()}
-                      )
-                    </span>
-                  </div>
-                  <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={paymentBreakdown}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {paymentBreakdown.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={PAYMENT_COLORS[index % PAYMENT_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 space-y-2">
+              {paymentBreakdown.map((item, index) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
                     <div
-                      className="bg-primary h-full rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{
-                        width: `${Math.min((prod.quantity / 50) * 100, 100)}%`,
+                        backgroundColor:
+                          PAYMENT_COLORS[index % PAYMENT_COLORS.length],
                       }}
                     />
+                    <span className="text-sm text-foreground">{item.name}</span>
                   </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    ৳{item.value.toLocaleString()}
+                  </span>
                 </div>
               ))}
             </div>
           </Card>
         </div>
+
+        {/* Top Products */}
+        <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Top Selling Products (Last 7 Days)
+          </h3>
+          <div className="space-y-3">
+            {topProducts.map((product) => (
+              <div key={product.name}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">
+                    {product.name}
+                  </span>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-muted-foreground">
+                      {product.quantity} sold
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      ৳{product.sales.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary"
+                    style={{ width: `${product.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
 
         {/* Dynamic Filters Control Panel */}
         <Card className="bg-card p-6 rounded-lg border border-border">
@@ -563,13 +653,11 @@ export function Reports() {
                           {item.totalPrice.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-right text-muted-foreground">
-                          <td className="px-6 py-4 text-right text-muted-foreground">
-                            {(
-                              item.expenseCost ??
-                              item.rawExpense ??
-                              0
-                            ).toLocaleString()}
-                          </td>
+                          {(
+                            item.expenseCost ??
+                            item.rawExpense ??
+                            0
+                          ).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-right font-medium text-emerald-600">
                           ৳{item.netProfit.toLocaleString()}
@@ -582,7 +670,7 @@ export function Reports() {
                   ) : (
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={8}
                         className="px-6 py-12 text-center text-muted-foreground"
                       >
                         No real-time sales transactions matched your active
