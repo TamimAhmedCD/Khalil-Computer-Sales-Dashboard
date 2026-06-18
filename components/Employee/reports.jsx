@@ -563,7 +563,13 @@ export function Reports() {
                           {item.totalPrice.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-right text-muted-foreground">
-                          {item.expenseCost.toLocaleString()}
+                          <td className="px-6 py-4 text-right text-muted-foreground">
+                            {(
+                              item.expenseCost ??
+                              item.rawExpense ??
+                              0
+                            ).toLocaleString()}
+                          </td>
                         </td>
                         <td className="px-6 py-4 text-right font-medium text-emerald-600">
                           ৳{item.netProfit.toLocaleString()}
