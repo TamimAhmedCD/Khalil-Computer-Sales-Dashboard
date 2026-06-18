@@ -1,10 +1,23 @@
-'use client';
+"use client";
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Plus, TrendingUp, DollarSign, Award, Target, Clock, Activity, ShoppingCart, CheckCircle, Users, Zap } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import {
+  Plus,
+  TrendingUp,
+  DollarSign,
+  Award,
+  Target,
+  Clock,
+  Activity,
+  ShoppingCart,
+  CheckCircle,
+  Users,
+  Zap,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export function EmployeeDashboard({ onNavigate, session }) {
   // Mock data
@@ -19,37 +32,37 @@ export function EmployeeDashboard({ onNavigate, session }) {
 
   const todaysSales = [
     {
-      time: '09:30 AM',
-      productName: 'Wireless Headphones',
-      category: 'Electronics',
+      time: "09:30 AM",
+      productName: "Wireless Headphones",
+      category: "Electronics",
       saleAmount: 8500,
       profit: 1700,
     },
     {
-      time: '10:15 AM',
-      productName: 'Smart Watch',
-      category: 'Gadgets',
+      time: "10:15 AM",
+      productName: "Smart Watch",
+      category: "Gadgets",
       saleAmount: 12000,
       profit: 2400,
     },
     {
-      time: '11:45 AM',
-      productName: 'Phone Case Bundle',
-      category: 'Accessories',
+      time: "11:45 AM",
+      productName: "Phone Case Bundle",
+      category: "Accessories",
       saleAmount: 5500,
       profit: 1100,
     },
     {
-      time: '02:20 PM',
-      productName: 'USB-C Cable Pack',
-      category: 'Accessories',
+      time: "02:20 PM",
+      productName: "USB-C Cable Pack",
+      category: "Accessories",
       saleAmount: 4200,
       profit: 840,
     },
     {
-      time: '03:50 PM',
-      productName: 'Laptop Stand',
-      category: 'Office',
+      time: "03:50 PM",
+      productName: "Laptop Stand",
+      category: "Office",
       saleAmount: 14800,
       profit: 2960,
     },
@@ -58,52 +71,52 @@ export function EmployeeDashboard({ onNavigate, session }) {
   const recentActivities = [
     {
       id: 1,
-      action: 'Added new sale',
-      product: 'Wireless Headphones',
-      time: '2 hours ago',
-      icon: 'plus',
+      action: "Added new sale",
+      product: "Wireless Headphones",
+      time: "2 hours ago",
+      icon: "plus",
     },
     {
       id: 2,
-      action: 'Updated sale',
-      product: 'Smart Watch',
-      time: '1 hour ago',
-      icon: 'edit',
+      action: "Updated sale",
+      product: "Smart Watch",
+      time: "1 hour ago",
+      icon: "edit",
     },
     {
       id: 3,
-      action: 'Completed sale',
-      product: 'Phone Case Bundle',
-      time: '30 minutes ago',
-      icon: 'check',
+      action: "Completed sale",
+      product: "Phone Case Bundle",
+      time: "30 minutes ago",
+      icon: "check",
     },
     {
       id: 4,
-      action: 'Added new sale',
-      product: 'USB-C Cable Pack',
-      time: '15 minutes ago',
-      icon: 'plus',
+      action: "Added new sale",
+      product: "USB-C Cable Pack",
+      time: "15 minutes ago",
+      icon: "plus",
     },
   ];
 
   const getCategoryColor = (category) => {
     const colors = {
-      Electronics: 'bg-blue-100 text-blue-700',
-      Gadgets: 'bg-purple-100 text-purple-700',
-      Accessories: 'bg-green-100 text-green-700',
-      Office: 'bg-orange-100 text-orange-700',
+      Electronics: "bg-blue-100 text-blue-700",
+      Gadgets: "bg-purple-100 text-purple-700",
+      Accessories: "bg-green-100 text-green-700",
+      Office: "bg-orange-100 text-orange-700",
     };
-    return colors[category] || 'bg-gray-100 text-gray-700';
+    return colors[category] || "bg-gray-100 text-gray-700";
   };
 
   const getActivityIcon = (iconType) => {
-    const iconClasses = 'h-4 w-4';
+    const iconClasses = "h-4 w-4";
     switch (iconType) {
-      case 'plus':
+      case "plus":
         return <Plus className={iconClasses} />;
-      case 'edit':
+      case "edit":
         return <TrendingUp className={iconClasses} />;
-      case 'check':
+      case "check":
         return <Award className={iconClasses} />;
       default:
         return <Activity className={iconClasses} />;
@@ -114,50 +127,67 @@ export function EmployeeDashboard({ onNavigate, session }) {
     <div className="min-h-screen">
       <div className="space-y-6">
         {/* Header Section */}
-        <div className={cn(
-          'relative overflow-hidden rounded-xl p-8 md:p-10 border border-border shadow-lg',
-          'bg-gradient-to-r from-primary/10 via-primary/5 to-transparent',
-          'before:absolute before:-right-20 before:-top-20 before:h-40 before:w-40 before:bg-primary/5 before:rounded-full',
-          'after:absolute after:-left-20 after:-bottom-20 after:h-40 after:w-40 after:bg-primary/5 after:rounded-full'
-        )}>
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-xl p-8 md:p-10 border border-border shadow-lg",
+            "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
+            "before:absolute before:-right-20 before:-top-20 before:h-40 before:w-40 before:bg-primary/5 before:rounded-full",
+            "after:absolute after:-left-20 after:-bottom-20 after:h-40 after:w-40 after:bg-primary/5 after:rounded-full",
+          )}
+        >
           <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-12 w-12 bg-primary/20 rounded-lg flex items-center justify-center">
                   <Zap className="h-6 w-6 text-primary" />
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground">Welcome back, {session.user.name}!</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                  Welcome back, {session.user.name}!
+                </h1>
               </div>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-4">
-                You&apos;re all set to manage your sales operations. Here&apos;s your dashboard overview for{' '}
+                You&apos;re all set to manage your sales operations. Here&apos;s
+                your dashboard overview for{" "}
                 <span className="font-semibold text-foreground">
-                  {new Date().toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
+                  {new Date().toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
                   })}
                 </span>
               </p>
               <div className="flex flex-wrap gap-6">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="text-sm text-foreground">All systems operational</span>
+                  <span className="text-sm text-foreground">
+                    All systems operational
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
-                  <span className="text-sm text-foreground">On track with targets</span>
+                  <span className="text-sm text-foreground">
+                    On track with targets
+                  </span>
                 </div>
               </div>
             </div>
             <div className="flex gap-2 flex-wrap md:flex-col lg:flex-row justify-start md:justify-end">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 whitespace-nowrap">
-                <ShoppingCart className="h-4 w-4" />
-                Add Sale
-              </Button>
-              <Button variant="outline" className="border-border text-foreground gap-2 whitespace-nowrap hover:bg-accent">
+              <Link href="sales/add">
+                <Button className="bg-primary cursor-pointer hover:bg-primary/90 text-primary-foreground gap-2 whitespace-nowrap">
+                  <ShoppingCart className="h-4 w-4" />
+                  Add Sale
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="border-border text-foreground gap-2 whitespace-nowrap hover:bg-accent"
+              >
                 <DollarSign className="h-4 w-4" />
                 Add Expense
               </Button>
-              <Button variant="outline" className="border-border text-foreground gap-2 whitespace-nowrap hover:bg-accent">
+              <Button
+                variant="outline"
+                className="border-border text-foreground gap-2 whitespace-nowrap hover:bg-accent"
+              >
                 <Users className="h-4 w-4" />
                 Add Employee
               </Button>
@@ -238,27 +268,33 @@ export function EmployeeDashboard({ onNavigate, session }) {
 
         {/* Quick Actions Section */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Button
-            onClick={() => onNavigate('sales')}
-            className="h-auto flex flex-col items-center justify-center gap-3 p-6 bg-card border border-border text-foreground hover:bg-muted rounded-lg cursor-pointer"
+          <Link
+            href="sales/add"
+            className="flex flex-col items-center justify-center gap-3 bg-card border border-border hover:bg-muted rounded-lg cursor-pointer"
           >
-            <Plus className="h-6 w-6" />
-            <span className="font-semibold">Add New Sale</span>
-          </Button>
-          <Button
-            onClick={() => onNavigate('sales-list')}
-            className="h-auto flex flex-col items-center justify-center gap-3 p-6 bg-card border border-border text-foreground hover:bg-muted rounded-lg cursor-pointer"
+            <Button className="h-auto flex flex-col items-center justify-center bg-transparent text-foreground cursor-pointer">
+              <Plus className="h-6 w-6" />
+              <span className="font-semibold">Add New Sale</span>
+            </Button>
+          </Link>
+          <Link
+            href="sales"
+            className="flex flex-col items-center justify-center gap-3 bg-card border border-border hover:bg-muted rounded-lg cursor-pointer"
           >
-            <TrendingUp className="h-6 w-6" />
-            <span className="font-semibold">My Sales</span>
-          </Button>
-          <Button
-            onClick={() => onNavigate('today-report')}
-            className="h-auto flex flex-col items-center justify-center gap-3 p-6 bg-card border border-border text-foreground hover:bg-muted rounded-lg cursor-pointer"
+            <Button className="h-auto flex flex-col items-center justify-center bg-transparent text-foreground cursor-pointer">
+              <TrendingUp className="h-6 w-6" />
+              <span className="font-semibold">My Sales</span>
+            </Button>
+          </Link>
+          <Link
+            href="reports"
+            className="flex flex-col items-center justify-center gap-3 bg-card border border-border hover:bg-muted rounded-lg cursor-pointer"
           >
-            <Clock className="h-6 w-6" />
-            <span className="font-semibold">Today&apos;s Report</span>
-          </Button>
+            <Button className="h-auto flex flex-col items-center justify-center bg-transparent gap-3 p-6 text-foreground cursor-pointer">
+              <Clock className="h-6 w-6" />
+              <span className="font-semibold">Today&apos;s Report</span>
+            </Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -293,13 +329,20 @@ export function EmployeeDashboard({ onNavigate, session }) {
                   </thead>
                   <tbody>
                     {todaysSales.map((sale, index) => (
-                      <tr key={index} className="border-b border-border hover:bg-muted/20">
-                        <td className="px-6 py-4 text-foreground">{sale.time}</td>
-                        <td className="px-6 py-4 text-foreground">{sale.productName}</td>
+                      <tr
+                        key={index}
+                        className="border-b border-border hover:bg-muted/20"
+                      >
+                        <td className="px-6 py-4 text-foreground">
+                          {sale.time}
+                        </td>
+                        <td className="px-6 py-4 text-foreground">
+                          {sale.productName}
+                        </td>
                         <td className="px-6 py-4">
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
-                              sale.category
+                              sale.category,
                             )}`}
                           >
                             {sale.category}
@@ -327,12 +370,17 @@ export function EmployeeDashboard({ onNavigate, session }) {
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-foreground">Target</span>
+                  <span className="text-sm font-medium text-foreground">
+                    Target
+                  </span>
                   <span className="text-sm font-semibold text-foreground">
                     ₹{todaysTarget.toLocaleString()}
                   </span>
                 </div>
-                <Progress value={Math.min(completionPercentage, 100)} className="h-2" />
+                <Progress
+                  value={Math.min(completionPercentage, 100)}
+                  className="h-2"
+                />
               </div>
 
               <div className="border-t border-border pt-6 space-y-4">
@@ -369,11 +417,16 @@ export function EmployeeDashboard({ onNavigate, session }) {
         {/* Recent Activity Section */}
         <Card className="bg-card border border-border rounded-lg shadow-sm">
           <div className="p-6 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Recent Activity
+            </h2>
           </div>
           <div className="divide-y divide-border">
             {recentActivities.map((activity) => (
-              <div key={activity.id} className="p-6 flex items-center gap-4 hover:bg-muted/20">
+              <div
+                key={activity.id}
+                className="p-6 flex items-center gap-4 hover:bg-muted/20"
+              >
                 <div className="p-2 bg-primary/10 rounded-lg">
                   {getActivityIcon(activity.icon)}
                 </div>
