@@ -83,7 +83,8 @@ export async function PATCH(req) {
   try {
     // 🔐 সেশন ও এডমিন রোল চেক
     const session = await auth();
-    const isAdmin = session?.user?.role === "admin";
+    const isAdmin =
+      session?.user?.role === "admin" || session?.user?.role === "superAdmin";
 
     if (!isAdmin) {
       return Response.json(
@@ -173,7 +174,8 @@ export async function DELETE(req) {
   try {
     // 🔐 সেশন ও এডমিন রোল চেক
     const session = await auth();
-    const isAdmin = session?.user?.role === "admin";
+    const isAdmin =
+      session?.user?.role === "admin" || session?.user?.role === "superAdmin";
 
     if (!isAdmin) {
       return Response.json(
