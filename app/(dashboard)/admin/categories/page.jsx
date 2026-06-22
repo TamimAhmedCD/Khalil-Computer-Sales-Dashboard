@@ -419,6 +419,7 @@ export default function CategoriesPage() {
                     Commission Fee
                   </p>
                   <p className="text-sm font-bold text-foreground mt-0.5">
+                    <span className="font-black text-sm">৳</span>
                     {(viewingCategory.commission || 0).toFixed(1)}%
                   </p>
                 </div>
@@ -435,7 +436,8 @@ export default function CategoriesPage() {
                     Generated Profit
                   </p>
                   <p className="text-base font-black text-green-600 mt-0.5">
-                    ${Number(viewingCategory.totalProfit || 0).toLocaleString()}
+                    <span className="font-black text-sm">৳</span>
+                    {Number(viewingCategory.totalProfit || 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -597,7 +599,8 @@ export default function CategoriesPage() {
 
                   {/* PROFIT */}
                   <td className="hidden sm:table-cell px-6 py-5 text-sm font-bold">
-                    ${Number(category.totalProfit || 0).toLocaleString()}
+                    <span className="font-black text-sm">৳</span>
+                    {Number(category.totalProfit || 0).toLocaleString()}
                   </td>
 
                   {/* STATUS */}

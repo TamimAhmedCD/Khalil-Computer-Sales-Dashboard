@@ -72,8 +72,6 @@ const initialEmployees = [
 ];
 
 export default function EmployeesPage() {
-  const { data: session } = useSession();
-  console.log(session);
   const [employees, setEmployees] = useState(initialEmployees);
 
   // Modals Open/Close States
@@ -225,7 +223,8 @@ export default function EmployeesPage() {
                 Total Commission
               </p>
               <p className="text-2xl font-black text-indigo-600">
-                ${totalCommission.toLocaleString()}
+                <span className="font-black">৳</span>
+                {totalCommission.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-indigo-500/10 text-indigo-600 rounded-xl">
@@ -243,7 +242,6 @@ export default function EmployeesPage() {
               <TableHead className="h-12">Employee Name</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Join Date</TableHead>
               <TableHead className="text-right">Total Sales</TableHead>
               <TableHead className="text-right">Commission</TableHead>
               <TableHead className="text-center">Status</TableHead>
@@ -273,14 +271,13 @@ export default function EmployeesPage() {
                     {emp.phone}
                   </TableCell>
                   <TableCell className="font-medium">{emp.role}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {emp.joinDate}
-                  </TableCell>
                   <TableCell className="text-right font-semibold">
-                    ${emp.totalSales.toLocaleString()}
+                    <span className="font-black text-md">৳</span>
+                    {emp.totalSales.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right font-black text-green-600">
-                    ${emp.commissionEarned.toLocaleString()}
+                    <span className="font-black text-md">৳</span>
+                    {emp.commissionEarned.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-center">
                     <span
@@ -388,7 +385,8 @@ export default function EmployeesPage() {
                     Total Sales
                   </p>
                   <p className="text-sm font-bold text-foreground mt-0.5">
-                    ${selectedEmployee.totalSales.toLocaleString()}
+                    <span className="font-black text-sm">৳</span>
+                    {selectedEmployee.totalSales.toLocaleString()}
                   </p>
                 </div>
                 <div>
@@ -404,7 +402,8 @@ export default function EmployeesPage() {
                     Commission Earned
                   </p>
                   <p className="text-base font-black text-green-600 mt-0.5">
-                    ${selectedEmployee.commissionEarned.toLocaleString()}
+                    <span className="font-black text-sm">৳</span>
+                    {selectedEmployee.commissionEarned.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -502,7 +501,7 @@ export default function EmployeesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Total Sales ($)
+                  Total Sales (৳)
                 </Label>
                 <Input
                   type="number"
@@ -518,7 +517,7 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Commission ($)
+                  Commission (৳)
                 </Label>
                 <Input
                   type="number"
