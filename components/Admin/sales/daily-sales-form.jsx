@@ -51,7 +51,7 @@ const formSchema = z.object({
   totalPrice: z
     .number({ invalid_type_error: "Total price is required" })
     .min(0, "Price cannot be negative"),
-  expenseCost: z
+  rawExpense: z
     .number({ invalid_type_error: "Expense is required" })
     .min(0, "Expense cannot be negative"),
   paymentMethod: z.string().min(1, "Please select a payment method"),
@@ -104,7 +104,7 @@ export default function DailySalesForm() {
       categoryId: "",
       quantity: 1,
       totalPrice: 0,
-      expenseCost: 0,
+      rawExpense: 0,
       paymentMethod: "",
       paidAmount: 0,
       note: "",
@@ -177,10 +177,10 @@ export default function DailySalesForm() {
     }
 
     // গ) খরচ বনাম প্রাইস
-    if (watchedFields.expenseCost > watchedFields.totalPrice) {
-      setError("expenseCost", {
+    if (watchedFields.rawExpense > watchedFields.totalPrice) {
+      setError("rawExpense", {
         type: "custom",
-        message: "Expense cost cannot exceed Total Price",
+        message: "Expense cannot exceed Total Price",
       });
     } else {
       clearErrors("expenseCost");
@@ -198,7 +198,7 @@ export default function DailySalesForm() {
   }, [
     watchedFields.quantity,
     watchedFields.totalPrice,
-    watchedFields.expenseCost,
+    watchedFields.rawExpense,
     watchedFields.paidAmount,
     watchedFields.customerName,
     watchedFields.customerPhone,
@@ -211,7 +211,7 @@ export default function DailySalesForm() {
   // Memoized calculations
   const calculations = useMemo(() => {
     const total = Number(watchedFields.totalPrice) || 0;
-    const initialExpense = Number(watchedFields.expenseCost) || 0; // আগের মূল খরচ
+    const initialExpense = Number(watchedFields.rawExpense) || 0; // আগের মূল খরচ
     const paid = Number(watchedFields.paidAmount) || 0;
 
     // ১. আগের খরচের ওপর ভিত্তি করে প্রাথমিক লাভ (যার ওপর কমিশন হিসাব হবে)
@@ -232,7 +232,7 @@ export default function DailySalesForm() {
     return { total, totalExpense, netProfit, commPct, commission, due };
   }, [
     watchedFields.totalPrice,
-    watchedFields.expenseCost,
+    watchedFields.rawExpense,
     watchedFields.paidAmount,
     selectedCategoryObj,
   ]);
@@ -302,7 +302,7 @@ export default function DailySalesForm() {
         categoryId: "",
         quantity: 1,
         totalPrice: 0,
-        expenseCost: 0,
+        rawExpense: 0,
         paymentMethod: "",
         paidAmount: 0,
         note: "",
@@ -314,7 +314,7 @@ export default function DailySalesForm() {
       toast.error(error?.response?.data?.message || "Submission failed");
     } finally {
       setIsSubmitting(false);
-      router.push("/admin/sales"); // Redirect to sales history after submission
+      router.push("/employee/sales"); // Redirect to sales history after submission
     }
   };
 
@@ -433,30 +433,24 @@ export default function DailySalesForm() {
                   </div>
 
                   <div className="md:col-span-2 space-y-1.5">
-                    <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
-                      Product/Service Name *
-                    </label>
-                    <Input
-                      className="h-11 md:h-10"
-                      {...register("productName")}
-                      placeholder="Item name..."
-                    />
-                    {errors.productName && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {errors.productName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
                     <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400 tracking-wider">
                       Category *
                     </label>
                     <Select
                       disabled={loadingCategories}
-                      onValueChange={(v) =>
-                        setValue("categoryId", v, { shouldValidate: true })
-                      }
+                      onValueChange={(v) => {
+                        setValue("categoryId", v, { shouldValidate: true });
+
+                        const selectedCategory = categories.find(
+                          (cat) => cat._id === v,
+                        );
+
+                        if (selectedCategory) {
+                          setValue("productName", selectedCategory.name, {
+                            shouldValidate: true,
+                          });
+                        }
+                      }}
                       value={watchedFields.categoryId || ""}
                     >
                       <SelectTrigger size="4" className="w-full h-11 md:h-10">
@@ -479,6 +473,21 @@ export default function DailySalesForm() {
                     {errors.categoryId && (
                       <p className="text-xs text-red-500 mt-1">
                         {errors.categoryId.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
+                      Product/Service Name *
+                    </label>
+                    <Input
+                      className="h-11 md:h-10"
+                      {...register("productName")}
+                      placeholder="Item name..."
+                    />
+                    {errors.productName && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.productName.message}
                       </p>
                     )}
                   </div>
@@ -571,12 +580,12 @@ export default function DailySalesForm() {
                         className="h-11 md:h-10"
                         type="number"
                         step="any"
-                        {...register("expenseCost", { valueAsNumber: true })}
+                        {...register("rawExpense", { valueAsNumber: true })}
                         placeholder="0"
                       />
-                      {errors.expenseCost && (
+                      {errors.rawExpense && (
                         <p className="text-xs text-red-500 mt-1">
-                          {errors.expenseCost.message}
+                          {errors.rawExpense.message}
                         </p>
                       )}
                     </div>
