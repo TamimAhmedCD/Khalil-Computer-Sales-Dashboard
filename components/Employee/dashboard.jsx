@@ -130,7 +130,7 @@ export function EmployeeDashboard({ onNavigate, session }) {
         <div
           className={cn(
             "relative overflow-hidden rounded-xl p-8 md:p-10 border border-border shadow-lg",
-            "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
+            "bg-linear-to-r from-primary/10 via-primary/5 to-transparent",
             "before:absolute before:-right-20 before:-top-20 before:h-40 before:w-40 before:bg-primary/5 before:rounded-full",
             "after:absolute after:-left-20 after:-bottom-20 after:h-40 after:w-40 after:bg-primary/5 after:rounded-full",
           )}

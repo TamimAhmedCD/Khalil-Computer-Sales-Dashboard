@@ -5,7 +5,8 @@ import { ObjectId } from "mongodb";
 export async function POST(req) {
   try {
     const session = await auth();
-    const isAdmin = session?.user?.role === "admin";
+    const isAdmin =
+      session?.user?.role === "admin" || session?.user?.role === "superAdmin";
 
     if (!isAdmin) {
       return Response.json(
