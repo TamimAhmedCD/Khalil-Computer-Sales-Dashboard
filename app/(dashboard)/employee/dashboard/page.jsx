@@ -1,9 +1,10 @@
 "use client";
 import { EmployeeDashboard } from "@/components/Employee/dashboard";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
-export default function AdminDashboard() {
+export default function EmployeeDashboardPage() {
   const { data: session, status } = useSession();
+  console.log(session);
   if (status === "loading") {
     return <div>Loading...</div>;
   }

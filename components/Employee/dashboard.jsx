@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export function EmployeeDashboard({ onNavigate, session }) {
+  console.log(session);
   // Mock data
   const todaysSalesAmount = 45000;
   const todaysProfit = 9000;

@@ -70,7 +70,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
     { href: "/admin/products", label: "Products", icon: <Package /> },
     { href: "/admin/add-product", label: "Add Product", icon: <Plus /> },
     { href: "/admin/categories", label: "Categories", icon: <Layers /> },
-    { href: "/admin/users", label: "Users", icon: <Users /> },
+    { href: "/admin/employees", label: "Employees", icon: <Users /> },
   ];
 
   const settingsNavLinks = [
