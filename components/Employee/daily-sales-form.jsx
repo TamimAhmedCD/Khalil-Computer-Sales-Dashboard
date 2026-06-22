@@ -433,30 +433,24 @@ export default function DailySalesForm() {
                   </div>
 
                   <div className="md:col-span-2 space-y-1.5">
-                    <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
-                      Product/Service Name *
-                    </label>
-                    <Input
-                      className="h-11 md:h-10"
-                      {...register("productName")}
-                      placeholder="Item name..."
-                    />
-                    {errors.productName && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {errors.productName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
                     <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400 tracking-wider">
                       Category *
                     </label>
                     <Select
                       disabled={loadingCategories}
-                      onValueChange={(v) =>
-                        setValue("categoryId", v, { shouldValidate: true })
-                      }
+                      onValueChange={(v) => {
+                        setValue("categoryId", v, { shouldValidate: true });
+
+                        const selectedCategory = categories.find(
+                          (cat) => cat._id === v,
+                        );
+
+                        if (selectedCategory) {
+                          setValue("productName", selectedCategory.name, {
+                            shouldValidate: true,
+                          });
+                        }
+                      }}
                       value={watchedFields.categoryId || ""}
                     >
                       <SelectTrigger size="4" className="w-full h-11 md:h-10">
@@ -479,6 +473,21 @@ export default function DailySalesForm() {
                     {errors.categoryId && (
                       <p className="text-xs text-red-500 mt-1">
                         {errors.categoryId.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400">
+                      Product/Service Name *
+                    </label>
+                    <Input
+                      className="h-11 md:h-10"
+                      {...register("productName")}
+                      placeholder="Item name..."
+                    />
+                    {errors.productName && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.productName.message}
                       </p>
                     )}
                   </div>
