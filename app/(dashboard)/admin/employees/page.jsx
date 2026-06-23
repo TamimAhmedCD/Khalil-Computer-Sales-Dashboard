@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 
 // Mock Data
 const initialEmployees = [
@@ -71,14 +72,22 @@ const initialEmployees = [
   },
 ];
 
-const fetchEmployees = async () => {
-  const res = await axios.get("/api/admin/employees");
-  return res.data?.employees || [];
-};
-
 export default function EmployeesPage() {
+  const fetchEmployees = async () => {
+    const res = await axios.get("/api/admin/employees");
+    return res.data?.data || [];
+  };
+
+  const {
+    data: employee,
+    status,
+    error,
+  } = useQuery({
+    queryKey: ["employee"],
+    queryFn: fetchEmployees,
+  });
+  console.log(employee);
   const [employees, setEmployees] = useState(initialEmployees);
-  console.log(fetchEmployees);
 
   // Modals Open/Close States
   const [isViewOpen, setIsViewOpen] = useState(false);
