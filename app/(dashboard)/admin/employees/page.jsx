@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useSession } from "next-auth/react";
+import axios from "axios";
 
 // Mock Data
 const initialEmployees = [
@@ -71,8 +71,14 @@ const initialEmployees = [
   },
 ];
 
+const fetchEmployees = async () => {
+  const res = await axios.get("/api/admin/employees");
+  return res.data?.employees || [];
+};
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState(initialEmployees);
+  console.log(fetchEmployees);
 
   // Modals Open/Close States
   const [isViewOpen, setIsViewOpen] = useState(false);
