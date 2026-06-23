@@ -44,50 +44,20 @@ import {
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 
-// Mock Data
-const initialEmployees = [
-  {
-    id: 1,
-    name: "Anika Rahman",
-    phone: "+880 1711-223344",
-    role: "Sales Executive",
-    joinDate: "2024-01-15",
-    totalSales: 45000,
-    commissionEarned: 4500,
-    status: true,
-    description:
-      "Top performer for Q1. Excellent communication skills and great team player.",
-  },
-  {
-    id: 2,
-    name: "Tanvir Ahmed",
-    phone: "+880 1812-556677",
-    role: "Manager",
-    joinDate: "2023-05-10",
-    totalSales: 82000,
-    commissionEarned: 8200,
-    status: true,
-    description:
-      "Manages the core retail sales team. Deep understanding of CRM tools.",
-  },
-];
-
 export default function EmployeesPage() {
   const fetchEmployees = async () => {
     const res = await axios.get("/api/admin/employees");
-    return res.data?.data || [];
+    return res.data;
   };
 
-  const {
-    data: employee,
-    status,
-    error,
-  } = useQuery({
-    queryKey: ["employee"],
+  const { data, status } = useQuery({
+    queryKey: ["employees"],
     queryFn: fetchEmployees,
   });
-  console.log(employee);
-  const [employees, setEmployees] = useState(initialEmployees);
+
+  const employees = data?.data || [];
+  const summary = data?.summary || {};
+  const isLoading = status === "pending";
 
   // Modals Open/Close States
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -106,18 +76,6 @@ export default function EmployeesPage() {
     status: true,
     description: "",
   });
-
-  // Calculate Metrics
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter((e) => e.status).length;
-  const totalCommission = employees.reduce(
-    (acc, curr) => acc + curr.commissionEarned,
-    0,
-  );
-  const topPerformer =
-    employees.length > 0
-      ? [...employees].sort((a, b) => b.totalSales - a.totalSales)[0].name
-      : "N/A";
 
   // CRUD Handlers
   const handleOpenView = (emp) => {
@@ -148,21 +106,11 @@ export default function EmployeesPage() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (selectedEmployee) {
-      setEmployees(
-        employees.map((emp) =>
-          emp.id === selectedEmployee.id ? { ...formData, id: emp.id } : emp,
-        ),
-      );
-    } else {
-      setEmployees([...employees, { ...formData, id: Date.now() }]);
-    }
-    setIsAddEditOpen(false);
+    // Implementation placeholder for mutations
   };
 
   const handleDeleteConfirm = () => {
-    setEmployees(employees.filter((emp) => emp.id !== selectedEmployee.id));
-    setIsDeleteOpen(false);
+    // Implementation placeholder for mutations
   };
 
   return (
@@ -178,6 +126,7 @@ export default function EmployeesPage() {
         <Button
           onClick={handleOpenAdd}
           className="rounded-xl h-11 px-5 shadow-sm gap-2"
+          disabled={isLoading}
         >
           <Plus className="w-4 h-4" /> Add Employee
         </Button>
@@ -185,64 +134,87 @@ export default function EmployeesPage() {
 
       {/* --- SUMMARY CARDS --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Employees */}
         <Card className="bg-muted/30 border-border/50 shadow-sm rounded-2xl">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                 Total Employees
               </p>
-              <p className="text-2xl font-black">{totalEmployees}</p>
+              {isLoading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded-lg mt-1" />
+              ) : (
+                <p className="text-2xl font-black">{summary.totalStaff}</p>
+              )}
             </div>
-            <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl">
+            <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl shrink-0">
               <Users className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
+        {/* Active Staff */}
         <Card className="bg-muted/30 border-border/50 shadow-sm rounded-2xl">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                 Active Staff
               </p>
-              <p className="text-2xl font-black text-green-600">
-                {activeEmployees}
-              </p>
+              {isLoading ? (
+                <div className="h-8 w-14 bg-muted animate-pulse rounded-lg mt-1" />
+              ) : (
+                <p className="text-2xl font-black text-green-600">
+                  {summary.totalStaff}
+                </p>
+              )}
             </div>
-            <div className="p-3 bg-green-500/10 text-green-600 rounded-xl">
+            <div className="p-3 bg-green-500/10 text-green-600 rounded-xl shrink-0">
               <UserCheck className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
+        {/* Top Performer */}
         <Card className="bg-muted/30 border-border/50 shadow-sm rounded-2xl">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1 min-w-0">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                 Top Performer
               </p>
-              <p className="text-xl font-bold truncate max-w-37.5">
-                {topPerformer}
-              </p>
+              {isLoading ? (
+                <div className="h-7 w-28 bg-muted animate-pulse rounded-lg mt-1" />
+              ) : (
+                <p
+                  className="text-xl font-bold truncate max-w-37.5"
+                  title={summary.topPerformer}
+                >
+                  {summary.topPerformer}
+                </p>
+              )}
             </div>
-            <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl">
+            <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl shrink-0">
               <Trophy className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
+        {/* Total Commission */}
         <Card className="bg-muted/30 border-border/50 shadow-sm rounded-2xl">
           <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                 Total Commission
               </p>
-              <p className="text-2xl font-black text-indigo-600">
-                <span className="font-black">৳</span>
-                {totalCommission.toLocaleString()}
-              </p>
+              {isLoading ? (
+                <div className="h-8 w-24 bg-muted animate-pulse rounded-lg mt-1" />
+              ) : (
+                <p className="text-2xl font-black text-indigo-600">
+                  <span className="font-black">৳</span>
+                  {Math.floor(summary.totalCommission || 0).toLocaleString()}
+                </p>
+              )}
             </div>
-            <div className="p-3 bg-indigo-500/10 text-indigo-600 rounded-xl">
+            <div className="p-3 bg-indigo-500/10 text-indigo-600 rounded-xl shrink-0">
               <DollarSign className="w-5 h-5" />
             </div>
           </CardContent>
@@ -259,15 +231,45 @@ export default function EmployeesPage() {
               <TableHead>Role</TableHead>
               <TableHead className="text-right">Total Sales</TableHead>
               <TableHead className="text-right">Commission</TableHead>
-              <TableHead className="text-center">Status</TableHead>
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="text-sm">
-            {employees.length === 0 ? (
+            {isLoading ? (
+              // Array Generator loop mimicking active table rows seamlessly
+              Array.from({ length: 3 }).map((_, idx) => (
+                <TableRow
+                  key={idx}
+                  className="hover:bg-transparent border-b border-border/40"
+                >
+                  <TableCell className="py-4">
+                    <div className="h-5 w-32 bg-muted animate-pulse rounded-md" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-4 w-28 bg-muted animate-pulse rounded-md" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-4 w-24 bg-muted animate-pulse rounded-md" />
+                  </TableCell>
+                  <TableCell className="flex justify-end pt-4">
+                    <div className="h-5 w-20 bg-muted animate-pulse rounded-md" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-5 w-16 bg-muted animate-pulse rounded-md ml-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="h-7 w-7 bg-muted animate-pulse rounded-md" />
+                      <div className="h-7 w-7 bg-muted animate-pulse rounded-md" />
+                      <div className="h-7 w-7 bg-muted animate-pulse rounded-md" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : employees.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={6}
                   className="p-8 text-center text-muted-foreground"
                 >
                   No records found.
@@ -276,7 +278,7 @@ export default function EmployeesPage() {
             ) : (
               employees.map((emp) => (
                 <TableRow
-                  key={emp.id}
+                  key={emp._id || emp.id}
                   className="hover:bg-muted/10 transition-colors"
                 >
                   <TableCell className="font-bold text-foreground">
@@ -288,22 +290,15 @@ export default function EmployeesPage() {
                   <TableCell className="font-medium">{emp.role}</TableCell>
                   <TableCell className="text-right font-semibold">
                     <span className="font-black text-md">৳</span>
-                    {emp.totalSales.toLocaleString()}
+                    {(emp.totalSales || 0).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right font-black text-green-600">
                     <span className="font-black text-md">৳</span>
-                    {emp.commissionEarned.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span
-                      className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        emp.status
-                          ? "bg-green-500/10 text-green-600"
-                          : "bg-zinc-500/10 text-zinc-500"
-                      }`}
-                    >
-                      {emp.status ? "Active" : "Inactive"}
-                    </span>
+                    {(
+                      emp.totalCommission ||
+                      emp.commissionEarned ||
+                      0
+                    ).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
@@ -316,6 +311,7 @@ export default function EmployeesPage() {
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
+                        disabled
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/5"
@@ -324,6 +320,7 @@ export default function EmployeesPage() {
                         <Edit3 className="w-4 h-4" />
                       </Button>
                       <Button
+                        disabled
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-500/5"
@@ -344,7 +341,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* ======================================================== */}
-      {/* 1. VIEW DETAILS DIALOG (Strictly Matched Layout) */}
+      {/* 1. VIEW DETAILS DIALOG */}
       {/* ======================================================== */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
@@ -401,7 +398,7 @@ export default function EmployeesPage() {
                   </p>
                   <p className="text-sm font-bold text-foreground mt-0.5">
                     <span className="font-black text-sm">৳</span>
-                    {selectedEmployee.totalSales.toLocaleString()}
+                    {(selectedEmployee.totalSales || 0).toLocaleString()}
                   </p>
                 </div>
                 <div>
@@ -418,7 +415,11 @@ export default function EmployeesPage() {
                   </p>
                   <p className="text-base font-black text-green-600 mt-0.5">
                     <span className="font-black text-sm">৳</span>
-                    {selectedEmployee.commissionEarned.toLocaleString()}
+                    {(
+                      selectedEmployee.totalCommission ||
+                      selectedEmployee.commissionEarned ||
+                      0
+                    ).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -445,7 +446,7 @@ export default function EmployeesPage() {
       </Dialog>
 
       {/* ======================================================== */}
-      {/* 2. ADD / EDIT DIALOG (Shadcn Architecture) */}
+      {/* 2. ADD / EDIT DIALOG */}
       {/* ======================================================== */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
@@ -496,6 +497,7 @@ export default function EmployeesPage() {
                   onValueChange={(value) =>
                     setFormData({ ...formData, role: value })
                   }
+                  defaultValue="Sales Executive"
                 >
                   <SelectTrigger className="rounded-xl h-10">
                     <SelectValue placeholder="Select Role" />
@@ -519,6 +521,7 @@ export default function EmployeesPage() {
                   Total Sales (৳)
                 </Label>
                 <Input
+                  readOnly
                   type="number"
                   value={formData.totalSales}
                   onChange={(e) =>
@@ -535,6 +538,7 @@ export default function EmployeesPage() {
                   Commission (৳)
                 </Label>
                 <Input
+                  readOnly
                   type="number"
                   value={formData.commissionEarned}
                   onChange={(e) =>

@@ -25,7 +25,7 @@ export async function GET() {
     // 👥 GET EMPLOYEES
     const employees = await authDb
       .collection("credentials")
-      .find({ role: "employee" })
+      .find({ role: "employee", status: true })
       .toArray();
 
     // 💰 GET ALL SALES
