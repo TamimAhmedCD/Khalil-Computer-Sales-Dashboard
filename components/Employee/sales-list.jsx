@@ -139,25 +139,25 @@ export function SalesList() {
   };
 
   return (
-    <div className="min-h-screen text-zinc-100 py-8">
-      {/* Professional Ambient Soft Underlays (Very subtle grey/slate depth, no bright colors) */}
-      <div className="absolute top-0 left-1/4 w-150 h-75 bg-zinc-800/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-100 h-100 bg-zinc-900/20 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen text-zinc-800 dark:text-zinc-100 py-8 transition-colors duration-200">
+      {/* Professional Ambient Soft Underlays (Adaptive depth) */}
+      <div className="absolute top-0 left-1/4 w-150 h-75 bg-zinc-200/40 dark:bg-zinc-800/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-100 h-100 bg-zinc-300/30 dark:bg-zinc-900/20 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="space-y-8 max-w-400 mx-auto px-4 sm:px-6 relative z-10">
         {/* Premium Enterprise Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-800/60 pb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200 dark:border-zinc-800/60 pb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-zinc-50 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
               My Sales Ledger
             </h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
               Corporate performance matrix, real-time auditing, and commission
               records.
             </p>
           </div>
           <Link href="/employee/sales/add">
-            <Button className="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-medium gap-2 transition-all active:scale-95 cursor-pointer h-9 px-4 text-xs tracking-wide rounded-lg shadow-sm">
+            <Button className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 font-medium gap-2 transition-all active:scale-95 cursor-pointer h-9 px-4 text-xs tracking-wide rounded-lg shadow-xs">
               <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
               Add New Transaction
             </Button>
@@ -167,45 +167,45 @@ export function SalesList() {
         {/* Professional Corporate Glass Summary Cards */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {/* Card 1 */}
-          <Card className="group bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-700/60 hover:bg-zinc-900/40 shadow-sm">
-            <div className="absolute right-3 top-3 text-zinc-700/20">
+          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
+            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
               <DollarSign className="h-10 w-10" />
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                 Total Sales Volume ({dateFilter})
               </p>
-              <p className="text-2xl font-bold tracking-tight text-zinc-100 font-mono">
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
                 ৳{summary.totalSalesAmount.toLocaleString()}
               </p>
             </div>
           </Card>
 
           {/* Card 2 */}
-          <Card className="group bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-700/60 hover:bg-zinc-900/40 shadow-sm">
-            <div className="absolute right-3 top-3 text-zinc-700/20">
+          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
+            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
               <TrendingUp className="h-10 w-10" />
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                 Net Operations Profit ({dateFilter})
               </p>
-              <p className="text-2xl font-bold tracking-tight text-zinc-100 font-mono">
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
                 ৳{summary.totalProfit.toLocaleString()}
               </p>
             </div>
           </Card>
 
           {/* Card 3 */}
-          <Card className="group bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-700/60 hover:bg-zinc-900/40 shadow-sm">
-            <div className="absolute right-3 top-3 text-zinc-700/20">
+          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
+            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
               <Award className="h-10 w-10" />
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                 Personal Earned Commission ({dateFilter})
               </p>
-              <p className="text-2xl font-bold tracking-tight text-zinc-50 font-mono bg-linear-to-r from-zinc-100 to-zinc-400 bg-clip-text">
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-mono bg-linear-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text">
                 ৳{summary.totalCommission.toLocaleString()}
               </p>
             </div>
@@ -213,15 +213,15 @@ export function SalesList() {
         </div>
 
         {/* Professional Glass Filter Hub */}
-        <div className="space-y-4 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/40 p-4 rounded-xl shadow-sm">
+        <div className="space-y-4 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/40 p-4 rounded-xl shadow-xs">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
               <Input
                 placeholder="Search by product name or invoice code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-zinc-950/40 border-zinc-800/80 text-zinc-200 pl-9 focus-visible:ring-zinc-700 focus-visible:border-zinc-700 h-9 text-xs rounded-lg transition-all placeholder:text-zinc-500"
+                className="bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 pl-9 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700 focus-visible:border-zinc-400 dark:focus-visible:border-zinc-700 h-9 text-xs rounded-lg transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
               />
             </div>
             <Select
@@ -231,10 +231,10 @@ export function SalesList() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="w-full md:w-48 bg-zinc-950/40 border-zinc-800/80 text-zinc-200 h-9 text-xs rounded-lg">
+              <SelectTrigger className="w-full md:w-48 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200 rounded-lg">
+              <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-lg">
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="week">This Week</SelectItem>
@@ -244,11 +244,11 @@ export function SalesList() {
             </Select>
           </div>
 
-          {/* Date Range Modal Panel */}
+          {/* Date Range Panel */}
           {dateFilter === "custom" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-zinc-950/30 border border-zinc-800/60 rounded-lg animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-white/80 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800/60 rounded-lg animate-in fade-in slide-in-from-top-1 duration-150">
               <div>
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                   Start Date
                 </label>
                 <Input
@@ -258,11 +258,11 @@ export function SalesList() {
                     setCustomStartDate(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="bg-zinc-900/40 border-zinc-800 text-zinc-200 h-8 text-xs rounded focus-visible:ring-zinc-700"
+                  className="bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 h-8 text-xs rounded focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                   End Date
                 </label>
                 <Input
@@ -272,7 +272,7 @@ export function SalesList() {
                     setCustomEndDate(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="bg-zinc-900/40 border-zinc-800 text-zinc-200 h-8 text-xs rounded focus-visible:ring-zinc-700"
+                  className="bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 h-8 text-xs rounded focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700"
                 />
               </div>
               <div className="flex items-end">
@@ -284,7 +284,7 @@ export function SalesList() {
                     setCustomEndDate("");
                     setCurrentPage(1);
                   }}
-                  className="w-full border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white h-8 text-xs font-medium rounded transition-colors"
+                  className="w-full border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white h-8 text-xs font-medium rounded transition-colors"
                 >
                   Clear Filter
                 </Button>
@@ -295,60 +295,60 @@ export function SalesList() {
 
         {/* Master Data Table */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-20 space-y-3 bg-zinc-900/10 backdrop-blur-md rounded-xl border border-zinc-800/60">
-            <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
-            <p className="text-zinc-400 text-[10px] font-medium tracking-widest uppercase">
+          <div className="flex flex-col items-center justify-center p-20 space-y-3 bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-800/60">
+            <Loader2 className="h-6 w-6 animate-spin text-zinc-500 dark:text-zinc-400" />
+            <p className="text-zinc-500 dark:text-zinc-400 text-[10px] font-medium tracking-widest uppercase">
               Syncing Database Ledger...
             </p>
           </div>
         ) : isError ? (
-          <Card className="p-8 rounded-xl bg-zinc-900/10 backdrop-blur-md border border-zinc-800 text-center space-y-2">
+          <Card className="p-8 rounded-xl bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 text-center space-y-2">
             <AlertCircle className="h-6 w-6 text-zinc-400 mx-auto" />
-            <p className="text-sm font-semibold text-zinc-200">
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
               Sync Timeout Error
             </p>
-            <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
               {error
                 ? error.message
                 : "Unable to populate data framework metrics."}
             </p>
           </Card>
         ) : sales.length > 0 ? (
-          <Card className="bg-zinc-900/10 backdrop-blur-xl rounded-xl border border-zinc-800/60 overflow-hidden shadow-lg">
+          <Card className="bg-white/70 dark:bg-zinc-900/10 backdrop-blur-xl rounded-xl border border-zinc-200 dark:border-zinc-800/60 overflow-hidden shadow-md">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-800/80 bg-zinc-900/40">
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Date
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Invoice
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Product Details
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Category
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Units
                     </th>
-                    <th className="px-6 py-3.5 text-right text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-right text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Net Amount
                     </th>
-                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Options
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/30">
+                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/30">
                   {sales.map((sale) => (
                     <tr
                       key={sale._id}
-                      className="hover:bg-zinc-800/20 transition-colors duration-150 group"
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors duration-150 group"
                     >
-                      <td className="px-6 py-3.5 text-xs text-zinc-400 whitespace-nowrap font-mono">
+                      <td className="px-6 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 whitespace-nowrap font-mono">
                         {sale.createdAt
                           ? new Date(sale.createdAt).toLocaleDateString(
                               "en-US",
@@ -360,21 +360,21 @@ export function SalesList() {
                             )
                           : "—"}
                       </td>
-                      <td className="px-6 py-3.5 text-xs font-semibold text-zinc-200 font-mono">
+                      <td className="px-6 py-3.5 text-xs font-semibold text-zinc-900 dark:text-zinc-200 font-mono">
                         {sale.invoiceNumber}
                       </td>
-                      <td className="px-6 py-3.5 text-xs text-zinc-300 max-w-60 truncate font-medium">
+                      <td className="px-6 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 max-w-60 truncate font-medium">
                         {sale.productName}
                       </td>
                       <td className="px-6 py-3.5 text-xs">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-zinc-800/60 text-zinc-300 text-[10px] font-medium border border-zinc-700/40">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 text-[10px] font-medium border border-zinc-200 dark:border-zinc-700/40">
                           {sale.categoryName}
                         </span>
                       </td>
-                      <td className="px-6 py-3.5 text-xs text-zinc-400 font-mono">
+                      <td className="px-6 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                         {sale.quantity}
                       </td>
-                      <td className="px-6 py-3.5 text-xs text-right font-semibold text-zinc-100 font-mono">
+                      <td className="px-6 py-3.5 text-xs text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
                         ৳
                         {sale.totalPrice ? sale.totalPrice.toLocaleString() : 0}
                       </td>
@@ -383,7 +383,7 @@ export function SalesList() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded transition-all"
+                            className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
                             onClick={() => setSelectedSale(sale)}
                           >
                             <Eye className="h-3.5 w-3.5" />
@@ -394,7 +394,7 @@ export function SalesList() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded transition-all"
+                                className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
                                 disabled={loadingId === sale._id}
                               >
                                 {loadingId === sale._id ? (
@@ -404,24 +404,24 @@ export function SalesList() {
                                 )}
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-xl border border-zinc-800 bg-zinc-900 backdrop-blur-xl max-w-sm">
+                            <AlertDialogContent className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-sm shadow-xl">
                               <AlertDialogHeader>
-                                <AlertDialogTitle className="text-sm font-bold tracking-tight text-zinc-200">
+                                <AlertDialogTitle className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-200">
                                   Confirm Records Purge
                                 </AlertDialogTitle>
-                                <AlertDialogDescription className="text-xs text-zinc-400 leading-normal">
+                                <AlertDialogDescription className="text-xs text-zinc-500 dark:text-zinc-400 leading-normal">
                                   This operational event will completely
                                   eliminate the selected invoice tracking data
                                   permanently.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="mt-4 gap-1.5">
-                                <AlertDialogCancel className="h-8 rounded-lg border border-zinc-800 bg-transparent text-zinc-400 hover:bg-zinc-800 font-medium text-[11px]">
+                                <AlertDialogCancel className="h-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium text-[11px]">
                                   Cancel
                                 </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDelete(sale._id)}
-                                  className="h-8 rounded-lg bg-zinc-100 text-zinc-950 hover:bg-zinc-200 font-medium text-[11px]"
+                                  className="h-8 rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium text-[11px]"
                                 >
                                   Confirm
                                 </AlertDialogAction>
@@ -437,21 +437,21 @@ export function SalesList() {
             </div>
 
             {/* Corporate Pagination Footer */}
-            <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-zinc-800/50 bg-zinc-900/10">
-              <div className="text-xs text-zinc-400">
+            <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/10">
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
                 Showing{" "}
-                <span className="text-zinc-200 font-medium font-mono">
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
                   {Math.min(
                     (currentPage - 1) * 10 + 1,
                     pagination.totalResults,
                   )}
                 </span>{" "}
                 to{" "}
-                <span className="text-zinc-200 font-medium font-mono">
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
                   {Math.min(currentPage * 10, pagination.totalResults)}
                 </span>{" "}
                 of{" "}
-                <span className="text-zinc-200 font-medium font-mono">
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
                   {pagination.totalResults}
                 </span>{" "}
                 records
@@ -462,7 +462,7 @@ export function SalesList() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="h-7 text-xs border-zinc-800 bg-zinc-900/30 text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
+                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
                 >
                   <ChevronLeft className="h-3 w-3 mr-1" /> Prev
                 </Button>
@@ -485,8 +485,8 @@ export function SalesList() {
                           onClick={() => handlePageChange(pageNum)}
                           className={`h-7 w-7 p-0 font-mono text-[11px] rounded ${
                             currentPage === pageNum
-                              ? "bg-zinc-100 text-zinc-950 hover:bg-zinc-100"
-                              : "border-zinc-800 bg-transparent text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-100"
+                              : "border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
                           }`}
                         >
                           {pageNum}
@@ -502,7 +502,7 @@ export function SalesList() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === pagination.totalPages}
-                  className="h-7 text-xs border-zinc-800 bg-zinc-900/30 text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
+                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
                 >
                   Next <ChevronRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -510,11 +510,11 @@ export function SalesList() {
             </div>
           </Card>
         ) : (
-          <Card className="p-12 rounded-xl bg-zinc-900/10 backdrop-blur-md border border-zinc-800/80 text-center max-w-md mx-auto">
-            <p className="text-zinc-300 font-medium text-sm">
+          <Card className="p-12 rounded-xl bg-white/50 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/80 text-center max-w-md mx-auto">
+            <p className="text-zinc-800 dark:text-zinc-300 font-medium text-sm">
               No Audit Files Located
             </p>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
               Please modify system filtering metrics values.
             </p>
           </Card>
@@ -522,14 +522,14 @@ export function SalesList() {
 
         {/* Professional Corporate Inspection Modal */}
         {selectedSale && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-in fade-in duration-200">
-            <Card className="bg-zinc-900/90 border border-zinc-800 w-full max-w-xl rounded-xl max-h-[90vh] overflow-y-auto shadow-xl transform scale-100 animate-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between p-5 border-b border-zinc-800/80 sticky top-0 bg-zinc-900/95 backdrop-blur-md z-10">
+          <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-xs animate-in fade-in duration-200">
+            <Card className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 w-full max-w-xl rounded-xl max-h-[90vh] overflow-y-auto shadow-2xl transform scale-100 animate-in zoom-in-95 duration-150 text-zinc-800 dark:text-zinc-100">
+              <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-10">
                 <div>
-                  <h2 className="text-base font-bold text-zinc-100 tracking-tight">
+                  <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
                     Transaction Profile Inspection
                   </h2>
-                  <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
+                  <p className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
                     Invoice UUID: #{selectedSale.invoiceNumber}
                   </p>
                 </div>
@@ -537,7 +537,7 @@ export function SalesList() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setSelectedSale(null)}
-                  className="h-7 w-7 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100"
+                  className="h-7 w-7 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
@@ -545,14 +545,14 @@ export function SalesList() {
 
               <div className="p-5 space-y-5">
                 {/* Metas Grid */}
-                <div className="grid grid-cols-2 gap-4 bg-zinc-950/40 border border-zinc-800/60 p-3.5 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 p-3.5 rounded-lg">
                   <div className="flex gap-2.5 items-center">
-                    <Calendar className="h-4 w-4 text-zinc-400" />
+                    <Calendar className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
                     <div>
-                      <p className="text-[9px] font-bold tracking-wider text-zinc-500 uppercase">
+                      <p className="text-[9px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">
                         Timestamp
                       </p>
-                      <p className="text-xs text-zinc-200 font-mono mt-0.5">
+                      <p className="text-xs text-zinc-800 dark:text-zinc-200 font-mono mt-0.5">
                         {selectedSale.createdAt
                           ? new Date(selectedSale.createdAt).toLocaleString(
                               "en-US",
@@ -569,12 +569,12 @@ export function SalesList() {
                     </div>
                   </div>
                   <div className="flex gap-2.5 items-center">
-                    <CreditCard className="h-4 w-4 text-zinc-400" />
+                    <CreditCard className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
                     <div>
-                      <p className="text-[9px] font-bold tracking-wider text-zinc-500 uppercase">
+                      <p className="text-[9px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">
                         Method Type
                       </p>
-                      <p className="text-xs text-zinc-200 font-medium mt-0.5">
+                      <p className="text-xs text-zinc-800 dark:text-zinc-200 font-medium mt-0.5">
                         {selectedSale.paymentMethod || "Standard Processing"}
                       </p>
                     </div>
@@ -584,38 +584,46 @@ export function SalesList() {
                 {/* Stakeholder Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                       Customer Entity
                     </h3>
-                    <div className="bg-zinc-950/20 border border-zinc-800/40 p-3 rounded-lg space-y-1 text-xs">
+                    <div className="bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg space-y-1 text-xs">
                       <p className="flex justify-between">
-                        <span className="text-zinc-500">Title:</span>{" "}
-                        <span className="font-medium text-zinc-300">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Title:
+                        </span>{" "}
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
                           {selectedSale.customerName || "Retail Client"}
                         </span>
                       </p>
                       <p className="flex justify-between">
-                        <span className="text-zinc-500">Contact:</span>{" "}
-                        <span className="font-mono text-zinc-300">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Contact:
+                        </span>{" "}
+                        <span className="font-mono text-zinc-700 dark:text-zinc-300">
                           {selectedSale.customerPhone || "—"}
                         </span>
                       </p>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                       Account Owner
                     </h3>
-                    <div className="bg-zinc-950/20 border border-zinc-800/40 p-3 rounded-lg space-y-1 text-xs">
+                    <div className="bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg space-y-1 text-xs">
                       <p className="flex justify-between">
-                        <span className="text-zinc-500">Assignee:</span>{" "}
-                        <span className="font-medium text-zinc-300">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Assignee:
+                        </span>{" "}
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
                           {selectedSale.sellerName || "System Agent"}
                         </span>
                       </p>
                       <p className="flex justify-between items-center">
-                        <span className="text-zinc-500">Agent ID:</span>{" "}
-                        <span className="font-mono text-[10px] px-1 bg-zinc-800 text-zinc-300 rounded truncate max-w-25">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Agent ID:
+                        </span>{" "}
+                        <span className="font-mono text-[10px] px-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded truncate max-w-25">
                           {selectedSale.sellerId || "—"}
                         </span>
                       </p>
@@ -624,21 +632,21 @@ export function SalesList() {
                 </div>
 
                 {/* Product Meta */}
-                <div className="border-t border-zinc-800/60 pt-4">
-                  <div className="flex justify-between items-center bg-zinc-950/20 border border-zinc-800/40 p-3 rounded-lg">
+                <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
+                  <div className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg">
                     <div>
-                      <p className="text-xs font-semibold text-zinc-200">
+                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
                         {selectedSale.productName}
                       </p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 text-[9px] font-medium border border-zinc-700/50">
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
                         {selectedSale.categoryName}
                       </span>
                     </div>
                     <div className="text-right font-mono">
-                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">
+                      <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                         Quantity
                       </p>
-                      <p className="text-sm font-bold text-zinc-200">
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
                         ×{selectedSale.quantity}
                       </p>
                     </div>
@@ -646,56 +654,56 @@ export function SalesList() {
                 </div>
 
                 {/* Balances Sheet */}
-                <div className="border-t border-zinc-800/60 pt-4">
-                  <h3 className="text-[9px] font-bold tracking-wider uppercase text-zinc-400 mb-2">
+                <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
+                  <h3 className="text-[9px] font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 mb-2">
                     Ledger Financial Summary
                   </h3>
-                  <div className="space-y-2 bg-zinc-950/20 border border-zinc-800/50 rounded-lg p-3.5 text-xs">
-                    <div className="flex justify-between text-zinc-400">
+                  <div className="space-y-2 bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/50 rounded-lg p-3.5 text-xs">
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
                       <span>Gross Aggregated Amount</span>
-                      <span className="font-mono text-zinc-200">
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200">
                         ৳{selectedSale.totalPrice?.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-zinc-400">
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
                       <span>Baseline Procurement Cost</span>
-                      <span className="font-mono text-zinc-200">
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200">
                         ৳{selectedSale.rawExpense?.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-zinc-400">
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
                       <span>Operating Expense Matrix</span>
-                      <span className="font-mono text-zinc-400">
+                      <span className="font-mono text-zinc-500 dark:text-zinc-400">
                         - ৳{selectedSale.totalExpense?.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between border-t border-dashed border-zinc-800 pt-2 text-zinc-400">
+                    <div className="flex justify-between border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-2 text-zinc-500 dark:text-zinc-400">
                       <span>Settled Capital Payment</span>
-                      <span className="font-mono text-zinc-200 font-medium">
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200 font-medium">
                         ৳{selectedSale.paidAmount?.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-zinc-400">
-                      <span>Outstanding Outstanding Debt</span>
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                      <span>Outstanding Debt</span>
                       <span
-                        className={`font-mono ${selectedSale.due > 0 ? "text-zinc-200 font-medium" : "text-zinc-500"}`}
+                        className={`font-mono ${selectedSale.due > 0 ? "text-zinc-900 dark:text-zinc-200 font-medium" : "text-zinc-400 dark:text-zinc-500"}`}
                       >
                         ৳{selectedSale.due?.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between border-t border-zinc-800 pt-2 font-semibold text-zinc-200">
-                      <span>Net Ledger Margin Net Profit</span>
-                      <span className="font-mono text-zinc-100">
+                    <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2 font-semibold text-zinc-900 dark:text-zinc-200">
+                      <span>Net Ledger Margin Profit</span>
+                      <span className="font-mono text-zinc-900 dark:text-zinc-100">
                         ৳{selectedSale.netProfit?.toLocaleString()}
                       </span>
                     </div>
 
-                    {/* Highlighted Commission line - Clean luxury style, no bright colors */}
-                    <div className="flex justify-between items-center border-t border-zinc-800 pt-3 mt-1 bg-zinc-800/30 p-2.5 rounded border">
-                      <span className="text-zinc-300 font-semibold">
+                    {/* Highlighted Commission line - Clean corporate style */}
+                    <div className="flex justify-between items-center border-t border-zinc-200 dark:border-zinc-800 pt-3 mt-1 bg-zinc-100/80 dark:bg-zinc-800/30 p-2.5 rounded border">
+                      <span className="text-zinc-800 dark:text-zinc-300 font-semibold">
                         Allocated Account Commission Payout
                       </span>
-                      <span className="font-bold text-base font-mono text-zinc-50">
+                      <span className="font-bold text-base font-mono text-zinc-900 dark:text-zinc-50">
                         ৳{selectedSale.commission?.toLocaleString()}
                       </span>
                     </div>
@@ -704,19 +712,19 @@ export function SalesList() {
 
                 {/* Notes Section */}
                 {selectedSale.note && (
-                  <div className="border-t border-zinc-800/60 pt-3">
-                    <p className="text-[9px] font-bold tracking-wider uppercase text-zinc-500 mb-1">
+                  <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-3">
+                    <p className="text-[9px] font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 mb-1">
                       Audit Log Remarks
                     </p>
-                    <p className="text-xs p-3 bg-zinc-950 border border-zinc-800 text-zinc-400 rounded-lg leading-relaxed italic">
+                    <p className="text-xs p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg leading-relaxed italic">
                       &quot;{selectedSale.note}&quot;
                     </p>
                   </div>
                 )}
 
-                <div className="border-t border-zinc-800/60 pt-3">
+                <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-3">
                   <Button
-                    className="w-full bg-zinc-100 text-zinc-950 hover:bg-zinc-200 h-9 text-xs font-semibold rounded-lg transition-all"
+                    className="w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 h-9 text-xs font-semibold rounded-lg transition-all"
                     onClick={() => setSelectedSale(null)}
                   >
                     Close Profile Audit
