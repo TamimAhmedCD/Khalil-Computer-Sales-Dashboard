@@ -15,16 +15,33 @@ import {
 } from "@/components/ui/select";
 import {
   Eye,
-  Edit2,
   Plus,
   X,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Trash,
+  CreditCard,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Search,
+  AlertCircle,
+  Award,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Next.js কম্পাইলার ফ্রেন্ডলি পিওর জাভাস্ক্রিপ্ট ফেচিং ফাংশন
 const fetchSales = async (context) => {
@@ -74,25 +91,23 @@ export function SalesList() {
       "sales",
       {
         searchTerm: debouncedSearch,
-        dateFilter,
-        customStartDate,
-        customEndDate,
-        currentPage,
+        dateFilter: dateFilter,
+        customStartDate: customStartDate,
+        customEndDate: customEndDate,
+        currentPage: currentPage,
       },
     ],
     queryFn: fetchSales,
   });
 
   // সেফটি ফলব্যাক
-  // const sales = (data && data.data) || [];
-  const sales = data?.data || [];
-  const summary = data?.summary || {
+  const sales = (data && data.data) || [];
+  const summary = (data && data.summary) || {
     totalSalesAmount: 0,
     totalProfit: 0,
     totalCommission: 0,
   };
-
-  const pagination = data?.pagination || {
+  const pagination = (data && data.pagination) || {
     totalResults: 0,
     totalPages: 1,
     currentPage: 1,
@@ -113,6 +128,7 @@ export function SalesList() {
       await axios.delete(`/api/products/sales/${id}`);
 
       toast.success("Deleted");
+
       refetch();
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
@@ -122,64 +138,89 @@ export function SalesList() {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">My Sales</h1>
-          <Link href="/admin/sales/add">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 cursor-pointer">
-              <Plus className="h-4 w-4" />
-              Add New Sale
+    <div className="min-h-screen text-zinc-800 dark:text-zinc-100 py-8 transition-colors duration-200">
+      {/* Professional Ambient Soft Underlays (Adaptive depth) */}
+      <div className="absolute top-0 left-1/4 w-150 h-75 bg-zinc-200/40 dark:bg-zinc-800/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-100 h-100 bg-zinc-300/30 dark:bg-zinc-900/20 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="space-y-8 max-w-400 mx-auto px-4 sm:px-6 relative z-10">
+        {/* Premium Enterprise Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200 dark:border-zinc-800/60 pb-6">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
+              My Sales Ledger
+            </h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              Corporate performance matrix, real-time auditing, and commission
+              records.
+            </p>
+          </div>
+          <Link href="/employee/sales/add">
+            <Button className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 font-medium gap-2 transition-all active:scale-95 cursor-pointer h-9 px-4 text-xs tracking-wide rounded-lg shadow-xs">
+              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              Add New Transaction
             </Button>
           </Link>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Total Sales Amount ({dateFilter})
+        {/* Professional Corporate Glass Summary Cards */}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          {/* Card 1 */}
+          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
+            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
+              <DollarSign className="h-10 w-10" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                Total Sales Volume ({dateFilter})
               </p>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
                 ৳{summary.totalSalesAmount.toLocaleString()}
               </p>
             </div>
           </Card>
 
-          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Total Net Profit ({dateFilter})
+          {/* Card 2 */}
+          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
+            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
+              <TrendingUp className="h-10 w-10" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                Net Operations Profit ({dateFilter})
               </p>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
                 ৳{summary.totalProfit.toLocaleString()}
               </p>
             </div>
           </Card>
 
-          <Card className="bg-card p-6 rounded-lg shadow-sm border border-border">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                My Total Commission ({dateFilter})
+          {/* Card 3 */}
+          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
+            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
+              <Award className="h-10 w-10" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                Personal Earned Commission ({dateFilter})
               </p>
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-mono bg-linear-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text">
                 ৳{summary.totalCommission.toLocaleString()}
               </p>
             </div>
           </Card>
         </div>
 
-        {/* Filters */}
-        <div className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:gap-3">
-            <div className="flex-1">
+        {/* Professional Glass Filter Hub */}
+        <div className="space-y-4 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/40 p-4 rounded-xl shadow-xs">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
               <Input
-                placeholder="Search by product name or invoice number..."
+                placeholder="Search by product name or invoice code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-card border-border text-foreground"
+                className="bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 pl-9 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700 focus-visible:border-zinc-400 dark:focus-visible:border-zinc-700 h-9 text-xs rounded-lg transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
               />
             </div>
             <Select
@@ -189,10 +230,10 @@ export function SalesList() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="w-full md:w-56 bg-card border-border text-foreground">
+              <SelectTrigger className="w-full md:w-48 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-lg">
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="week">This Week</SelectItem>
@@ -202,11 +243,11 @@ export function SalesList() {
             </Select>
           </div>
 
-          {/* Custom Date Range */}
+          {/* Date Range Panel */}
           {dateFilter === "custom" && (
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:gap-3 p-4 bg-muted/30 rounded-lg border border-border">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-white/80 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-800/60 rounded-lg animate-in fade-in slide-in-from-top-1 duration-150">
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                   Start Date
                 </label>
                 <Input
@@ -216,11 +257,11 @@ export function SalesList() {
                     setCustomStartDate(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="bg-card border-border text-foreground"
+                  className="bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 h-8 text-xs rounded focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700"
                 />
               </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                   End Date
                 </label>
                 <Input
@@ -230,76 +271,83 @@ export function SalesList() {
                     setCustomEndDate(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="bg-card border-border text-foreground"
+                  className="bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 h-8 text-xs rounded focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700"
                 />
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDateFilter("today");
-                  setCustomStartDate("");
-                  setCustomEndDate("");
-                  setCurrentPage(1);
-                }}
-                className="border-border text-foreground hover:bg-muted"
-              >
-                Clear
-              </Button>
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDateFilter("today");
+                    setCustomStartDate("");
+                    setCustomEndDate("");
+                    setCurrentPage(1);
+                  }}
+                  className="w-full border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white h-8 text-xs font-medium rounded transition-colors"
+                >
+                  Clear Filter
+                </Button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Dynamic Status Engine */}
+        {/* Master Data Table */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-24 space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground text-sm">
-              Loading sales data...
+          <div className="flex flex-col items-center justify-center p-20 space-y-3 bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-800/60">
+            <Loader2 className="h-6 w-6 animate-spin text-zinc-500 dark:text-zinc-400" />
+            <p className="text-zinc-500 dark:text-zinc-400 text-[10px] font-medium tracking-widest uppercase">
+              Syncing Database Ledger...
             </p>
           </div>
         ) : isError ? (
-          <Card className="bg-destructive/10 p-6 rounded-lg border border-destructive/20 text-center">
-            <p className="text-destructive font-semibold">Error loading data</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {error ? error.message : "Something went wrong"}
+          <Card className="p-8 rounded-xl bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 text-center space-y-2">
+            <AlertCircle className="h-6 w-6 text-zinc-400 mx-auto" />
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              Sync Timeout Error
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
+              {error
+                ? error.message
+                : "Unable to populate data framework metrics."}
             </p>
           </Card>
         ) : sales.length > 0 ? (
-          <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+          <Card className="bg-white/70 dark:bg-zinc-900/10 backdrop-blur-xl rounded-xl border border-zinc-200 dark:border-zinc-800/60 overflow-hidden shadow-md">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Date
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Invoice
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                      Product Name
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                      Product Details
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                       Category
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                      Qty
+                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                      Units
                     </th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">
-                      Total Price
+                    <th className="px-6 py-3.5 text-right text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                      Net Amount
                     </th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-foreground">
-                      Actions
+                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                      Options
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/30">
                   {sales.map((sale) => (
                     <tr
                       key={sale._id}
-                      className="border-b border-border hover:bg-muted/30 transition-colors"
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors duration-150 group"
                     >
-                      <td className="px-6 py-4 text-sm text-foreground whitespace-nowrap">
+                      <td className="px-6 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 whitespace-nowrap font-mono">
                         {sale.createdAt
                           ? new Date(sale.createdAt).toLocaleDateString(
                               "en-US",
@@ -309,58 +357,76 @@ export function SalesList() {
                                 year: "numeric",
                               },
                             )
-                          : "N/A"}{" "}
+                          : "—"}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-foreground">
+                      <td className="px-6 py-3.5 text-xs font-semibold text-zinc-900 dark:text-zinc-200 font-mono">
                         {sale.invoiceNumber}
                       </td>
-                      <td className="px-6 py-4 text-sm text-foreground max-w-50 truncate">
+                      <td className="px-6 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 max-w-60 truncate font-medium">
                         {sale.productName}
                       </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className="inline-block px-2 py-1 rounded bg-secondary text-secondary-foreground text-xs font-medium">
+                      <td className="px-6 py-3.5 text-xs">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 text-[10px] font-medium border border-zinc-200 dark:border-zinc-700/40">
                           {sale.categoryName}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-foreground">
+                      <td className="px-6 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                         {sale.quantity}
                       </td>
-                      <td className="px-6 py-4 text-sm text-right font-semibold text-foreground">
+                      <td className="px-6 py-3.5 text-xs text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
                         ৳
                         {sale.totalPrice ? sale.totalPrice.toLocaleString() : 0}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-6 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-muted"
+                            size="icon"
+                            className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
                             onClick={() => setSelectedSale(sale)}
                           >
-                            <Eye className="h-4 w-4 text-foreground" />
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          <Link href={`/admin/sales/edit/${sale._id}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 hover:bg-muted"
-                            >
-                              <Edit2 className="h-4 w-4 text-foreground" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleDelete(sale._id)}
-                            disabled={loadingId === sale._id}
-                          >
-                            {loadingId === sale._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash className="h-4 w-4" />
-                            )}
-                          </Button>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
+                                disabled={loadingId === sale._id}
+                              >
+                                {loadingId === sale._id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                                ) : (
+                                  <Trash className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-sm shadow-xl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-200">
+                                  Confirm Records Purge
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-xs text-zinc-500 dark:text-zinc-400 leading-normal">
+                                  This operational event will completely
+                                  eliminate the selected invoice tracking data
+                                  permanently.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="mt-4 gap-1.5">
+                                <AlertDialogCancel className="h-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium text-[11px]">
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(sale._id)}
+                                  className="h-8 rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium text-[11px]"
+                                >
+                                  Confirm
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </td>
                     </tr>
@@ -369,30 +435,42 @@ export function SalesList() {
               </table>
             </div>
 
-            {/* Pagination Controls */}
-            <div className="px-6 py-4 flex items-center justify-between border-t border-border bg-muted/20">
-              <div className="text-sm text-muted-foreground">
+            {/* Corporate Pagination Footer */}
+            <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/10">
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
                 Showing{" "}
-                {Math.min((currentPage - 1) * 10 + 1, pagination.totalResults)}{" "}
-                to {Math.min(currentPage * 10, pagination.totalResults)} of{" "}
-                {pagination.totalResults} results
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
+                  {Math.min(
+                    (currentPage - 1) * 10 + 1,
+                    pagination.totalResults,
+                  )}
+                </span>{" "}
+                to{" "}
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
+                  {Math.min(currentPage * 10, pagination.totalResults)}
+                </span>{" "}
+                of{" "}
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
+                  {pagination.totalResults}
+                </span>{" "}
+                records
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="gap-1"
+                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <ChevronLeft className="h-3 w-3 mr-1" /> Prev
                 </Button>
+
                 <div className="flex items-center gap-1">
                   {Array.from({ length: pagination.totalPages }).map((_, i) => {
                     const pageNum = i + 1;
                     if (
-                      Math.abs(currentPage - pageNum) <= 2 ||
+                      Math.abs(currentPage - pageNum) <= 1 ||
                       pageNum === 1 ||
                       pageNum === pagination.totalPages
                     ) {
@@ -404,11 +482,11 @@ export function SalesList() {
                           }
                           size="sm"
                           onClick={() => handlePageChange(pageNum)}
-                          className={
+                          className={`h-7 w-7 p-0 font-mono text-[11px] rounded ${
                             currentPage === pageNum
-                              ? "bg-primary text-primary-foreground"
-                              : ""
-                          }
+                              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-100"
+                              : "border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
+                          }`}
                         >
                           {pageNum}
                         </Button>
@@ -417,254 +495,244 @@ export function SalesList() {
                     return null;
                   })}
                 </div>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === pagination.totalPages}
-                  className="gap-1"
+                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
                 >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
+                  Next <ChevronRight className="h-3 w-3 ml-1" />
                 </Button>
               </div>
             </div>
           </Card>
         ) : (
-          <Card className="bg-card p-12 rounded-lg shadow-sm border border-border text-center">
-            <p className="text-muted-foreground mb-4">No sales found</p>
+          <Card className="p-12 rounded-xl bg-white/50 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/80 text-center max-w-md mx-auto">
+            <p className="text-zinc-800 dark:text-zinc-300 font-medium text-sm">
+              No Audit Files Located
+            </p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+              Please modify system filtering metrics values.
+            </p>
           </Card>
         )}
-      </div>
-
-      {/* Details Modal Pop-up */}
-      {selectedSale && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <Card className="bg-card w-full max-w-2xl rounded-lg shadow-lg border border-border max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card z-10">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  Sale Details
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Invoice: {selectedSale.invoiceNumber}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedSale(null)}
-                className="h-8 w-8 p-0 rounded-full"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-lg border border-border">
+        {/* Professional Corporate Inspection Modal */}
+        {selectedSale && (
+          <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-xs animate-in fade-in duration-200">
+            <Card className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 w-full max-w-xl rounded-xl max-h-[90vh] overflow-y-auto shadow-2xl transform scale-100 animate-in zoom-in-95 duration-150 text-zinc-800 dark:text-zinc-100">
+              <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-10">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Sale Date & Time
-                  </p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {selectedSale.createdAt
-                      ? new Date(selectedSale.createdAt).toLocaleString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          },
-                        )
-                      : "N/A"}{" "}
+                  <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    Transaction Profile Inspection
+                  </h2>
+                  <p className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Invoice UUID: #{selectedSale.invoiceNumber}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Payment Method
-                  </p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {selectedSale.paymentMethod || "Cash"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Customer & Seller Specs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Customer Info
-                  </h3>
-                  <div className="bg-card p-3 rounded-md border border-border space-y-1 text-sm">
-                    <p>
-                      <span className="text-muted-foreground">Name:</span>{" "}
-                      <span className="font-medium">
-                        {selectedSale.customerName || "N/A"}
-                      </span>
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Phone:</span>{" "}
-                      <span className="font-medium">
-                        {selectedSale.customerPhone || "N/A"}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Seller Info
-                  </h3>
-                  <div className="bg-card p-3 rounded-md border border-border space-y-1 text-sm">
-                    <p>
-                      <span className="text-muted-foreground">Name:</span>{" "}
-                      <span className="font-medium">
-                        {selectedSale.sellerName || "N/A"}
-                      </span>
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">Seller ID:</span>{" "}
-                      <span className="font-mono text-xs text-muted-foreground block truncate">
-                        {selectedSale.sellerId || "N/A"}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Product Info */}
-              <div className="border-t border-border pt-6">
-                <h3 className="text-sm font-semibold text-foreground mb-4">
-                  Product Details
-                </h3>
-                <div className="grid grid-cols-3 gap-4 bg-muted/20 p-3 rounded-md border border-border">
-                  <div className="col-span-2">
-                    <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                      Product Name
-                    </p>
-                    <p className="text-sm font-medium text-foreground">
-                      {selectedSale.productName}
-                    </p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-[10px]">
-                      {selectedSale.categoryName}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                      Quantity
-                    </p>
-                    <p className="text-sm font-bold text-foreground">
-                      × {selectedSale.quantity}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Financial Breakdowns */}
-              <div className="border-t border-border pt-6">
-                <h3 className="text-sm font-semibold text-foreground mb-4">
-                  Financial Summary Breakdown
-                </h3>
-                <div className="space-y-3 bg-card border border-border rounded-lg p-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Subtotal / Total Price
-                    </span>
-                    <span className="font-medium text-foreground">
-                      ৳
-                      {selectedSale.totalPrice
-                        ? selectedSale.totalPrice.toLocaleString()
-                        : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Expense Cost (Per Unit)
-                    </span>
-                    <span className="font-medium text-destructive">
-                      ৳
-                      {selectedSale.expenseCost
-                        ? selectedSale.expenseCost.toLocaleString()
-                        : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Expense</span>
-                    <span className="font-medium text-destructive">
-                      ৳
-                      {selectedSale.totalExpense
-                        ? selectedSale.totalExpense.toLocaleString()
-                        : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm border-t border-dashed border-border pt-2">
-                    <span className="text-muted-foreground">Paid Amount</span>
-                    <span className="font-medium text-green-600">
-                      ৳
-                      {selectedSale.paidAmount
-                        ? selectedSale.paidAmount.toLocaleString()
-                        : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Due Amount</span>
-                    <span
-                      className={`font-medium ${selectedSale.due > 0 ? "text-destructive font-bold" : "text-muted-foreground"}`}
-                    >
-                      ৳
-                      {selectedSale.due ? selectedSale.due.toLocaleString() : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm border-t border-border pt-2">
-                    <span className="text-foreground font-medium">
-                      Net Profit Generated
-                    </span>
-                    <span className="font-bold text-foreground">
-                      ৳
-                      {selectedSale.netProfit
-                        ? selectedSale.netProfit.toLocaleString()
-                        : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-t border-border pt-3 bg-primary/5 -mx-4 -mb-4 p-4 rounded-b-lg">
-                    <span className="text-primary font-bold text-sm">
-                      Your Commission (Earnings)
-                    </span>
-                    <span className="font-extrabold text-primary text-xl">
-                      ৳
-                      {selectedSale.commission
-                        ? selectedSale.commission.toLocaleString()
-                        : 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {selectedSale.note && (
-                <div className="border-t border-border pt-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Notes / Remarks
-                  </p>
-                  <p className="text-sm p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 rounded border border-amber-200/50">
-                    {selectedSale.note}
-                  </p>
-                </div>
-              )}
-
-              <div className="border-t border-border pt-6 flex gap-3">
                 <Button
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setSelectedSale(null)}
+                  className="h-7 w-7 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                 >
-                  Close View
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
-            </div>
-          </Card>
-        </div>
-      )}
+
+              <div className="p-5 space-y-5">
+                {/* Metas Grid */}
+                <div className="grid grid-cols-2 gap-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 p-3.5 rounded-lg">
+                  <div className="flex gap-2.5 items-center">
+                    <Calendar className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                    <div>
+                      <p className="text-[9px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">
+                        Timestamp
+                      </p>
+                      <p className="text-xs text-zinc-800 dark:text-zinc-200 font-mono mt-0.5">
+                        {selectedSale.createdAt
+                          ? new Date(selectedSale.createdAt).toLocaleString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                              },
+                            )
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2.5 items-center">
+                    <CreditCard className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                    <div>
+                      <p className="text-[9px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">
+                        Method Type
+                      </p>
+                      <p className="text-xs text-zinc-800 dark:text-zinc-200 font-medium mt-0.5">
+                        {selectedSale.paymentMethod || "Standard Processing"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stakeholder Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                      Customer Entity
+                    </h3>
+                    <div className="bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg space-y-1 text-xs">
+                      <p className="flex justify-between">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Title:
+                        </span>{" "}
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                          {selectedSale.customerName || "Retail Client"}
+                        </span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Contact:
+                        </span>{" "}
+                        <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                          {selectedSale.customerPhone || "—"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                      Account Owner
+                    </h3>
+                    <div className="bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg space-y-1 text-xs">
+                      <p className="flex justify-between">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Assignee:
+                        </span>{" "}
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                          {selectedSale.sellerName || "System Agent"}
+                        </span>
+                      </p>
+                      <p className="flex justify-between items-center">
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          Agent ID:
+                        </span>{" "}
+                        <span className="font-mono text-[10px] px-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded truncate max-w-25">
+                          {selectedSale.sellerId || "—"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Meta */}
+                <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
+                  <div className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg">
+                    <div>
+                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
+                        {selectedSale.productName}
+                      </p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
+                        {selectedSale.categoryName}
+                      </span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                        Quantity
+                      </p>
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+                        ×{selectedSale.quantity}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Balances Sheet */}
+                <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
+                  <h3 className="text-[9px] font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 mb-2">
+                    Ledger Financial Summary
+                  </h3>
+                  <div className="space-y-2 bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/50 rounded-lg p-3.5 text-xs">
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                      <span>Gross Aggregated Amount</span>
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200">
+                        ৳{selectedSale.totalPrice?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                      <span>Baseline Procurement Cost</span>
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200">
+                        ৳{selectedSale.rawExpense?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                      <span>Operating Expense Matrix</span>
+                      <span className="font-mono text-zinc-500 dark:text-zinc-400">
+                        - ৳{selectedSale.totalExpense?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-2 text-zinc-500 dark:text-zinc-400">
+                      <span>Settled Capital Payment</span>
+                      <span className="font-mono text-zinc-800 dark:text-zinc-200 font-medium">
+                        ৳{selectedSale.paidAmount?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                      <span>Outstanding Debt</span>
+                      <span
+                        className={`font-mono ${selectedSale.due > 0 ? "text-zinc-900 dark:text-zinc-200 font-medium" : "text-zinc-400 dark:text-zinc-500"}`}
+                      >
+                        ৳{selectedSale.due?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2 font-semibold text-zinc-900 dark:text-zinc-200">
+                      <span>Net Ledger Margin Profit</span>
+                      <span className="font-mono text-zinc-900 dark:text-zinc-100">
+                        ৳{selectedSale.netProfit?.toLocaleString()}
+                      </span>
+                    </div>
+
+                    {/* Highlighted Commission line - Clean corporate style */}
+                    <div className="flex justify-between items-center border-t border-zinc-200 dark:border-zinc-800 pt-3 mt-1 bg-zinc-100/80 dark:bg-zinc-800/30 p-2.5 rounded border">
+                      <span className="text-zinc-800 dark:text-zinc-300 font-semibold">
+                        Allocated Account Commission Payout
+                      </span>
+                      <span className="font-bold text-base font-mono text-zinc-900 dark:text-zinc-50">
+                        ৳{selectedSale.commission?.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes Section */}
+                {selectedSale.note && (
+                  <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-3">
+                    <p className="text-[9px] font-bold tracking-wider uppercase text-zinc-400 dark:text-zinc-500 mb-1">
+                      Audit Log Remarks
+                    </p>
+                    <p className="text-xs p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg leading-relaxed italic">
+                      &quot;{selectedSale.note}&quot;
+                    </p>
+                  </div>
+                )}
+
+                <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-3">
+                  <Button
+                    className="w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 h-9 text-xs font-semibold rounded-lg transition-all"
+                    onClick={() => setSelectedSale(null)}
+                  >
+                    Close Profile Audit
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

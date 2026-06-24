@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import {
   Eye,
-  Edit2,
   Plus,
   X,
   ChevronLeft,

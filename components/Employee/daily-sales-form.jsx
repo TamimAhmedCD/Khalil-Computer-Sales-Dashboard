@@ -67,6 +67,8 @@ const mandatoryCategories = [
   "Khajna Payment",
   "Namjari",
   "Khajna Nibondon",
+  "Miss Case",
+  "Khatian Application",
 ];
 
 const bdtFormatter = new Intl.NumberFormat("en-BD", {

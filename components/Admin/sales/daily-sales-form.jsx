@@ -67,6 +67,8 @@ const mandatoryCategories = [
   "Khajna Payment",
   "Namjari",
   "Khajna Nibondon",
+  "Miss Case",
+  "Khatian Application",
 ];
 
 const bdtFormatter = new Intl.NumberFormat("en-BD", {
@@ -314,7 +316,7 @@ export default function DailySalesForm() {
       toast.error(error?.response?.data?.message || "Submission failed");
     } finally {
       setIsSubmitting(false);
-      router.push("/employee/sales"); // Redirect to sales history after submission
+      router.push("/admin/sales"); // Redirect to sales history after submission
     }
   };
 

@@ -142,6 +142,8 @@ export async function POST(req) {
       "Khajna Payment",
       "Namjari",
       "Khajna Nibondon",
+      "Miss Case",
+      "Khatian Application",
     ];
     if (mandatoryCategories.includes(categoryData.name)) {
       if (!customerName || customerName.length < 2) {
