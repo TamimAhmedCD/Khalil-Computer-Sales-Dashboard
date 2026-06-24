@@ -155,7 +155,7 @@ export function SalesList() {
               records.
             </p>
           </div>
-          <Link href="/employee/sales/add">
+          <Link href="/admin/sales/add">
             <Button className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 font-medium gap-2 transition-all active:scale-95 cursor-pointer h-9 px-4 text-xs tracking-wide rounded-lg shadow-xs">
               <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
               Add New Transaction
