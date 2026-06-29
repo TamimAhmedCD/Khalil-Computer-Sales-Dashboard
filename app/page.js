@@ -57,6 +57,13 @@ export default function Home() {
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black">
+        <Loader2 className="h-10 w-10 text-white animate-spin" />
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen w-full flex bg-black overflow-hidden selection:bg-white selection:text-black">
       {/* --- LEFT SIDE: Visual Branding (Stealth Pro Look) --- */}
