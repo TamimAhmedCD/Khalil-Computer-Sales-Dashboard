@@ -57,7 +57,7 @@ export default function Home() {
     }
   };
 
-  if (session && session.status === "loading") {
+  if (session?.user || status === "loading") {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-black">
         <Loader2 className="h-10 w-10 text-white animate-spin" />
