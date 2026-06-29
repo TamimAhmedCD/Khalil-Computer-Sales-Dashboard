@@ -1,28 +1,19 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      <div className="text-center p-8 max-w-sm w-full">
-        {/* Logo */}
-        <div className="mb-6 flex justify-center">
-          <div className="h-12 w-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-200 dark:shadow-none">
-            Logo
-          </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 transition-colors duration-300">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-8 shadow-sm text-center">
+        {/* Modern Corporate Linear/Bar Loader */}
+        <div className="w-full max-w-[240px] h-[3px] bg-slate-100 dark:bg-slate-800 rounded-full mx-auto mb-8 overflow-hidden relative">
+          <div className="absolute top-0 left-0 h-full w-1/2 bg-slate-900 dark:bg-slate-50 rounded-full animate-[loading-bar_1.5s_infinite_ease-in-out]"></div>
         </div>
 
-        {/* Modern Loader */}
-        <div className="relative flex items-center justify-center mb-6">
-          {/* Outer pulsing ring */}
-          <div className="absolute animate-ping inline-flex h-12 w-12 rounded-full bg-indigo-400 opacity-20"></div>
-          {/* Inner spinning wheel */}
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-200 border-t-indigo-600"></div>
-        </div>
-
-        {/* Status Text */}
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-          Securing your session
+        {/* Corporate Status Text */}
+        <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-50 mb-1.5">
+          Authenticating Session
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">
-          Preparing your personalized dashboard...
+
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Verifying permissions and loading your workspace...
         </p>
       </div>
     </div>
