@@ -1,32 +1,8 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-
-export default async function DashboardRedirect() {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/");
-  }
-
-  const role = session.user.role;
-
-  if (role === "admin") {
-    redirect("/admin/dashboard");
-  }
-
-  if (role === "employee") {
-    redirect("/employee/dashboard");
-  }
-
-  if (role === "superAdmin") {
-    redirect("/super-admin/dashboard");
-  }
-
-  redirect("/");
+export default function Loading() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <div className="text-center p-8 max-w-sm w-full">
-        {/* Optional: Your App Logo */}
+        {/* Logo */}
         <div className="mb-6 flex justify-center">
           <div className="h-12 w-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-200 dark:shadow-none">
             Logo
