@@ -5,23 +5,27 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    // 🔐 ১. অথেন্টিকেশন ও সেশন চেক (ব্যাকএন্ডেই সিকিউরলি হ্যান্ডেলড)
+    // 🔐 1. Authentication & Session Check
     const session = await auth();
+
     if (!session?.user) {
       return Response.json(
-        { success: false, message: "Unauthorized" },
+        {
+          success: false,
+          message: "Unauthorized",
+        },
         { status: 401 },
       );
     }
 
+    // 📦 2. Request Body
     const body = await req.json();
 
     let {
-      invoiceNumber,
       customerName,
       customerPhone,
       productName,
-      categoryId, // 🔄 ড্রপডাউন থেকে এখন ক্যাটাগরি নামের বদলে আইডি আসবে
+      categoryId,
       quantity,
       totalPrice,
       rawExpense,
@@ -30,72 +34,109 @@ export async function POST(req) {
       note,
     } = body;
 
-    // ✅ ভ্যালু ক্লিন এবং ট্রিম করা
+    // 🧹 3. Clean & Convert Values
     customerName = customerName?.trim() || "";
     customerPhone = customerPhone?.trim() || "";
-    productName = productName?.trim();
-    categoryId = categoryId?.trim();
+    productName = productName?.trim() || "";
+    categoryId = categoryId?.trim() || "";
 
     quantity = Number(quantity);
     totalPrice = Number(totalPrice);
     rawExpense = Number(rawExpense || 0);
     paidAmount = Number(paidAmount || 0);
 
-    // ❌ ২. বেসিক রিকোয়ার্ড ফিল্ড ভ্যালিডেশন
-    if (
-      !invoiceNumber ||
-      !productName ||
-      !categoryId || // 🔄 category এর জায়গায় এখন categoryId চেক হবে
-      !quantity ||
-      !totalPrice
-    ) {
+    // ❌ 4. Required Field Validation
+    if (!productName || !categoryId || !quantity || !totalPrice) {
       return Response.json(
         {
           success: false,
           message:
-            "Missing required fields (invoice, product, category ID, quantity, or price)",
+            "Missing required fields (product, category, quantity, or price)",
         },
         { status: 400 },
       );
     }
 
-    // 🛑 ডাটাবেজ কানেকশন ইনিশিয়ালাইজেশন (কোডের শুরুতেই রাখা হলো এরর এড়াতে)
+    // 🛑 5. Database Connection
     const client = await clientPromise;
     const db = client.db("products");
 
-    // 🔍 ৩. ডুপ্লিকেট ইনভয়েস চেক
-    const existingInvoice = await db.collection("sales").findOne({
-      invoiceNumber,
-    });
+    // =========================================================
+    // 🧾 6. DAILY INVOICE COUNTER
+    // Format: INV-YYYYMMDD-00001
+    // Example: INV-20260819-00001
+    // =========================================================
 
-    if (existingInvoice) {
-      return Response.json(
-        { success: false, message: "Invoice already exists" },
-        { status: 400 },
-      );
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    const dateKey = `${year}${month}${day}`;
+
+    const counterResult = await db.collection("counters").findOneAndUpdate(
+      {
+        _id: `invoice_${dateKey}`,
+      },
+      {
+        $inc: {
+          sequence: 1,
+        },
+        $set: {
+          updatedAt: now,
+        },
+      },
+      {
+        upsert: true,
+        returnDocument: "after",
+      },
+    );
+
+    if (!counterResult) {
+      throw new Error("Failed to generate invoice counter");
     }
 
-    // ❌ ৪. মাইনাস বা জিরো ভ্যালু প্রোটেকশন
-    if (quantity <= 0 || totalPrice < 0 || rawExpense < 0 || paidAmount < 0) {
+    const sequence = counterResult.sequence;
+
+    const invoiceNumber = `INV-${dateKey}-${String(sequence).padStart(5, "0")}`;
+
+    // =========================================================
+    // 🔐 7. Make Sure Invoice Number Is Unique
+    // =========================================================
+
+    await db
+      .collection("sales")
+      .createIndex({ invoiceNumber: 1 }, { unique: true });
+
+    // ❌ 8. Negative / Invalid Value Protection
+    if (
+      !Number.isFinite(quantity) ||
+      !Number.isFinite(totalPrice) ||
+      !Number.isFinite(rawExpense) ||
+      !Number.isFinite(paidAmount)
+    ) {
       return Response.json(
         {
           success: false,
-          message: "Negative values or zero quantity are not allowed",
+          message: "Invalid numeric values",
         },
         { status: 400 },
       );
     }
 
-    // ❌ ৫. বিজনেস লজিক ভ্যালিডেশনs
-    if (totalPrice < quantity) {
+    if (quantity <= 0 || totalPrice <= 0 || rawExpense < 0 || paidAmount < 0) {
       return Response.json(
         {
           success: false,
-          message: `Total price cannot be less than quantity (${quantity} pcs)`,
+          message:
+            "Quantity and total price must be greater than zero. Expense and paid amount cannot be negative.",
         },
         { status: 400 },
       );
     }
+
+    // ❌ 9. Business Logic Validation
 
     if (rawExpense > totalPrice) {
       return Response.json(
@@ -117,26 +158,36 @@ export async function POST(req) {
       );
     }
 
-    // 🔍 ৬. ক্যাটাগরি আইডি ভ্যালিডেশন এবং ডাটা রিট্রিভ
+    // 🔍 10. Validate Category ID
     if (!ObjectId.isValid(categoryId)) {
       return Response.json(
-        { success: false, message: "Invalid Category ID format" },
+        {
+          success: false,
+          message: "Invalid Category ID format",
+        },
         { status: 400 },
       );
     }
 
+    // 🔍 11. Get Category
     const categoryData = await db.collection("categories").findOne({
-      _id: new ObjectId(categoryId), // 🔥 নাম বাদ দিয়ে আইডি দিয়ে খোঁজা হচ্ছে
+      _id: new ObjectId(categoryId),
     });
 
     if (!categoryData) {
       return Response.json(
-        { success: false, message: "Category not found in database" },
+        {
+          success: false,
+          message: "Category not found in database",
+        },
         { status: 404 },
       );
     }
 
-    // 🔥 7. কন্ডিশনাল কাস্টমার ভ্যালিডেশন (ডাটাবেজ থেকে রিয়েল-টাইম নাম ম্যাচিং)
+    // =========================================================
+    // 👤 12. Conditional Customer Validation
+    // =========================================================
+
     const mandatoryCategories = [
       "DCR",
       "Khajna Payment",
@@ -145,6 +196,7 @@ export async function POST(req) {
       "Miss Case",
       "Khatian Application",
     ];
+
     if (mandatoryCategories.includes(categoryData.name)) {
       if (!customerName || customerName.length < 2) {
         return Response.json(
@@ -155,6 +207,7 @@ export async function POST(req) {
           { status: 400 },
         );
       }
+
       if (!customerPhone || customerPhone.length < 11) {
         return Response.json(
           {
@@ -166,53 +219,70 @@ export async function POST(req) {
       }
     }
 
-    const commissionRate = categoryData.commission || 0;
+    // =========================================================
+    // 📊 13. Calculations
+    // =========================================================
 
-    // 📊 ৮. ক্যালকুলেশনস
+    const commissionRate = Number(categoryData.commission || 0);
+
     const total = totalPrice;
 
-    // ১. কমিশনের পরিমাণ বের করে পূর্ণসংখ্যা করা
     const commission = Math.round((total * commissionRate) / 100);
 
-    // ২. মূল খরচ এবং কমিশন যোগ করে মোট খরচ (Total Expense) বের করা
     const totalExpense = rawExpense + commission;
 
-    // ৩. মোট টাকা থেকে সব খরচ (কমিশনসহ) বাদ দিয়ে Net Profit বের করা
     const netProfit = Math.round(total - totalExpense);
 
-    // ৪. কাস্টমার যদি শুধু প্রোডাক্টের দাম দিয়ে থাকে, তবে বাকি (Due) হিসাব:
-    // [এখানে 'total' থেকে 'paidAmount' বাদ দেওয়া হয়েছে। যদি কমিশন কাস্টমারের কাছ থেকে আদায়যোগ্য বকেয়া হয়, তবে total এর জায়গায় (total + commission) হতে পারে। তবে সাধারণত due = total - paidAmount-ই হয়।]
     const due = Math.max(total - paidAmount, 0);
 
-    // 💾 ৯. সেলস রেকর্ড ইনসার্ট (ভবিষ্যতের রিপোর্টের জন্য আইডি ও নাম দুটিই সেভ রাখছি)
+    // =========================================================
+    // 💾 14. Insert Sale
+    // =========================================================
+
     const sale = await db.collection("sales").insertOne({
-      sellerName: session.user.name, // 🔐 সেশন থেকে নেওয়া সুরক্ষিত নাম
-      sellerId: session.user.id, // 🔐 সেশন থেকে নেওয়া সুরক্ষিত আইডি
-      customerName,
+      sellerName: session.user.name || "",
+      sellerId: session.user.id,
+
+      // 🧾 Backend generated invoice
       invoiceNumber,
+
+      customerName,
       customerPhone,
+
       productName,
-      categoryId: new ObjectId(categoryId), // 🔄 ক্যাটাগরি রিলেশন আইডি
-      categoryName: categoryData.name, // 🔄 ক্যাটাগরি স্ন্যাপশট নাম
+
+      categoryId: new ObjectId(categoryId),
+      categoryName: categoryData.name,
+
       quantity,
       totalPrice,
-      rawExpense,
-      paymentMethod,
-      paidAmount,
-      note: note || "",
 
+      rawExpense,
+
+      paymentMethod,
+
+      paidAmount,
+
+      note: note?.trim() || "",
+
+      // 📊 Calculated values
       total,
       totalExpense,
       netProfit,
       commission,
       due,
 
-      createdAt: new Date(),
+      createdAt: now,
     });
 
-    // 📈 ১০. ক্যাটাগরি স্ট্যাটস আপডেট (এখন ক্যাটাগরি আইডি দিয়ে সুরক্ষিতভাবে আপডেট হবে)
+    // =========================================================
+    // 📈 15. Update Category Statistics
+    // =========================================================
+
     await db.collection("categories").updateOne(
-      { _id: new ObjectId(categoryId) }, // 🔥 নাম চেঞ্জ হলেও এই ট্র্যাকিং বিন্দুমাত্র নড়বে না
+      {
+        _id: new ObjectId(categoryId),
+      },
       {
         $inc: {
           totalSales: total,
@@ -221,30 +291,54 @@ export async function POST(req) {
           saleCount: 1,
         },
         $set: {
-          updatedAt: new Date(),
+          updatedAt: now,
         },
       },
     );
 
-    return Response.json({
-      success: true,
-      message: "Sale recorded successfully",
-      saleId: sale.insertedId,
-      data: {
-        total,
-        totalExpense,
-        netProfit,
-        commission,
-        due,
+    // =========================================================
+    // ✅ 16. Success Response
+    // =========================================================
+
+    return Response.json(
+      {
+        success: true,
+        message: "Sale recorded successfully",
+
+        saleId: sale.insertedId,
+
+        data: {
+          invoiceNumber,
+
+          total,
+          totalExpense,
+          netProfit,
+          commission,
+          due,
+        },
       },
-    });
+      { status: 201 },
+    );
   } catch (error) {
     console.error("SALE API ERROR:", error);
+
+    // Duplicate invoice protection
+    if (error?.code === 11000) {
+      return Response.json(
+        {
+          success: false,
+          message: "Invoice number already exists. Please try again.",
+        },
+        { status: 409 },
+      );
+    }
+
     return Response.json(
       {
         success: false,
         message: "Server error",
-        error: error.message,
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
       { status: 500 },
     );

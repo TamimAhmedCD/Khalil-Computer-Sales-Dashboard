@@ -42,6 +42,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 
 // Next.js কম্পাইলার ফ্রেন্ডলি পিওর জাভাস্ক্রিপ্ট ফেচিং ফাংশন
 const fetchSales = async (context) => {
@@ -174,9 +182,13 @@ export function SalesList() {
               <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                 Total Sales Volume ({dateFilter})
               </p>
-              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
-                ৳{summary.totalSalesAmount.toLocaleString()}
-              </p>
+              {isLoading ? (
+                <div className="h-6 w-16 bg-zinc-300 dark:bg-zinc-700 rounded animate-pulse"></div>
+              ) : (
+                <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
+                  ৳{summary.totalSalesAmount.toLocaleString()}
+                </p>
+              )}
             </div>
           </Card>
 
@@ -189,9 +201,13 @@ export function SalesList() {
               <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                 Net Operations Profit ({dateFilter})
               </p>
-              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
-                ৳{summary.totalProfit.toLocaleString()}
-              </p>
+              {isLoading ? (
+                <div className="h-6 w-16 bg-zinc-300 dark:bg-zinc-700 rounded animate-pulse"></div>
+              ) : (
+                <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
+                  ৳{summary.totalProfit.toLocaleString()}
+                </p>
+              )}
             </div>
           </Card>
 
@@ -204,9 +220,13 @@ export function SalesList() {
               <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
                 Personal Earned Commission ({dateFilter})
               </p>
-              <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-mono bg-linear-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text">
-                ৳{summary.totalCommission.toLocaleString()}
-              </p>
+              {isLoading ? (
+                <div className="h-6 w-16 bg-zinc-300 dark:bg-zinc-700 rounded animate-pulse"></div>
+              ) : (
+                <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-mono bg-linear-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text">
+                  ৳{summary.totalCommission.toLocaleString()}
+                </p>
+              )}
             </div>
           </Card>
         </div>
@@ -293,231 +313,258 @@ export function SalesList() {
         </div>
 
         {/* Master Data Table */}
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-20 space-y-3 bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-800/60">
-            <Loader2 className="h-6 w-6 animate-spin text-zinc-500 dark:text-zinc-400" />
-            <p className="text-zinc-500 dark:text-zinc-400 text-[10px] font-medium tracking-widest uppercase">
-              Syncing Database Ledger...
-            </p>
-          </div>
-        ) : isError ? (
-          <Card className="p-8 rounded-xl bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 text-center space-y-2">
-            <AlertCircle className="h-6 w-6 text-zinc-400 mx-auto" />
-            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-              Sync Timeout Error
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
-              {error
-                ? error.message
-                : "Unable to populate data framework metrics."}
-            </p>
-          </Card>
-        ) : sales.length > 0 ? (
-          <Card className="bg-white/70 dark:bg-zinc-900/10 backdrop-blur-xl rounded-xl border border-zinc-200 dark:border-zinc-800/60 overflow-hidden shadow-md">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Date
-                    </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Invoice
-                    </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Product Details
-                    </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Category
-                    </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Units
-                    </th>
-                    <th className="px-6 py-3.5 text-right text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Net Amount
-                    </th>
-                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                      Options
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/30">
-                  {sales.map((sale) => (
-                    <tr
-                      key={sale._id}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors duration-150 group"
-                    >
-                      <td className="px-6 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 whitespace-nowrap font-mono">
-                        {sale.createdAt
-                          ? new Date(sale.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )
-                          : "—"}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs font-semibold text-zinc-900 dark:text-zinc-200 font-mono">
-                        {sale.invoiceNumber}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 max-w-60 truncate font-medium">
-                        {sale.productName}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 text-[10px] font-medium border border-zinc-200 dark:border-zinc-700/40">
-                          {sale.categoryName}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
-                        {sale.quantity}
-                      </td>
-                      <td className="px-6 py-3.5 text-xs text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
-                        ৳
-                        {sale.totalPrice ? sale.totalPrice.toLocaleString() : 0}
-                      </td>
-                      <td className="px-6 py-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
-                            onClick={() => setSelectedSale(sale)}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
+        <div className="space-y-4">
+          {isError ? (
+            <div className="p-8 rounded-2xl bg-card border border-border/60 text-center space-y-2 shadow-sm">
+              <AlertCircle className="h-6 w-6 text-muted-foreground mx-auto" />
+              <p className="text-sm font-semibold text-foreground">
+                Sync Timeout Error
+              </p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                {error
+                  ? error.message
+                  : "Unable to populate data framework metrics."}
+              </p>
+            </div>
+          ) : (
+            <div className="border border-border/60 rounded-2xl overflow-hidden bg-card shadow-sm">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="text-xs text-muted-foreground uppercase tracking-wider font-semibold hover:bg-transparent">
+                    <TableHead className="h-12">Date</TableHead>
+                    <TableHead>Invoice</TableHead>
+                    <TableHead>Product Details</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Units</TableHead>
+                    <TableHead className="text-right">Net Amount</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="text-sm">
+                  {isLoading ? (
+                    // Array Generator loop mimicking active table rows seamlessly
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <TableRow
+                        key={idx}
+                        className="hover:bg-transparent border-b border-border/40"
+                      >
+                        <TableCell className="py-4">
+                          <div className="h-4 w-20 bg-muted animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-4 w-24 bg-muted animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-4 w-44 bg-muted animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-5 w-16 bg-muted animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-4 w-10 bg-muted animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-4 w-16 bg-muted animate-pulse rounded-md ml-auto" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="h-7 w-7 bg-muted animate-pulse rounded-md" />
+                            <div className="h-7 w-7 bg-muted animate-pulse rounded-md" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : sales.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="p-12 text-center text-muted-foreground"
+                      >
+                        <p className="font-medium text-sm text-foreground mb-0.5">
+                          No Audit Files Located
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Please modify system filtering metrics values.
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sales.map((sale) => (
+                      <TableRow
+                        key={sale._id}
+                        className="hover:bg-muted/10 transition-colors"
+                      >
+                        <TableCell className="text-muted-foreground text-xs font-mono whitespace-nowrap">
+                          {sale.createdAt
+                            ? new Date(sale.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                },
+                              )
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="font-bold text-foreground font-mono">
+                          {sale.invoiceNumber}
+                        </TableCell>
+                        <TableCell className="font-medium max-w-60 truncate">
+                          {sale.productName}
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-medium border border-border/40">
+                            {sale.categoryName}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-mono text-muted-foreground">
+                          {sale.quantity}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold font-mono">
+                          <span className="font-black text-md mr-0.5">৳</span>
+                          {sale.totalPrice
+                            ? sale.totalPrice.toLocaleString()
+                            : 0}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => setSelectedSale(sale)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
-                                disabled={loadingId === sale._id}
-                              >
-                                {loadingId === sale._id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
-                                ) : (
-                                  <Trash className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-sm shadow-xl">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-200">
-                                  Confirm Records Purge
-                                </AlertDialogTitle>
-                                <AlertDialogDescription className="text-xs text-zinc-500 dark:text-zinc-400 leading-normal">
-                                  This operational event will completely
-                                  eliminate the selected invoice tracking data
-                                  permanently.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="mt-4 gap-1.5">
-                                <AlertDialogCancel className="h-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium text-[11px]">
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(sale._id)}
-                                  className="h-8 rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium text-[11px]"
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-500/5"
+                                  disabled={loadingId === sale._id}
                                 >
-                                  Confirm
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Corporate Pagination Footer */}
-            <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/10">
-              <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                Showing{" "}
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
-                  {Math.min(
-                    (currentPage - 1) * 10 + 1,
-                    pagination.totalResults,
+                                  {loadingId === sale._id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                  ) : (
+                                    <Trash className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="rounded-2xl border border-border bg-card max-w-sm shadow-xl">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-sm font-bold tracking-tight text-foreground">
+                                    Confirm Records Purge
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription className="text-xs text-muted-foreground leading-normal">
+                                    This operational event will completely
+                                    eliminate the selected invoice tracking data
+                                    permanently.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="mt-4 gap-1.5">
+                                  <AlertDialogCancel className="h-8 rounded-lg border border-border bg-transparent text-muted-foreground hover:bg-muted font-medium text-[11px]">
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(sale._id)}
+                                    className="h-8 rounded-lg bg-foreground text-background hover:opacity-90 font-medium text-[11px]"
+                                  >
+                                    Confirm
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
-                </span>{" "}
-                to{" "}
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
-                  {Math.min(currentPage * 10, pagination.totalResults)}
-                </span>{" "}
-                of{" "}
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
-                  {pagination.totalResults}
-                </span>{" "}
-                records
-              </div>
-              <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-3 w-3 mr-1" /> Prev
-                </Button>
+                </TableBody>
+              </Table>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: pagination.totalPages }).map((_, i) => {
-                    const pageNum = i + 1;
-                    if (
-                      Math.abs(currentPage - pageNum) <= 1 ||
-                      pageNum === 1 ||
-                      pageNum === pagination.totalPages
-                    ) {
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={
-                            currentPage === pageNum ? "default" : "outline"
+              {/* Corporate Pagination Footer */}
+              {sales.length > 0 && !isLoading && (
+                <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-border/40 bg-muted/20">
+                  <div className="text-xs text-muted-foreground">
+                    Showing{" "}
+                    <span className="text-foreground font-medium font-mono">
+                      {Math.min(
+                        (currentPage - 1) * 10 + 1,
+                        pagination.totalResults,
+                      )}
+                    </span>{" "}
+                    to{" "}
+                    <span className="text-foreground font-medium font-mono">
+                      {Math.min(currentPage * 10, pagination.totalResults)}
+                    </span>{" "}
+                    of{" "}
+                    <span className="text-foreground font-medium font-mono">
+                      {pagination.totalResults}
+                    </span>{" "}
+                    records
+                  </div>
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-7 text-xs border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-40"
+                    >
+                      <ChevronLeft className="h-3 w-3 mr-1" /> Prev
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: pagination.totalPages }).map(
+                        (_, i) => {
+                          const pageNum = i + 1;
+                          if (
+                            Math.abs(currentPage - pageNum) <= 1 ||
+                            pageNum === 1 ||
+                            pageNum === pagination.totalPages
+                          ) {
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={
+                                  currentPage === pageNum
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`h-7 w-7 p-0 font-mono text-[11px] rounded ${
+                                  currentPage === pageNum
+                                    ? "bg-foreground text-background hover:bg-foreground/90"
+                                    : "border-border bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                                }`}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
                           }
-                          size="sm"
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`h-7 w-7 p-0 font-mono text-[11px] rounded ${
-                            currentPage === pageNum
-                              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-100"
-                              : "border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
-                          }`}
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
+                          return null;
+                        },
+                      )}
+                    </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === pagination.totalPages}
-                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
-                >
-                  Next <ChevronRight className="h-3 w-3 ml-1" />
-                </Button>
-              </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === pagination.totalPages}
+                      className="h-7 text-xs border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-40"
+                    >
+                      Next <ChevronRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          </Card>
-        ) : (
-          <Card className="p-12 rounded-xl bg-white/50 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/80 text-center max-w-md mx-auto">
-            <p className="text-zinc-800 dark:text-zinc-300 font-medium text-sm">
-              No Audit Files Located
-            </p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-              Please modify system filtering metrics values.
-            </p>
-          </Card>
-        )}
+          )}
+        </div>
 
         {/* Professional Corporate Inspection Modal */}
         {selectedSale && (

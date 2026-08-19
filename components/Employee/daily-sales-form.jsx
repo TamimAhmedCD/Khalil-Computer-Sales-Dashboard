@@ -40,7 +40,6 @@ import { useRouter } from "next/navigation";
 
 // 🔄 ১. স্কিমা আপডেট: ব্যাকএন্ড রুলস অনুযায়ী শুধু রিকোয়ার্ড ফিল্ড রাখা হয়েছে (সেলার ডিটেইলস ব্যাকএন্ড সেশন থেকে আসবে)
 const formSchema = z.object({
-  invoiceNumber: z.string().min(1, "Invoice number is required"),
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
   productName: z.string().min(2, "Product or service name is required"),
@@ -80,9 +79,6 @@ const bdtFormatter = new Intl.NumberFormat("en-BD", {
 export default function DailySalesForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [invoiceNumber] = useState(
-    `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-  );
 
   const router = useRouter();
 
@@ -110,7 +106,6 @@ export default function DailySalesForm() {
       paymentMethod: "",
       paidAmount: 0,
       note: "",
-      invoiceNumber: invoiceNumber,
     },
   });
 
@@ -308,7 +303,6 @@ export default function DailySalesForm() {
         paymentMethod: "",
         paidAmount: 0,
         note: "",
-        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       });
       setShowConfirm(false);
     } catch (error) {
@@ -630,16 +624,6 @@ export default function DailySalesForm() {
           <aside className="col-span-12 lg:col-span-4 lg:sticky lg:top-8 space-y-6">
             <Card className="bg-zinc-900 text-zinc-100 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl">
               <div className="p-5 md:p-8 space-y-6 md:space-y-8">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[9px] md:text-[10px] uppercase font-bold opacity-40">
-                      Invoice Reference
-                    </p>
-                    <h3 className="font-mono text-xs">{invoiceNumber}</h3>
-                  </div>
-                  <Receipt size={18} className="opacity-40" />
-                </div>
-
                 <div className="space-y-3 md:space-y-4">
                   <div className="flex justify-between text-xs md:text-sm">
                     <span className="opacity-50">Subtotal</span>
