@@ -17,6 +17,7 @@ import {
   Users,
   Zap,
   RefreshCw,
+  Badge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -68,8 +69,9 @@ export function EmployeeDashboard({ session }) {
 
   const monthlySales = Number(dashboardData?.monthlySales) || 0;
 
-  const todaysTarget = Number(dashboardData?.todaysTarget) || 50000;
+  const todaysTarget = Number(dashboardData?.todaysTarget) || 2000;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const todaysSales = dashboardData?.todaysSales || [];
 
   // ---------------------------------------------------------
@@ -214,57 +216,53 @@ export function EmployeeDashboard({ session }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <div className="space-y-6 animate-pulse">
-          {/* Header Skeleton */}
-          <div className="h-64 rounded-xl bg-muted" />
+      <div className="min-h-screen space-y-8 p-6 md:p-10 animate-pulse max-w-7xl mx-auto">
+        {/* Banner Skeleton */}
+        <div className="h-56 rounded-2xl bg-muted/60" />
 
-          {/* Cards Skeleton */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => (
-              <Card key={item} className="h-32 bg-card border border-border" />
-            ))}
-          </div>
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-32 rounded-xl bg-muted/40 border border-border/50"
+            />
+          ))}
+        </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="h-24 rounded-lg bg-muted" />
-            ))}
-          </div>
+        {/* Quick Actions Skeleton */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 rounded-xl bg-muted/40" />
+          ))}
+        </div>
 
-          {/* Main */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 h-80 rounded-lg bg-muted" />
-            <div className="h-80 rounded-lg bg-muted" />
-          </div>
-
-          {/* Activity */}
-          <div className="h-72 rounded-lg bg-muted" />
+        {/* Analytics Grid Skeleton */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 h-96 rounded-xl bg-muted/40" />
+          <div className="h-96 rounded-xl bg-muted/40" />
         </div>
       </div>
     );
   }
 
   // ---------------------------------------------------------
-  // Error
+  // Error State
   // ---------------------------------------------------------
-
   if (error) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Card className="w-full max-w-md p-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <Activity className="h-6 w-6 text-red-600" />
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-4 shadow-xl border-destructive/20 bg-card">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <Activity className="h-7 w-7" />
           </div>
-
-          <h2 className="text-lg font-semibold mb-2">
-            Failed to load dashboard
-          </h2>
-
-          <p className="text-sm text-muted-foreground mb-6">{error}</p>
-
-          <Button onClick={fetchDashboard} className="gap-2">
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold tracking-tight">
+              Failed to load dashboard
+            </h2>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+          <Button onClick={fetchDashboard} className="w-full gap-2 mt-2">
             <RefreshCw className="h-4 w-4" />
             Try Again
           </Button>
@@ -273,483 +271,348 @@ export function EmployeeDashboard({ session }) {
     );
   }
 
+  // ---------------------------------------------------------
+  // Dashboard Content
+  // ---------------------------------------------------------
   return (
-    <div className="min-h-screen">
-      <div className="space-y-6">
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
+    <div className="min-h-screen space-y-8 p-4 md:p-8 max-w-7xl mx-auto">
+      {/* =====================================================
+    HEADER BANNER
+====================================================== */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8 shadow-sm">
+        {/* Ambient decorative background glows */}
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
 
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-xl p-8 md:p-10",
-            "border border-border shadow-lg",
-            "bg-linear-to-r from-primary/10 via-primary/5 to-transparent",
-            "before:absolute before:-right-20 before:-top-20",
-            "before:h-40 before:w-40 before:bg-primary/5",
-            "before:rounded-full",
-            "after:absolute after:-left-20 after:-bottom-20",
-            "after:h-40 after:w-40 after:bg-primary/5",
-            "after:rounded-full",
-          )}
-        >
-          <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-12 w-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-primary" />
+        <div className="relative z-10 flex flex-col gap-6">
+          {/* Top Row: User Info & Status Indicators */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-primary/15 text-primary rounded-xl flex items-center justify-center ring-1 ring-primary/20">
+                  <Zap className="h-5 w-5" />
                 </div>
-
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
                   Welcome back, {session?.user?.name || "Employee"}!
                 </h1>
               </div>
 
-              <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-4">
-                You&apos;re all set to manage your sales operations. Here&apos;s
-                your dashboard overview for{" "}
+              <p className="text-muted-foreground text-sm md:text-base">
+                Here&apos;s your sales overview for{" "}
                 <span className="font-semibold text-foreground">
                   {new Date().toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
+                    year: "numeric",
                   })}
                 </span>
               </p>
-
-              <div className="flex flex-wrap gap-6">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-
-                  <span className="text-sm text-foreground">
-                    All systems operational
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-
-                  <span className="text-sm text-foreground">
-                    {completionPercentage >= 100
-                      ? "Target achieved"
-                      : "On track with targets"}
-                  </span>
-                </div>
-              </div>
             </div>
 
-            {/* Actions */}
+            {/* Status Badges */}
+            <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
+              <Badge
+                variant="outline"
+                className="gap-1.5 py-1 px-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              >
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Systems Operational
+              </Badge>
 
-            <div className="flex gap-2 flex-wrap md:flex-col lg:flex-row justify-start md:justify-end">
-              <Link href="sales/add">
-                <Button className="bg-primary cursor-pointer hover:bg-primary/90 text-primary-foreground gap-2 whitespace-nowrap">
+              <Badge
+                variant="outline"
+                className="gap-1.5 py-1 px-3 bg-primary/10 text-primary border-primary/20"
+              >
+                <Target className="h-3.5 w-3.5" />
+                {completionPercentage >= 100 ? "Target Achieved" : "On Track"}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Divider Line */}
+          <div className="h-px w-full bg-border/50" />
+
+          {/* Bottom Row: Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+            <p className="text-xs text-muted-foreground font-medium hidden sm:block">
+              Quick Shortcuts
+            </p>
+
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto">
+              <Button
+                asChild
+                className="flex-1 sm:flex-initial gap-2 shadow-sm transition-transform active:scale-95"
+              >
+                <Link href="sales/add">
                   <ShoppingCart className="h-4 w-4" />
-                  Add Sale
-                </Button>
-              </Link>
-
-              <Button
-                variant="outline"
-                className="border-border text-foreground gap-2 whitespace-nowrap hover:bg-accent"
-              >
-                <DollarSign className="h-4 w-4" />
-                Add Expense
-              </Button>
-
-              <Button
-                variant="outline"
-                className="border-border text-foreground gap-2 whitespace-nowrap hover:bg-accent"
-              >
-                <Users className="h-4 w-4" />
-                Add Employee
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* =====================================================
-            SUMMARY CARDS
-        ====================================================== */}
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* Today's Sales */}
-
-          <Card className="bg-card border border-border rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Today&apos;s Sales Amount
-                </p>
-
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(todaysSalesAmount)}
-                </p>
-              </div>
-
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </Card>
-
-          {/* Today's Profit */}
-
-          <Card className="bg-card border border-border rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Today&apos;s Profit
-                </p>
-
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(todaysProfit)}
-                </p>
-              </div>
-
-              <div className="p-3 bg-green-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </Card>
-
-          {/* Commission */}
-
-          <Card className="bg-card border border-border rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  My Commission
-                </p>
-
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(myCommission)}
-                </p>
-              </div>
-
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Award className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </Card>
-
-          {/* Monthly Sales */}
-
-          <Card className="bg-card border border-border rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Monthly Sales
-                </p>
-
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(monthlySales)}
-                </p>
-              </div>
-
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Target className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* =====================================================
-            QUICK ACTIONS
-        ====================================================== */}
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Link
-            href="sales/add"
-            className="flex flex-col items-center justify-center gap-3 bg-card border border-border hover:bg-muted rounded-lg cursor-pointer"
-          >
-            <Button className="h-auto flex flex-col items-center justify-center bg-transparent text-foreground cursor-pointer">
-              <Plus className="h-6 w-6" />
-              <span className="font-semibold">Add New Sale</span>
-            </Button>
-          </Link>
-
-          <Link
-            href="sales"
-            className="flex flex-col items-center justify-center gap-3 bg-card border border-border hover:bg-muted rounded-lg cursor-pointer"
-          >
-            <Button className="h-auto flex flex-col items-center justify-center bg-transparent text-foreground cursor-pointer">
-              <TrendingUp className="h-6 w-6" />
-              <span className="font-semibold">My Sales</span>
-            </Button>
-          </Link>
-
-          <Link
-            href="reports"
-            className="flex flex-col items-center justify-center gap-3 bg-card border border-border hover:bg-muted rounded-lg cursor-pointer"
-          >
-            <Button className="h-auto flex flex-col items-center justify-center bg-transparent gap-3 p-6 text-foreground cursor-pointer">
-              <Clock className="h-6 w-6" />
-              <span className="font-semibold">Today&apos;s Report</span>
-            </Button>
-          </Link>
-        </div>
-
-        {/* =====================================================
-            SALES + PERFORMANCE
-        ====================================================== */}
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Today's Sales */}
-
-          <div className="lg:col-span-2">
-            <Card className="bg-card border border-border rounded-lg shadow-sm">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Today&apos;s Sales Preview
-                  </h2>
-
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {todaysSales.length} sale
-                    {todaysSales.length !== 1 ? "s" : ""} today
-                  </p>
-                </div>
-
-                <Link href="sales">
-                  <Button variant="outline" size="sm">
-                    View All
-                  </Button>
+                  <span>Add Sale</span>
                 </Link>
-              </div>
+              </Button>
 
-              <div className="overflow-x-auto">
-                {todaysSales.length === 0 ? (
-                  <div className="py-16 text-center">
-                    <ShoppingCart className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+              <Button
+                variant="outline"
+                className="flex-1 sm:flex-initial gap-2 border-border/80 hover:bg-accent"
+              >
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <span>Add Expense</span>
+              </Button>
 
-                    <p className="font-medium text-foreground">
-                      No sales today
-                    </p>
-
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your sales will appear here.
-                    </p>
-
-                    <Link href="sales/add">
-                      <Button className="mt-4 gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add Sale
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/50">
-                        <th className="px-6 py-3 text-left font-medium text-muted-foreground">
-                          Time
-                        </th>
-
-                        <th className="px-6 py-3 text-left font-medium text-muted-foreground">
-                          Product Name
-                        </th>
-
-                        <th className="px-6 py-3 text-left font-medium text-muted-foreground">
-                          Category
-                        </th>
-
-                        <th className="px-6 py-3 text-right font-medium text-muted-foreground">
-                          Sale Amount
-                        </th>
-
-                        <th className="px-6 py-3 text-right font-medium text-muted-foreground">
-                          Profit
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {todaysSales.map((sale, index) => {
-                        const category =
-                          sale.categoryName || sale.category || "Unknown";
-
-                        const saleAmount = Number(
-                          sale.totalPrice ?? sale.total ?? 0,
-                        );
-
-                        const profit = Number(sale.netProfit ?? 0);
-
-                        return (
-                          <tr
-                            key={sale._id || sale.invoiceNumber || index}
-                            className="border-b border-border hover:bg-muted/20"
-                          >
-                            <td className="px-6 py-4 text-foreground whitespace-nowrap">
-                              {formatTime(sale.createdAt)}
-                            </td>
-
-                            <td className="px-6 py-4 text-foreground">
-                              <div className="font-medium">
-                                {sale.productName || "Unknown product"}
-                              </div>
-
-                              {sale.invoiceNumber && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {sale.invoiceNumber}
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="px-6 py-4">
-                              <span
-                                className={cn(
-                                  "inline-block px-3 py-1 rounded-full",
-                                  "text-xs font-medium",
-                                  getCategoryColor(category),
-                                )}
-                              >
-                                {category}
-                              </span>
-                            </td>
-
-                            <td className="px-6 py-4 text-right text-foreground font-medium whitespace-nowrap">
-                              {formatCurrency(saleAmount)}
-                            </td>
-
-                            <td className="px-6 py-4 text-right text-foreground font-medium whitespace-nowrap">
-                              {formatCurrency(profit)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </Card>
+              <Button
+                variant="outline"
+                className="flex-1 sm:flex-initial gap-2 border-border/80 hover:bg-accent"
+              >
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span>Add Employee</span>
+              </Button>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Performance */}
-
-          <Card className="bg-card border border-border rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-6">
-              Today&apos;s Performance
-            </h2>
-
-            <div className="space-y-6">
-              {/* Target */}
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-foreground">
-                    Target
-                  </span>
-
-                  <span className="text-sm font-semibold text-foreground">
-                    {formatCurrency(todaysTarget)}
-                  </span>
-                </div>
-
-                <Progress
-                  value={Math.min(completionPercentage, 100)}
-                  className="h-2"
-                />
-
-                <p className="text-xs text-muted-foreground mt-2">
-                  {completionPercentage.toFixed(1)}% completed
+      {/* METRICS GRID */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          {
+            label: "Today's Sales",
+            val: todaysSalesAmount,
+            icon: DollarSign,
+            color: "text-blue-600 bg-blue-500/10",
+          },
+          {
+            label: "Today's Profit",
+            val: todaysProfit,
+            icon: TrendingUp,
+            color: "text-emerald-600 bg-emerald-500/10",
+          },
+          {
+            label: "My Commission",
+            val: myCommission,
+            icon: Award,
+            color: "text-purple-600 bg-purple-500/10",
+          },
+          {
+            label: "Monthly Sales",
+            val: monthlySales,
+            icon: Target,
+            color: "text-amber-600 bg-amber-500/10",
+          },
+        ].map((item, idx) => (
+          <Card
+            key={idx}
+            className="p-5 hover:shadow-md transition-all duration-200 border-border/60"
+          >
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {item.label}
+                </p>
+                <p className="text-2xl font-bold tracking-tight">
+                  {formatCurrency(item.val)}
                 </p>
               </div>
-
-              <div className="border-t border-border pt-6 space-y-4">
-                {/* Current Sales */}
-
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Current Sales
-                  </p>
-
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatCurrency(todaysSalesAmount)}
-                  </p>
-
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {completionPercentage.toFixed(1)}% of target
-                  </p>
-                </div>
-
-                {/* Remaining Target */}
-
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Remaining Target
-                  </p>
-
-                  <p className="text-2xl font-bold text-foreground">
-                    {formatCurrency(remainingTarget)}
-                  </p>
-
-                  {remainingTarget <= 0 && (
-                    <p className="text-xs text-green-600 mt-1 font-medium">
-                      🎉 Target achieved!
-                    </p>
-                  )}
-                </div>
+              <div className={cn("p-3 rounded-xl", item.color)}>
+                <item.icon className="h-5 w-5" />
               </div>
             </div>
           </Card>
-        </div>
+        ))}
+      </section>
 
-        {/* =====================================================
-            RECENT ACTIVITY
-        ====================================================== */}
+      {/* QUICK ACTION TILES */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {[
+          { href: "sales/add", title: "Add New Sale", icon: Plus },
+          { href: "sales", title: "My Sales History", icon: TrendingUp },
+          { href: "reports", title: "Today's Report", icon: Clock },
+        ].map((action, idx) => (
+          <Link key={idx} href={action.href} className="group">
+            <Card className="p-4 flex items-center justify-center gap-3 border-border/60 group-hover:border-primary/50 group-hover:bg-accent/50 transition-all duration-200 cursor-pointer">
+              <action.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="font-semibold text-sm">{action.title}</span>
+            </Card>
+          </Link>
+        ))}
+      </section>
 
-        <Card className="bg-card border border-border rounded-lg shadow-sm">
-          <div className="p-6 border-b border-border flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Recent Activity
-              </h2>
-
-              <p className="text-sm text-muted-foreground mt-1">
-                Latest sales activity
-              </p>
-            </div>
-          </div>
-
-          <div className="divide-y divide-border">
-            {recentActivities.length === 0 ? (
-              <div className="p-10 text-center">
-                <Activity className="mx-auto h-8 w-8 text-muted-foreground/50 mb-3" />
-
-                <p className="text-sm font-medium">No recent activity</p>
-
-                <p className="text-xs text-muted-foreground mt-1">
-                  Your latest sales activity will appear here.
+      {/* MAIN CONTENT GRID */}
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Sales Table */}
+        <Card className="lg:col-span-2 border-border/60 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="p-6 border-b border-border/60 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">
+                  Today&apos;s Sales Preview
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {todaysSales.length}{" "}
+                  {todaysSales.length === 1 ? "transaction" : "transactions"}{" "}
+                  recorded
                 </p>
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="sales">View All</Link>
+              </Button>
+            </div>
+
+            {todaysSales.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <ShoppingCart className="mx-auto h-10 w-10 text-muted-foreground/30" />
+                <div className="space-y-1">
+                  <p className="font-medium text-sm">No sales logged today</p>
+                  <p className="text-xs text-muted-foreground">
+                    Transactions will automatically stream here.
+                  </p>
+                </div>
+                <Button size="sm" asChild className="gap-1.5">
+                  <Link href="sales/add">
+                    <Plus className="h-3.5 w-3.5" /> Add Sale
+                  </Link>
+                </Button>
               </div>
             ) : (
-              recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="p-6 flex items-center gap-4 hover:bg-muted/20"
-                >
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    {getActivityIcon(activity.icon)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {activity.action}
-                    </p>
-
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {activity.product}
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground whitespace-nowrap">
-                    {activity.time}
-                  </p>
-                </div>
-              ))
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/40 text-xs font-medium text-muted-foreground uppercase border-b border-border/60">
+                    <tr>
+                      <th className="px-6 py-3">Time</th>
+                      <th className="px-6 py-3">Product</th>
+                      <th className="px-6 py-3">Category</th>
+                      <th className="px-6 py-3 text-right">Amount</th>
+                      <th className="px-6 py-3 text-right">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {todaysSales.map((sale, index) => {
+                      const category =
+                        sale.categoryName || sale.category || "General";
+                      return (
+                        <tr
+                          key={sale._id || index}
+                          className="hover:bg-muted/30 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-xs font-medium text-muted-foreground">
+                            {formatTime(sale.createdAt)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-foreground">
+                              {sale.productName || "Unknown product"}
+                            </div>
+                            {sale.invoiceNumber && (
+                              <div className="text-[11px] text-muted-foreground">
+                                {sale.invoiceNumber}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={cn(
+                                "px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                getCategoryColor(category),
+                              )}
+                            >
+                              {category}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium">
+                            {formatCurrency(sale.totalPrice ?? sale.total ?? 0)}
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(sale.netProfit ?? 0)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </Card>
-      </div>
+
+        {/* Target Progress */}
+        <Card className="p-6 border-border/60 shadow-sm flex flex-col justify-between">
+          <div className="space-y-6">
+            <h2 className="text-base font-semibold">Performance Target</h2>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Target Goal</span>
+                <span className="font-bold">
+                  {formatCurrency(todaysTarget)}
+                </span>
+              </div>
+              <Progress
+                value={Math.min(completionPercentage, 100)}
+                className="h-2.5"
+              />
+              <p className="text-xs text-right text-muted-foreground font-medium">
+                {completionPercentage.toFixed(1)}% Achieved
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-border/60 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  Current Progress
+                </span>
+                <span className="text-base font-semibold">
+                  {formatCurrency(todaysSalesAmount)}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">Remaining</span>
+                <span className="text-base font-semibold">
+                  {formatCurrency(Math.max(0, remainingTarget))}
+                </span>
+              </div>
+
+              {remainingTarget <= 0 && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-600 dark:text-emerald-400 text-xs font-medium text-center">
+                  🎉 Daily target completed!
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* RECENT ACTIVITY */}
+      <Card className="border-border/60 shadow-sm">
+        <div className="p-6 border-b border-border/60">
+          <h2 className="text-base font-semibold">Recent Activity Log</h2>
+        </div>
+        <div className="divide-y divide-border/40">
+          {recentActivities.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">
+              No recent logs recorded.
+            </div>
+          ) : (
+            recentActivities.map((activity) => (
+              <div
+                key={activity.id}
+                className="p-4 px-6 flex items-center gap-4 hover:bg-muted/20 transition-colors"
+              >
+                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  {getActivityIcon(activity.icon)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {activity.action}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {activity.product}
+                  </p>
+                </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {activity.time}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

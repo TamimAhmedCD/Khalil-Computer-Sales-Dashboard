@@ -57,7 +57,7 @@ export async function GET() {
 
     // আপাতত static target
     // পরে database থেকে employee target আনতে পারবে
-    const todaysTarget = 50000;
+    const todaysTarget = 2000;
 
     // =========================================================
     // 📊 5. Today's Sales + Summary
