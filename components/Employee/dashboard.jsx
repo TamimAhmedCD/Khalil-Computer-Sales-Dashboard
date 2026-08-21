@@ -252,7 +252,7 @@ export function EmployeeDashboard({ session }) {
       {/* =====================================================
     HEADER BANNER
 ====================================================== */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8 shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-linear-to-br from-primary/10 via-background to-background p-6 md:p-8 shadow-sm">
         {/* Ambient decorative background glows */}
         <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
