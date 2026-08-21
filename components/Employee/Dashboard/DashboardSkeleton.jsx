@@ -1,33 +1,30 @@
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen p-6 animate-pulse space-y-6">
-      {/* Header Skeleton */}
-      <div className="h-40 bg-slate-200/60 dark:bg-slate-800/60 rounded-xl w-full" />
+    <div className="min-h-screen space-y-8 animate-pulse">
+      {/* Banner Skeleton */}
+      <div className="h-56 rounded-2xl bg-muted/60" />
 
-      {/* Grid Cards Skeleton */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      {/* Stats Grid Skeleton */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="h-28 bg-slate-200/60 dark:bg-slate-800/60 rounded-lg"
+            className="h-32 rounded-xl bg-muted/40 border border-border/50"
           />
         ))}
       </div>
 
-      {/* Quick Action Buttons Skeleton */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="h-24 bg-slate-200/60 dark:bg-slate-800/60 rounded-lg"
-          />
+      {/* Quick Actions Skeleton */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-20 rounded-xl bg-muted/40" />
         ))}
       </div>
 
-      {/* Main Content Splitted Area */}
+      {/* Analytics Grid Skeleton */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 h-80 bg-slate-200/60 dark:bg-slate-800/60 rounded-lg" />
-        <div className="h-80 bg-slate-200/60 dark:bg-slate-800/60 rounded-lg" />
+        <div className="lg:col-span-2 h-96 rounded-xl bg-muted/40" />
+        <div className="h-96 rounded-xl bg-muted/40" />
       </div>
     </div>
   );
