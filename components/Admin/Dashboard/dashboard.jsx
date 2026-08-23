@@ -488,7 +488,7 @@ export function AdminDashboard({ session }) {
               </p>
             </div>
 
-            <Link href="/admin/sales">
+            <Link href="/admin/transactions">
               <Button variant="outline" size="sm" className="gap-2">
                 <Receipt className="h-4 w-4" />
                 View All Transactions

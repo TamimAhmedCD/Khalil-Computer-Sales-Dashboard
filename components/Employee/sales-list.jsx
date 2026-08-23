@@ -332,7 +332,6 @@ export function SalesList() {
                 <TableHeader className="bg-muted/40">
                   <TableRow className="text-xs text-muted-foreground uppercase tracking-wider font-semibold hover:bg-transparent">
                     <TableHead className="h-12">Date</TableHead>
-                    <TableHead>Invoice</TableHead>
                     <TableHead>Product Details</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Units</TableHead>
@@ -405,9 +404,6 @@ export function SalesList() {
                                 },
                               )
                             : "—"}
-                        </TableCell>
-                        <TableCell className="font-bold text-foreground font-mono">
-                          {sale.invoiceNumber}
                         </TableCell>
                         <TableCell className="font-medium max-w-60 truncate">
                           {sale.productName}

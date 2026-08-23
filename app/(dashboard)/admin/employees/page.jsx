@@ -126,7 +126,8 @@ export default function EmployeesPage() {
         <Button
           onClick={handleOpenAdd}
           className="rounded-xl h-11 px-5 shadow-sm gap-2"
-          disabled={isLoading}
+          // disabled={isLoading}
+          disabled
         >
           <Plus className="w-4 h-4" /> Add Employee
         </Button>
