@@ -140,12 +140,12 @@ export default function AdminTransactions() {
 
         // Employee
         if (employeeFilter !== "all") {
-          params.set("employee", employeeFilter);
+          params.set("employeeId", employeeFilter);
         }
 
         // Category
         if (categoryFilter !== "all") {
-          params.set("category", categoryFilter);
+          params.set("categoryId", categoryFilter);
         }
 
         // Payment

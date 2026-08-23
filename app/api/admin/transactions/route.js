@@ -45,9 +45,9 @@ export async function GET(request) {
 
     const categoryId = searchParams.get("categoryId")?.trim() || "";
 
-    const customStartDate = searchParams.get("startDate");
+    const customStartDate = searchParams.get("customStartDate");
 
-    const customEndDate = searchParams.get("endDate");
+    const customEndDate = searchParams.get("customEndDate");
 
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
 
