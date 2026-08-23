@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Badge,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -52,250 +51,12 @@ import {
 } from "@/components/ui/table";
 
 // =========================================================
-// DEMO DATA
+// CONSTANTS
 // =========================================================
 
-const demoTransactions = [
-  {
-    id: "1",
-    invoiceNumber: "INV-2026-5201",
-    employee: "Md Khalil Uddin",
-    employeeId: "EMP-001",
-    customer: "Delara Begum",
-    phone: "01715409109",
-    product: "Photocopy",
-    category: "Photocopy",
-    quantity: 50,
-    revenue: 250,
-    expense: 0,
-    profit: 250,
-    commission: 25,
-    paymentMethod: "Cash",
-    paidAmount: 250,
-    due: 0,
-    date: "2026-08-23T14:35:00",
-  },
+const API_URL = "/api/admin/transactions";
 
-  {
-    id: "2",
-    invoiceNumber: "INV-2026-5200",
-    employee: "Rahim Ahmed",
-    employeeId: "EMP-002",
-    customer: "Abdul Karim",
-    phone: "01812345678",
-    product: "Online Application",
-    category: "DCR",
-    quantity: 1,
-    revenue: 800,
-    expense: 100,
-    profit: 700,
-    commission: 80,
-    paymentMethod: "Cash",
-    paidAmount: 800,
-    due: 0,
-    date: "2026-08-23T13:48:00",
-  },
-
-  {
-    id: "3",
-    invoiceNumber: "INV-2026-5199",
-    employee: "Nusrat Jahan",
-    employeeId: "EMP-003",
-    customer: "Mizanur Rahman",
-    phone: "01912345678",
-    product: "Namjari Application",
-    category: "Namjari",
-    quantity: 1,
-    revenue: 1500,
-    expense: 300,
-    profit: 1200,
-    commission: 150,
-    paymentMethod: "bKash",
-    paidAmount: 1000,
-    due: 500,
-    date: "2026-08-23T12:22:00",
-  },
-
-  {
-    id: "4",
-    invoiceNumber: "INV-2026-5198",
-    employee: "Md Khalil Uddin",
-    employeeId: "EMP-001",
-    customer: "Sakina Begum",
-    phone: "01612345678",
-    product: "Khatian Application",
-    category: "Khatian Application",
-    quantity: 1,
-    revenue: 1200,
-    expense: 200,
-    profit: 1000,
-    commission: 120,
-    paymentMethod: "Cash",
-    paidAmount: 1200,
-    due: 0,
-    date: "2026-08-23T11:16:00",
-  },
-
-  {
-    id: "5",
-    invoiceNumber: "INV-2026-5197",
-    employee: "Sabbir Hossain",
-    employeeId: "EMP-004",
-    customer: "Jamal Uddin",
-    phone: "01512345678",
-    product: "Printing",
-    category: "Printing",
-    quantity: 25,
-    revenue: 500,
-    expense: 150,
-    profit: 350,
-    commission: 50,
-    paymentMethod: "Cash",
-    paidAmount: 500,
-    due: 0,
-    date: "2026-08-23T10:45:00",
-  },
-
-  {
-    id: "6",
-    invoiceNumber: "INV-2026-5196",
-    employee: "Rahim Ahmed",
-    employeeId: "EMP-002",
-    customer: "Rashed Mia",
-    phone: "01798765432",
-    product: "Khajna Payment",
-    category: "Khajna Payment",
-    quantity: 1,
-    revenue: 900,
-    expense: 100,
-    profit: 800,
-    commission: 90,
-    paymentMethod: "Nagad",
-    paidAmount: 900,
-    due: 0,
-    date: "2026-08-23T10:12:00",
-  },
-
-  {
-    id: "7",
-    invoiceNumber: "INV-2026-5195",
-    employee: "Nusrat Jahan",
-    employeeId: "EMP-003",
-    customer: "Farhana Akter",
-    phone: "01898765432",
-    product: "Document Scan",
-    category: "Scanning",
-    quantity: 15,
-    revenue: 300,
-    expense: 50,
-    profit: 250,
-    commission: 30,
-    paymentMethod: "Cash",
-    paidAmount: 300,
-    due: 0,
-    date: "2026-08-22T17:20:00",
-  },
-
-  {
-    id: "8",
-    invoiceNumber: "INV-2026-5194",
-    employee: "Sabbir Hossain",
-    employeeId: "EMP-004",
-    customer: "Habib Ahmed",
-    phone: "01987654321",
-    product: "Graphic Design",
-    category: "Design",
-    quantity: 1,
-    revenue: 2000,
-    expense: 400,
-    profit: 1600,
-    commission: 200,
-    paymentMethod: "bKash",
-    paidAmount: 2000,
-    due: 0,
-    date: "2026-08-22T16:45:00",
-  },
-
-  {
-    id: "9",
-    invoiceNumber: "INV-2026-5193",
-    employee: "Md Khalil Uddin",
-    employeeId: "EMP-001",
-    customer: "Ruhul Amin",
-    phone: "01711112222",
-    product: "Photocopy",
-    category: "Photocopy",
-    quantity: 100,
-    revenue: 500,
-    expense: 0,
-    profit: 500,
-    commission: 50,
-    paymentMethod: "Cash",
-    paidAmount: 500,
-    due: 0,
-    date: "2026-08-22T15:10:00",
-  },
-
-  {
-    id: "10",
-    invoiceNumber: "INV-2026-5192",
-    employee: "Rahim Ahmed",
-    employeeId: "EMP-002",
-    customer: "Morshed Alam",
-    phone: "01698761234",
-    product: "Miss Case",
-    category: "Miss Case",
-    quantity: 1,
-    revenue: 2500,
-    expense: 500,
-    profit: 2000,
-    commission: 250,
-    paymentMethod: "Cash",
-    paidAmount: 2000,
-    due: 500,
-    date: "2026-08-22T13:25:00",
-  },
-
-  {
-    id: "11",
-    invoiceNumber: "INV-2026-5191",
-    employee: "Nusrat Jahan",
-    employeeId: "EMP-003",
-    customer: "Nasima Begum",
-    phone: "01787654321",
-    product: "Printing",
-    category: "Printing",
-    quantity: 40,
-    revenue: 800,
-    expense: 200,
-    profit: 600,
-    commission: 80,
-    paymentMethod: "Cash",
-    paidAmount: 800,
-    due: 0,
-    date: "2026-08-22T12:40:00",
-  },
-
-  {
-    id: "12",
-    invoiceNumber: "INV-2026-5190",
-    employee: "Sabbir Hossain",
-    employeeId: "EMP-004",
-    customer: "Al Amin",
-    phone: "01876543210",
-    product: "Online Registration",
-    category: "Registration",
-    quantity: 1,
-    revenue: 700,
-    expense: 100,
-    profit: 600,
-    commission: 70,
-    paymentMethod: "Nagad",
-    paidAmount: 700,
-    due: 0,
-    date: "2026-08-21T16:30:00",
-  },
-];
+const ITEMS_PER_PAGE = 10;
 
 // =========================================================
 // COMPONENT
@@ -314,7 +75,7 @@ export default function AdminTransactions() {
 
   const [paymentFilter, setPaymentFilter] = useState("all");
 
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("today");
 
   const [customStartDate, setCustomStartDate] = useState();
 
@@ -322,146 +83,224 @@ export default function AdminTransactions() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 8;
-
   // =========================================================
-  // FILTER OPTIONS
+  // API DATA
   // =========================================================
 
-  const employees = useMemo(() => {
-    return [
-      ...new Map(
-        demoTransactions.map((item) => [
-          item.employeeId,
-          {
-            id: item.employeeId,
-            name: item.employee,
-          },
-        ]),
-      ).values(),
-    ];
-  }, []);
+  const [transactions, setTransactions] = useState([]);
 
-  const categories = useMemo(() => {
-    return [...new Set(demoTransactions.map((item) => item.category))];
-  }, []);
+  const [summary, setSummary] = useState({
+    revenue: 0,
+    profit: 0,
+    expense: 0,
+    commission: 0,
+    transactionCount: 0,
+  });
 
-  const paymentMethods = useMemo(() => {
-    return [...new Set(demoTransactions.map((item) => item.paymentMethod))];
-  }, []);
+  const [pagination, setPagination] = useState({
+    totalResults: 0,
+    totalPages: 1,
+    currentPage: 1,
+  });
 
-  // =========================================================
-  // DATE HELPERS
-  // =========================================================
+  const [employees, setEmployees] = useState([]);
 
-  const startOfDay = (date) => {
-    const result = new Date(date);
+  const [categories, setCategories] = useState([]);
 
-    result.setHours(0, 0, 0, 0);
-
-    return result;
-  };
-
-  const endOfDay = (date) => {
-    const result = new Date(date);
-
-    result.setHours(23, 59, 59, 999);
-
-    return result;
-  };
-
-  const getDateRange = () => {
-    const now = new Date();
-
-    if (dateFilter === "this-month") {
-      return {
-        start: new Date(now.getFullYear(), now.getMonth(), 1),
-        end: endOfDay(now),
-      };
-    }
-
-    if (dateFilter === "last-month") {
-      return {
-        start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-        end: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999),
-      };
-    }
-
-    if (dateFilter === "custom" && customStartDate && customEndDate) {
-      return {
-        start: startOfDay(customStartDate),
-        end: endOfDay(customEndDate),
-      };
-    }
-
-    return null;
-  };
+  const [paymentMethods, setPaymentMethods] = useState([]);
 
   // =========================================================
-  // FILTER DATA
+  // LOADING / ERROR
   // =========================================================
 
-  const filteredTransactions = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+  const [loading, setLoading] = useState(true);
 
-    const dateRange = getDateRange();
+  const [error, setError] = useState("");
 
-    return demoTransactions.filter((transaction) => {
-      // -------------------------
-      // Search
-      // -------------------------
+  // =========================================================
+  // FETCH TRANSACTIONS
+  // =========================================================
 
-      const matchesSearch =
-        !normalizedSearch ||
-        transaction.invoiceNumber.toLowerCase().includes(normalizedSearch) ||
-        transaction.customer.toLowerCase().includes(normalizedSearch) ||
-        transaction.phone.toLowerCase().includes(normalizedSearch) ||
-        transaction.product.toLowerCase().includes(normalizedSearch) ||
-        transaction.employee.toLowerCase().includes(normalizedSearch);
+  useEffect(() => {
+    let cancelled = false;
 
-      // -------------------------
-      // Employee
-      // -------------------------
+    const controller = new AbortController();
 
-      const matchesEmployee =
-        employeeFilter === "all" || transaction.employeeId === employeeFilter;
+    const timer = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      // -------------------------
-      // Category
-      // -------------------------
+        const params = new URLSearchParams();
 
-      const matchesCategory =
-        categoryFilter === "all" || transaction.category === categoryFilter;
+        // Search
+        if (search.trim()) {
+          params.set("search", search.trim());
+        }
 
-      // -------------------------
-      // Payment
-      // -------------------------
+        // Employee
+        if (employeeFilter !== "all") {
+          params.set("employee", employeeFilter);
+        }
 
-      const matchesPayment =
-        paymentFilter === "all" || transaction.paymentMethod === paymentFilter;
+        // Category
+        if (categoryFilter !== "all") {
+          params.set("category", categoryFilter);
+        }
 
-      // -------------------------
-      // Date
-      // -------------------------
+        // Payment
+        if (paymentFilter !== "all") {
+          params.set("paymentMethod", paymentFilter);
+        }
 
-      let matchesDate = true;
+        // Date filter
+        params.set("dateFilter", dateFilter);
 
-      if (dateRange) {
-        const transactionDate = new Date(transaction.date);
+        // Custom dates
+        if (dateFilter === "custom") {
+          if (customStartDate) {
+            params.set("customStartDate", formatDateForAPI(customStartDate));
+          }
 
-        matchesDate =
-          transactionDate >= dateRange.start &&
-          transactionDate <= dateRange.end;
+          if (customEndDate) {
+            params.set("customEndDate", formatDateForAPI(customEndDate));
+          }
+        }
+
+        // Pagination
+        params.set("page", String(currentPage));
+
+        params.set("limit", String(ITEMS_PER_PAGE));
+
+        const response = await fetch(`${API_URL}?${params.toString()}`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to load transactions");
+        }
+
+        if (cancelled) return;
+
+        // =====================================================
+        // TRANSACTIONS
+        // =====================================================
+
+        setTransactions(Array.isArray(result.data) ? result.data : []);
+
+        // =====================================================
+        // SUMMARY
+        // =====================================================
+
+        const summaryData = result.summary || {};
+
+        setSummary({
+          revenue:
+            Number(
+              summaryData.revenue ??
+                summaryData.totalRevenue ??
+                summaryData.totalSalesAmount ??
+                0,
+            ) || 0,
+
+          profit:
+            Number(summaryData.profit ?? summaryData.totalProfit ?? 0) || 0,
+
+          expense:
+            Number(
+              summaryData.expense ??
+                summaryData.totalExpense ??
+                summaryData.totalExpenses ??
+                0,
+            ) || 0,
+
+          commission:
+            Number(
+              summaryData.commission ?? summaryData.totalCommission ?? 0,
+            ) || 0,
+
+          transactionCount:
+            Number(
+              summaryData.transactionCount ??
+                summaryData.totalTransactions ??
+                result.pagination?.totalResults ??
+                0,
+            ) || 0,
+        });
+
+        // =====================================================
+        // PAGINATION
+        // =====================================================
+
+        setPagination({
+          totalResults: Number(result.pagination?.totalResults) || 0,
+
+          totalPages: Number(result.pagination?.totalPages) || 1,
+
+          currentPage: Number(result.pagination?.currentPage) || currentPage,
+        });
+
+        // =====================================================
+        // FILTER OPTIONS
+        // =====================================================
+
+        const filterData = result.filters || {};
+
+        if (Array.isArray(filterData.employees)) {
+          setEmployees(filterData.employees);
+        }
+
+        if (Array.isArray(filterData.categories)) {
+          setCategories(filterData.categories);
+        }
+
+        if (Array.isArray(filterData.paymentMethods)) {
+          setPaymentMethods(filterData.paymentMethods);
+        }
+      } catch (err) {
+        if (err.name === "AbortError") return;
+
+        console.error("Transactions API Error:", err);
+
+        if (!cancelled) {
+          setError(err.message || "Failed to load transactions");
+
+          setTransactions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
+    }, 350);
 
-      return (
-        matchesSearch &&
-        matchesEmployee &&
-        matchesCategory &&
-        matchesPayment &&
-        matchesDate
-      );
-    });
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [
+    search,
+    employeeFilter,
+    categoryFilter,
+    paymentFilter,
+    dateFilter,
+    customStartDate,
+    customEndDate,
+    currentPage,
+  ]);
+
+  // =========================================================
+  // RESET PAGE WHEN FILTER CHANGES
+  // =========================================================
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [
     search,
     employeeFilter,
@@ -473,89 +312,60 @@ export default function AdminTransactions() {
   ]);
 
   // =========================================================
-  // SUMMARY
+  // HELPERS
   // =========================================================
 
-  const summary = useMemo(() => {
-    return filteredTransactions.reduce(
-      (acc, transaction) => {
-        acc.revenue += transaction.revenue;
-        acc.profit += transaction.profit;
-        acc.expense += transaction.expense;
-        acc.commission += transaction.commission;
+  function formatDateForAPI(date) {
+    if (!date) return "";
 
-        return acc;
-      },
-      {
-        revenue: 0,
-        profit: 0,
-        expense: 0,
-        commission: 0,
-      },
-    );
-  }, [filteredTransactions]);
+    const year = date.getFullYear();
+
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatCurrency(value) {
+    return `৳${Number(value || 0).toLocaleString("en-BD")}`;
+  }
+
+  function formatDate(date) {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleDateString("en-BD", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function formatTime(date) {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleTimeString("en-BD", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
   // =========================================================
-  // PAGINATION
+  // ACTIVE FILTERS
   // =========================================================
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredTransactions.length / itemsPerPage),
-  );
-
-  const paginatedTransactions = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-
-    return filteredTransactions.slice(start, start + itemsPerPage);
-  }, [filteredTransactions, currentPage]);
-
-  // =========================================================
-  // RESET FILTERS
-  // =========================================================
-
-  const resetFilters = () => {
-    setSearch("");
-    setEmployeeFilter("all");
-    setCategoryFilter("all");
-    setPaymentFilter("all");
-    setDateFilter("all");
-    setCustomStartDate(undefined);
-    setCustomEndDate(undefined);
-    setCurrentPage(1);
-  };
 
   const hasActiveFilters =
     search.trim() !== "" ||
     employeeFilter !== "all" ||
     categoryFilter !== "all" ||
     paymentFilter !== "all" ||
-    dateFilter !== "all";
+    dateFilter !== "today";
 
   // =========================================================
-  // HELPERS
+  // CUSTOM DATE LABEL
   // =========================================================
 
-  const formatCurrency = (value) => {
-    return `৳${Number(value || 0).toLocaleString("en-BD")}`;
-  };
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("en-BD", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString("en-BD", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatCustomRange = () => {
+  const customDateLabel = useMemo(() => {
     if (!customStartDate && !customEndDate) {
       return "Select date range";
     }
@@ -571,7 +381,54 @@ export default function AdminTransactions() {
     }
 
     return "Select date range";
-  };
+  }, [customStartDate, customEndDate]);
+
+  // =========================================================
+  // RESET FILTERS
+  // =========================================================
+
+  function resetFilters() {
+    setSearch("");
+    setEmployeeFilter("all");
+    setCategoryFilter("all");
+    setPaymentFilter("all");
+
+    setDateFilter("today");
+
+    setCustomStartDate(undefined);
+    setCustomEndDate(undefined);
+
+    setCurrentPage(1);
+  }
+
+  // =========================================================
+  // PAGE NAVIGATION
+  // =========================================================
+
+  function goToPreviousPage() {
+    setCurrentPage((page) => Math.max(page - 1, 1));
+  }
+
+  function goToNextPage() {
+    setCurrentPage((page) => Math.min(page + 1, pagination.totalPages));
+  }
+
+  // =========================================================
+  // PAGE RANGE
+  // =========================================================
+
+  const showingFrom =
+    pagination.totalResults === 0
+      ? 0
+      : (pagination.currentPage - 1) * ITEMS_PER_PAGE + 1;
+
+  const showingTo =
+    pagination.totalResults === 0
+      ? 0
+      : Math.min(
+          pagination.currentPage * ITEMS_PER_PAGE,
+          pagination.totalResults,
+        );
 
   // =========================================================
   // PAGE
@@ -611,7 +468,12 @@ export default function AdminTransactions() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-fit gap-2">
+          <Button
+            variant="outline"
+            className="w-fit gap-2"
+            disabled
+            title="Export can be connected to a dedicated export API"
+          >
             <Download className="h-4 w-4" />
             Export
           </Button>
@@ -622,6 +484,8 @@ export default function AdminTransactions() {
         ====================================================== */}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {/* Revenue */}
+
           <Card>
             <CardContent className="flex items-start justify-between p-5">
               <div>
@@ -629,9 +493,13 @@ export default function AdminTransactions() {
                   Total Revenue
                 </p>
 
-                <p className="mt-2 text-2xl font-bold">
-                  {formatCurrency(summary.revenue)}
-                </p>
+                {loading ? (
+                  <div className="mt-2 h-8 w-32 animate-pulse rounded bg-muted" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">
+                    {formatCurrency(summary.revenue)}
+                  </p>
+                )}
 
                 <p className="mt-2 text-xs text-muted-foreground">
                   Based on current filters
@@ -644,6 +512,8 @@ export default function AdminTransactions() {
             </CardContent>
           </Card>
 
+          {/* Profit */}
+
           <Card>
             <CardContent className="flex items-start justify-between p-5">
               <div>
@@ -651,9 +521,13 @@ export default function AdminTransactions() {
                   Net Profit
                 </p>
 
-                <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {formatCurrency(summary.profit)}
-                </p>
+                {loading ? (
+                  <div className="mt-2 h-8 w-32 animate-pulse rounded bg-muted" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(summary.profit)}
+                  </p>
+                )}
 
                 <p className="mt-2 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                   <TrendingUp className="h-3.5 w-3.5" />
@@ -667,6 +541,8 @@ export default function AdminTransactions() {
             </CardContent>
           </Card>
 
+          {/* Expenses */}
+
           <Card>
             <CardContent className="flex items-start justify-between p-5">
               <div>
@@ -674,9 +550,13 @@ export default function AdminTransactions() {
                   Total Expenses
                 </p>
 
-                <p className="mt-2 text-2xl font-bold">
-                  {formatCurrency(summary.expense)}
-                </p>
+                {loading ? (
+                  <div className="mt-2 h-8 w-32 animate-pulse rounded bg-muted" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">
+                    {formatCurrency(summary.expense)}
+                  </p>
+                )}
 
                 <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                   <TrendingDown className="h-3.5 w-3.5" />
@@ -690,6 +570,8 @@ export default function AdminTransactions() {
             </CardContent>
           </Card>
 
+          {/* Transactions */}
+
           <Card>
             <CardContent className="flex items-start justify-between p-5">
               <div>
@@ -697,9 +579,13 @@ export default function AdminTransactions() {
                   Transactions
                 </p>
 
-                <p className="mt-2 text-2xl font-bold">
-                  {filteredTransactions.length.toLocaleString()}
-                </p>
+                {loading ? (
+                  <div className="mt-2 h-8 w-24 animate-pulse rounded bg-muted" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold">
+                    {pagination.totalResults.toLocaleString()}
+                  </p>
+                )}
 
                 <p className="mt-2 text-xs text-muted-foreground">
                   Matching current filters
@@ -719,8 +605,6 @@ export default function AdminTransactions() {
 
         <Card>
           <CardContent className="space-y-5 p-5">
-            {/* Filter Header */}
-
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-primary" />
@@ -761,7 +645,6 @@ export default function AdminTransactions() {
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value);
-                    setCurrentPage(1);
                   }}
                   placeholder="Search invoice, customer, phone, product or employee..."
                   className="pl-9"
@@ -769,7 +652,7 @@ export default function AdminTransactions() {
               </div>
             </div>
 
-            {/* Other Filters */}
+            {/* Filters */}
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Date */}
@@ -798,7 +681,11 @@ export default function AdminTransactions() {
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+
+                    <SelectItem value="this-week">This Week</SelectItem>
 
                     <SelectItem value="this-month">This Month</SelectItem>
 
@@ -833,7 +720,7 @@ export default function AdminTransactions() {
                     <SelectItem value="all">All Employees</SelectItem>
 
                     {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
+                      <SelectItem key={employee.id} value={String(employee.id)}>
                         {employee.name}
                       </SelectItem>
                     ))}
@@ -865,8 +752,11 @@ export default function AdminTransactions() {
                     <SelectItem value="all">All Categories</SelectItem>
 
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                      <SelectItem
+                        key={category.id || category}
+                        value={String(category.id || category)}
+                      >
+                        {category.name || category}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -921,7 +811,7 @@ export default function AdminTransactions() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {/* Start Date */}
+                  {/* Start */}
 
                   <Popover>
                     <PopoverTrigger asChild>
@@ -947,19 +837,18 @@ export default function AdminTransactions() {
                         selected={customStartDate}
                         onSelect={(date) => {
                           setCustomStartDate(date);
+                          setCurrentPage(1);
 
                           if (customEndDate && date && date > customEndDate) {
                             setCustomEndDate(undefined);
                           }
-
-                          setCurrentPage(1);
                         }}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
 
-                  {/* End Date */}
+                  {/* End */}
 
                   <Popover>
                     <PopoverTrigger asChild>
@@ -996,11 +885,11 @@ export default function AdminTransactions() {
                   </Popover>
                 </div>
 
-                {customStartDate && customEndDate && (
+                {(customStartDate || customEndDate) && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarDays className="h-3.5 w-3.5" />
 
-                    <span>{formatCustomRange()}</span>
+                    <span>{customDateLabel}</span>
                   </div>
                 )}
               </div>
@@ -1013,8 +902,6 @@ export default function AdminTransactions() {
         ====================================================== */}
 
         <Card className="overflow-hidden">
-          {/* Table Header */}
-
           <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -1024,8 +911,8 @@ export default function AdminTransactions() {
               </div>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                {filteredTransactions.length.toLocaleString()} transaction
-                {filteredTransactions.length !== 1 ? "s" : ""} found
+                {pagination.totalResults.toLocaleString()} transaction
+                {pagination.totalResults !== 1 ? "s" : ""} found
               </p>
             </div>
 
@@ -1036,6 +923,33 @@ export default function AdminTransactions() {
               </span>
             </div>
           </div>
+
+          {/* Error */}
+
+          {error && (
+            <div className="border-b bg-destructive/5 px-5 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium text-destructive">
+                    Unable to load transactions
+                  </p>
+
+                  <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setError("");
+                    setCurrentPage((page) => page);
+                  }}
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
 
@@ -1064,7 +978,17 @@ export default function AdminTransactions() {
               </TableHeader>
 
               <TableBody>
-                {paginatedTransactions.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 8 }).map((_, index) => (
+                    <TableRow key={index}>
+                      {Array.from({ length: 9 }).map((_, cellIndex) => (
+                        <TableCell key={cellIndex}>
+                          <div className="h-5 w-full max-w-[140px] animate-pulse rounded bg-muted" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : transactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-64 text-center">
                       <div className="flex flex-col items-center justify-center">
@@ -1095,127 +1019,174 @@ export default function AdminTransactions() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      {/* Invoice */}
+                  transactions.map((transaction) => {
+                    const id =
+                      transaction.id ||
+                      transaction._id ||
+                      transaction.invoiceNumber;
 
-                      <TableCell>
-                        <div>
-                          <p className="font-semibold">
-                            {transaction.invoiceNumber}
-                          </p>
+                    const employeeName =
+                      transaction.employee ||
+                      transaction.employeeName ||
+                      transaction.sellerName ||
+                      "Unknown";
 
-                          <p className="text-xs text-muted-foreground">
-                            #{transaction.id.padStart(4, "0")}
-                          </p>
-                        </div>
-                      </TableCell>
+                    const employeeId =
+                      transaction.employeeId || transaction.sellerId || "-";
 
-                      {/* Employee */}
+                    const customer =
+                      transaction.customer || transaction.customerName || "-";
 
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                            <UserRound className="h-4 w-4 text-primary" />
-                          </div>
+                    const phone =
+                      transaction.phone || transaction.customerPhone || "";
 
+                    const product =
+                      transaction.product || transaction.productName || "-";
+
+                    const category =
+                      transaction.category || transaction.categoryName || "-";
+
+                    const revenue =
+                      transaction.revenue ??
+                      transaction.totalPrice ??
+                      transaction.total ??
+                      0;
+
+                    const expense =
+                      transaction.expense ??
+                      transaction.rawExpense ??
+                      transaction.expenseCost ??
+                      0;
+
+                    const profit =
+                      transaction.profit ?? transaction.netProfit ?? 0;
+
+                    const commission = transaction.commission ?? 0;
+
+                    const due = transaction.due ?? 0;
+
+                    const paymentMethod = transaction.paymentMethod || "-";
+
+                    const quantity = transaction.quantity ?? 0;
+
+                    const createdAt = transaction.date || transaction.createdAt;
+
+                    return (
+                      <TableRow key={id}>
+                        {/* Invoice */}
+
+                        <TableCell>
                           <div>
-                            <p className="font-medium">
-                              {transaction.employee}
+                            <p className="font-semibold">
+                              {transaction.invoiceNumber || "-"}
                             </p>
 
                             <p className="text-xs text-muted-foreground">
-                              {transaction.employeeId}
+                              #{String(id).slice(-4).padStart(4, "0")}
                             </p>
                           </div>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Customer */}
+                        {/* Employee */}
 
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{transaction.customer}</p>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                              <UserRound className="h-4 w-4 text-primary" />
+                            </div>
+
+                            <div>
+                              <p className="font-medium">{employeeName}</p>
+
+                              <p className="text-xs text-muted-foreground">
+                                {employeeId}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        {/* Customer */}
+
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{customer}</p>
+
+                            {phone && (
+                              <p className="text-xs text-muted-foreground">
+                                {phone}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Product */}
+
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{product}</p>
+
+                            <p className="text-xs text-muted-foreground">
+                              Qty: {quantity}
+                            </p>
+                          </div>
+                        </TableCell>
+
+                        {/* Category */}
+
+                        <TableCell>
+                          <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium">
+                            {category}
+                          </span>
+                        </TableCell>
+
+                        {/* Revenue */}
+
+                        <TableCell className="text-right">
+                          <p className="font-semibold">
+                            {formatCurrency(revenue)}
+                          </p>
+
+                          {due > 0 && (
+                            <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                              Due: {formatCurrency(due)}
+                            </p>
+                          )}
+                        </TableCell>
+
+                        {/* Profit */}
+
+                        <TableCell className="text-right">
+                          <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(profit)}
+                          </p>
 
                           <p className="text-xs text-muted-foreground">
-                            {transaction.phone}
+                            Exp: {formatCurrency(expense)}
                           </p>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Product */}
+                        {/* Payment */}
 
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{transaction.product}</p>
+                        <TableCell className="text-center">
+                          <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium">
+                            {paymentMethod}
+                          </span>
+                        </TableCell>
+
+                        {/* Date */}
+
+                        <TableCell className="text-right">
+                          <p className="whitespace-nowrap font-medium">
+                            {formatDate(createdAt)}
+                          </p>
 
                           <p className="text-xs text-muted-foreground">
-                            Qty: {transaction.quantity}
+                            {formatTime(createdAt)}
                           </p>
-                        </div>
-                      </TableCell>
-
-                      {/* Category */}
-
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {transaction.category}
-                        </Badge>
-                      </TableCell>
-
-                      {/* Revenue */}
-
-                      <TableCell className="text-right">
-                        <p className="font-semibold">
-                          {formatCurrency(transaction.revenue)}
-                        </p>
-
-                        {transaction.due > 0 && (
-                          <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
-                            Due: {formatCurrency(transaction.due)}
-                          </p>
-                        )}
-                      </TableCell>
-
-                      {/* Profit */}
-
-                      <TableCell className="text-right">
-                        <p className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(transaction.profit)}
-                        </p>
-
-                        <p className="text-xs text-muted-foreground">
-                          Exp: {formatCurrency(transaction.expense)}
-                        </p>
-                      </TableCell>
-
-                      {/* Payment */}
-
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={
-                            transaction.paymentMethod === "Cash"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {transaction.paymentMethod}
-                        </Badge>
-                      </TableCell>
-
-                      {/* Date */}
-
-                      <TableCell className="text-right">
-                        <p className="whitespace-nowrap font-medium">
-                          {formatDate(transaction.date)}
-                        </p>
-
-                        <p className="text-xs text-muted-foreground">
-                          {formatTime(transaction.date)}
-                        </p>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -1225,26 +1196,18 @@ export default function AdminTransactions() {
               PAGINATION
           ================================================== */}
 
-          {filteredTransactions.length > 0 && (
+          {!loading && pagination.totalResults > 0 && (
             <div className="flex flex-col gap-4 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
                 Showing{" "}
                 <span className="font-medium text-foreground">
-                  {Math.min(
-                    (currentPage - 1) * itemsPerPage + 1,
-                    filteredTransactions.length,
-                  )}
+                  {showingFrom}
                 </span>
                 {" - "}
-                <span className="font-medium text-foreground">
-                  {Math.min(
-                    currentPage * itemsPerPage,
-                    filteredTransactions.length,
-                  )}
-                </span>
+                <span className="font-medium text-foreground">{showingTo}</span>
                 {" of "}
                 <span className="font-medium text-foreground">
-                  {filteredTransactions.length}
+                  {pagination.totalResults}
                 </span>{" "}
                 transactions
               </p>
@@ -1253,26 +1216,27 @@ export default function AdminTransactions() {
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={currentPage === 1}
-                  onClick={() =>
-                    setCurrentPage((page) => Math.max(page - 1, 1))
-                  }
+                  disabled={pagination.currentPage <= 1 || loading}
+                  onClick={goToPreviousPage}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
-                <div className="flex h-9 min-w-[80px] items-center justify-center rounded-md border px-3 text-sm">
-                  Page <span className="mx-1 font-semibold">{currentPage}</span>
-                  of {totalPages}
+                <div className="flex h-9 min-w-[90px] items-center justify-center rounded-md border px-3 text-sm">
+                  Page{" "}
+                  <span className="mx-1 font-semibold">
+                    {pagination.currentPage}
+                  </span>
+                  of {pagination.totalPages}
                 </div>
 
                 <Button
                   variant="outline"
                   size="icon"
-                  disabled={currentPage === totalPages}
-                  onClick={() =>
-                    setCurrentPage((page) => Math.min(page + 1, totalPages))
+                  disabled={
+                    pagination.currentPage >= pagination.totalPages || loading
                   }
+                  onClick={goToNextPage}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
