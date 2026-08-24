@@ -183,11 +183,11 @@ export async function GET() {
       .aggregate([
         {
           $group: {
-            _id: "$sellerId",
+            _id: "$sellerId", // ইউনিক sellerId গুলো গ্রুপ করবে
           },
         },
         {
-          $count: "total",
+          $count: "total", // মোট কতজন ইউনিক এমপ্লয়ি আছে তা কাউন্ট করবে
         },
       ])
       .toArray();

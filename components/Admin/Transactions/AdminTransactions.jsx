@@ -477,7 +477,7 @@ export default function AdminTransactions() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1600px] space-y-8">
+      <div className="mx-auto max-w-400 space-y-8">
         {/* =====================================================
             HEADER
         ====================================================== */}
@@ -1232,7 +1232,7 @@ export default function AdminTransactions() {
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
 
-                    <div className="flex h-9 min-w-[100px] items-center justify-center rounded-md border px-3 text-sm">
+                    <div className="flex h-9 min-w-25 items-center justify-center rounded-md border px-3 text-sm">
                       Page{" "}
                       <span className="mx-1 font-semibold">{currentPage}</span>{" "}
                       of {pagination.totalPages}
