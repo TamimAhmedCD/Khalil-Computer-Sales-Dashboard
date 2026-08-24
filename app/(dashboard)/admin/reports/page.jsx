@@ -1,10 +1,9 @@
-import { Reports } from "@/components/Employee/reports";
-import React from "react";
+import AdminReport from "@/components/Admin/Reports/AdminReport";
 
 export default function ReportsPage() {
   return (
     <section>
-      <Reports />
+      <AdminReport />
     </section>
   );
 }
