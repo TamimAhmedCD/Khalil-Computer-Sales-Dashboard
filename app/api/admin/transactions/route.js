@@ -4,11 +4,68 @@ import { ObjectId } from "mongodb";
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 
+// =========================================================
+// HELPERS
+// =========================================================
+
+const BD_OFFSET = 6 * 60 * 60 * 1000;
+
+// Bangladesh date -> UTC start
+function getBDStartOfDay(dateString) {
+  const date = dateString
+    ? new Date(`${dateString}T00:00:00+06:00`)
+    : new Date();
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+// Bangladesh date -> UTC end
+function getBDEndOfDay(dateString) {
+  const date = dateString
+    ? new Date(`${dateString}T23:59:59.999+06:00`)
+    : new Date();
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+// Get today's date in Bangladesh
+function getTodayBD() {
+  const now = new Date();
+
+  const bdDate = new Date(now.getTime() + BD_OFFSET);
+
+  return {
+    year: bdDate.getUTCFullYear(),
+    month: bdDate.getUTCMonth(),
+    day: bdDate.getUTCDate(),
+  };
+}
+
+// Create YYYY-MM-DD
+function formatBDDate(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+// =========================================================
+// GET
+// =========================================================
+
 export async function GET(request) {
   try {
-    // =========================================================
-    // 1. AUTHENTICATION
-    // =========================================================
+    // =======================================================
+    // 1. AUTH
+    // =======================================================
 
     const session = await auth();
 
@@ -22,28 +79,30 @@ export async function GET(request) {
       );
     }
 
-    // =========================================================
+    // =======================================================
     // 2. DATABASE
-    // =========================================================
+    // =======================================================
 
     const client = await clientPromise;
     const db = client.db("products");
 
     const salesCollection = db.collection("sales");
 
-    // =========================================================
+    // =======================================================
     // 3. QUERY PARAMETERS
-    // =========================================================
+    // =======================================================
 
     const { searchParams } = new URL(request.url);
 
-    const dateFilter = searchParams.get("dateFilter") || "today";
-
     const search = searchParams.get("search")?.trim() || "";
 
-    const employeeId = searchParams.get("employeeId")?.trim() || "";
+    const dateFilter = searchParams.get("dateFilter") || "today";
 
-    const categoryId = searchParams.get("categoryId")?.trim() || "";
+    const employeeId = searchParams.get("employeeId") || "all";
+
+    const categoryId = searchParams.get("categoryId") || "all";
+
+    const paymentMethod = searchParams.get("paymentMethod") || "all";
 
     const customStartDate = searchParams.get("customStartDate");
 
@@ -58,193 +117,25 @@ export async function GET(request) {
 
     const skip = (page - 1) * limit;
 
-    // =========================================================
-    // 4. DATE RANGE
-    // =========================================================
+    // =======================================================
+    // 4. BASE QUERY
+    // =======================================================
 
-    const now = new Date();
+    const query = {};
 
-    let startDate;
-    let endDate;
+    // =======================================================
+    // 5. EMPLOYEE FILTER
+    // =======================================================
 
-    switch (dateFilter) {
-      // -------------------------------------------------------
-      // TODAY
-      // -------------------------------------------------------
-
-      case "today": {
-        startDate = new Date(now);
-        startDate.setHours(0, 0, 0, 0);
-
-        endDate = new Date(now);
-        endDate.setHours(23, 59, 59, 999);
-
-        break;
-      }
-
-      // -------------------------------------------------------
-      // YESTERDAY
-      // -------------------------------------------------------
-
-      case "yesterday": {
-        startDate = new Date(now);
-        startDate.setDate(startDate.getDate() - 1);
-        startDate.setHours(0, 0, 0, 0);
-
-        endDate = new Date(startDate);
-        endDate.setHours(23, 59, 59, 999);
-
-        break;
-      }
-
-      // -------------------------------------------------------
-      // THIS WEEK
-      // Sunday → Today
-      // -------------------------------------------------------
-
-      case "week": {
-        startDate = new Date(now);
-
-        startDate.setDate(startDate.getDate() - startDate.getDay());
-
-        startDate.setHours(0, 0, 0, 0);
-
-        endDate = new Date(now);
-        endDate.setHours(23, 59, 59, 999);
-
-        break;
-      }
-
-      // -------------------------------------------------------
-      // THIS MONTH
-      // -------------------------------------------------------
-
-      case "month": {
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        endDate = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-          999,
-        );
-
-        break;
-      }
-
-      // -------------------------------------------------------
-      // LAST MONTH
-      // -------------------------------------------------------
-
-      case "lastMonth": {
-        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-        endDate = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          0,
-          23,
-          59,
-          59,
-          999,
-        );
-
-        break;
-      }
-
-      // -------------------------------------------------------
-      // CUSTOM
-      // -------------------------------------------------------
-
-      case "custom": {
-        if (!customStartDate || !customEndDate) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Start date and end date are required for custom range",
-            },
-            { status: 400 },
-          );
-        }
-
-        startDate = new Date(customStartDate);
-        endDate = new Date(customEndDate);
-
-        if (
-          Number.isNaN(startDate.getTime()) ||
-          Number.isNaN(endDate.getTime())
-        ) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Invalid custom date range",
-            },
-            { status: 400 },
-          );
-        }
-
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-
-        break;
-      }
-
-      // -------------------------------------------------------
-      // INVALID FILTER
-      // -------------------------------------------------------
-
-      default: {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Invalid date filter",
-          },
-          { status: 400 },
-        );
-      }
-    }
-
-    // =========================================================
-    // 5. VALIDATE DATE RANGE
-    // =========================================================
-
-    if (startDate > endDate) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Start date cannot be greater than end date",
-        },
-        { status: 400 },
-      );
-    }
-
-    // =========================================================
-    // 6. BUILD QUERY
-    // =========================================================
-
-    const query = {
-      createdAt: {
-        $gte: startDate,
-        $lte: endDate,
-      },
-    };
-
-    // =========================================================
-    // 7. EMPLOYEE FILTER
-    // =========================================================
-
-    if (employeeId) {
+    if (employeeId !== "all") {
       query.sellerId = employeeId;
     }
 
-    // =========================================================
-    // 8. CATEGORY FILTER
-    // =========================================================
+    // =======================================================
+    // 6. CATEGORY FILTER
+    // =======================================================
 
-    if (categoryId) {
+    if (categoryId !== "all") {
       if (!ObjectId.isValid(categoryId)) {
         return NextResponse.json(
           {
@@ -258,20 +149,22 @@ export async function GET(request) {
       query.categoryId = new ObjectId(categoryId);
     }
 
-    // =========================================================
-    // 9. SEARCH
-    // =========================================================
+    // =======================================================
+    // 7. PAYMENT FILTER
+    // =======================================================
+
+    if (paymentMethod !== "all") {
+      query.paymentMethod = paymentMethod;
+    }
+
+    // =======================================================
+    // 8. SEARCH
+    // =======================================================
 
     if (search) {
       query.$or = [
         {
           invoiceNumber: {
-            $regex: search,
-            $options: "i",
-          },
-        },
-        {
-          productName: {
             $regex: search,
             $options: "i",
           },
@@ -289,6 +182,12 @@ export async function GET(request) {
           },
         },
         {
+          productName: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
           sellerName: {
             $regex: search,
             $options: "i",
@@ -297,195 +196,493 @@ export async function GET(request) {
       ];
     }
 
-    // =========================================================
-    // 10. FETCH TRANSACTIONS + SUMMARY IN PARALLEL
-    // =========================================================
+    // =======================================================
+    // 9. DATE FILTER
+    //
+    // Frontend values:
+    //
+    // today
+    // yesterday
+    // week
+    // month
+    // last-month
+    // custom
+    // =======================================================
 
-    const [transactions, totalResults, summaryData] = await Promise.all([
-      salesCollection
-        .find(query, {
-          projection: {
-            _id: 1,
+    let startDate = null;
+    let endDate = null;
 
-            invoiceNumber: 1,
+    const today = getTodayBD();
 
-            sellerId: 1,
-            sellerName: 1,
+    const todayString = formatBDDate(today.year, today.month, today.day);
 
-            customerName: 1,
-            customerPhone: 1,
+    switch (dateFilter) {
+      // -----------------------------------------------------
+      // TODAY
+      // -----------------------------------------------------
 
-            productName: 1,
+      case "today": {
+        startDate = getBDStartOfDay(todayString);
+        endDate = getBDEndOfDay(todayString);
 
-            categoryId: 1,
-            categoryName: 1,
+        break;
+      }
 
-            quantity: 1,
+      // -----------------------------------------------------
+      // YESTERDAY
+      // -----------------------------------------------------
 
-            totalPrice: 1,
-            total: 1,
+      case "yesterday": {
+        const yesterday = new Date(
+          Date.UTC(today.year, today.month, today.day - 1),
+        );
 
-            rawExpense: 1,
-            expenseCost: 1,
-            totalExpense: 1,
+        const yesterdayString = formatBDDate(
+          yesterday.getUTCFullYear(),
+          yesterday.getUTCMonth(),
+          yesterday.getUTCDate(),
+        );
 
-            netProfit: 1,
-            commission: 1,
+        startDate = getBDStartOfDay(yesterdayString);
+        endDate = getBDEndOfDay(yesterdayString);
 
-            paidAmount: 1,
-            due: 1,
+        break;
+      }
 
-            paymentMethod: 1,
-            note: 1,
+      // -----------------------------------------------------
+      // THIS WEEK
+      // Saturday -> Friday
+      // Bangladesh week
+      // -----------------------------------------------------
 
-            createdAt: 1,
-          },
-        })
-        .sort({
-          createdAt: -1,
-        })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
+      case "week": {
+        const current = new Date(Date.UTC(today.year, today.month, today.day));
 
-      salesCollection.countDocuments(query),
+        const dayOfWeek = current.getUTCDay();
 
-      salesCollection
-        .aggregate([
-          {
-            $match: query,
-          },
+        // JS:
+        // Sunday = 0
+        // Monday = 1
+        // ...
+        // Friday = 5
+        // Saturday = 6
 
-          {
-            $group: {
-              _id: null,
+        const daysSinceSaturday = (dayOfWeek + 1) % 7;
 
-              totalRevenue: {
-                $sum: {
-                  $ifNull: ["$totalPrice", 0],
-                },
-              },
+        const weekStart = new Date(current);
 
-              totalProfit: {
-                $sum: {
-                  $ifNull: ["$netProfit", 0],
-                },
-              },
+        weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceSaturday);
 
-              totalCommission: {
-                $sum: {
-                  $ifNull: ["$commission", 0],
-                },
-              },
+        const weekEnd = new Date(weekStart);
 
-              totalExpense: {
-                $sum: {
-                  $ifNull: ["$totalExpense", 0],
-                },
-              },
+        weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
 
-              totalPaid: {
-                $sum: {
-                  $ifNull: ["$paidAmount", 0],
-                },
-              },
+        const startString = formatBDDate(
+          weekStart.getUTCFullYear(),
+          weekStart.getUTCMonth(),
+          weekStart.getUTCDate(),
+        );
 
-              totalDue: {
-                $sum: {
-                  $ifNull: ["$due", 0],
-                },
-              },
+        const endString = formatBDDate(
+          weekEnd.getUTCFullYear(),
+          weekEnd.getUTCMonth(),
+          weekEnd.getUTCDate(),
+        );
 
-              totalQuantity: {
-                $sum: {
-                  $ifNull: ["$quantity", 0],
-                },
-              },
+        startDate = getBDStartOfDay(startString);
+        endDate = getBDEndOfDay(endString);
 
-              transactionCount: {
-                $sum: 1,
+        break;
+      }
+
+      // -----------------------------------------------------
+      // THIS MONTH
+      // -----------------------------------------------------
+
+      case "month": {
+        const monthStartString = formatBDDate(today.year, today.month, 1);
+
+        const monthEnd = new Date(Date.UTC(today.year, today.month + 1, 0));
+
+        const monthEndString = formatBDDate(
+          monthEnd.getUTCFullYear(),
+          monthEnd.getUTCMonth(),
+          monthEnd.getUTCDate(),
+        );
+
+        startDate = getBDStartOfDay(monthStartString);
+        endDate = getBDEndOfDay(monthEndString);
+
+        break;
+      }
+
+      // -----------------------------------------------------
+      // LAST MONTH
+      // -----------------------------------------------------
+
+      case "last-month": {
+        const lastMonthStart = new Date(
+          Date.UTC(today.year, today.month - 1, 1),
+        );
+
+        const lastMonthEnd = new Date(Date.UTC(today.year, today.month, 0));
+
+        const startString = formatBDDate(
+          lastMonthStart.getUTCFullYear(),
+          lastMonthStart.getUTCMonth(),
+          lastMonthStart.getUTCDate(),
+        );
+
+        const endString = formatBDDate(
+          lastMonthEnd.getUTCFullYear(),
+          lastMonthEnd.getUTCMonth(),
+          lastMonthEnd.getUTCDate(),
+        );
+
+        startDate = getBDStartOfDay(startString);
+        endDate = getBDEndOfDay(endString);
+
+        break;
+      }
+
+      // -----------------------------------------------------
+      // CUSTOM
+      // -----------------------------------------------------
+
+      case "custom": {
+        if (!customStartDate || !customEndDate) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "customStartDate and customEndDate are required",
+            },
+            { status: 400 },
+          );
+        }
+
+        startDate = getBDStartOfDay(customStartDate);
+        endDate = getBDEndOfDay(customEndDate);
+
+        if (!startDate || !endDate) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Invalid custom date range",
+            },
+            { status: 400 },
+          );
+        }
+
+        if (startDate > endDate) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Custom start date cannot be greater than end date",
+            },
+            { status: 400 },
+          );
+        }
+
+        break;
+      }
+
+      // -----------------------------------------------------
+      // ALL
+      // -----------------------------------------------------
+
+      case "all":
+        break;
+
+      default:
+        startDate = getBDStartOfDay(todayString);
+        endDate = getBDEndOfDay(todayString);
+    }
+
+    // =======================================================
+    // 10. ADD DATE QUERY
+    // =======================================================
+
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: startDate,
+        $lte: endDate,
+      };
+    }
+
+    // =======================================================
+    // 11. TOTAL COUNT
+    // =======================================================
+
+    const totalResults = await salesCollection.countDocuments(query);
+
+    // =======================================================
+    // 12. TRANSACTIONS
+    // =======================================================
+
+    const transactions = await salesCollection
+      .find(query, {
+        projection: {
+          _id: 1,
+          invoiceNumber: 1,
+
+          sellerId: 1,
+          sellerName: 1,
+
+          customerName: 1,
+          customerPhone: 1,
+
+          productName: 1,
+
+          categoryId: 1,
+          categoryName: 1,
+
+          quantity: 1,
+
+          totalPrice: 1,
+          total: 1,
+
+          rawExpense: 1,
+          expenseCost: 1,
+          totalExpense: 1,
+
+          netProfit: 1,
+          commission: 1,
+
+          paymentMethod: 1,
+          paidAmount: 1,
+          due: 1,
+
+          note: 1,
+
+          createdAt: 1,
+        },
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    // =======================================================
+    // 13. SUMMARY
+    // =======================================================
+
+    const summaryResult = await salesCollection
+      .aggregate([
+        {
+          $match: query,
+        },
+
+        {
+          $group: {
+            _id: null,
+
+            totalRevenue: {
+              $sum: {
+                $ifNull: ["$totalPrice", "$total"],
               },
             },
+
+            totalProfit: {
+              $sum: {
+                $ifNull: ["$netProfit", 0],
+              },
+            },
+
+            totalCommission: {
+              $sum: {
+                $ifNull: ["$commission", 0],
+              },
+            },
+
+            totalDue: {
+              $sum: {
+                $ifNull: ["$due", 0],
+              },
+            },
+
+            totalExpense: {
+              $sum: {
+                $ifNull: [
+                  "$totalExpense",
+                  {
+                    $ifNull: [
+                      "$rawExpense",
+                      {
+                        $ifNull: ["$expenseCost", 0],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+
+            totalQuantity: {
+              $sum: {
+                $ifNull: ["$quantity", 0],
+              },
+            },
+
+            transactionCount: {
+              $sum: 1,
+            },
           },
-        ])
-        .toArray(),
-    ]);
+        },
+      ])
+      .toArray();
 
-    // =========================================================
-    // 11. SUMMARY
-    // =========================================================
-
-    const summary = summaryData[0] || {
+    const summary = summaryResult[0] || {
       totalRevenue: 0,
       totalProfit: 0,
       totalCommission: 0,
-      totalExpense: 0,
-      totalPaid: 0,
       totalDue: 0,
+      totalExpense: 0,
       totalQuantity: 0,
       transactionCount: 0,
     };
 
-    // =========================================================
-    // 12. SERIALIZE MONGODB DATA
-    // =========================================================
+    // =======================================================
+    // 14. DYNAMIC EMPLOYEE OPTIONS
+    // =======================================================
 
-    const formattedTransactions = transactions.map((transaction) => ({
-      _id: transaction._id.toString(),
+    const employeeOptions = await salesCollection
+      .aggregate([
+        {
+          $match: {},
+        },
 
-      invoiceNumber: transaction.invoiceNumber || "",
+        {
+          $group: {
+            _id: "$sellerId",
+            name: {
+              $first: "$sellerName",
+            },
+          },
+        },
 
-      sellerId: transaction.sellerId || "",
+        {
+          $match: {
+            _id: {
+              $nin: [null, ""],
+            },
+          },
+        },
 
-      sellerName: transaction.sellerName || "Unknown",
+        {
+          $project: {
+            _id: 0,
+            id: "$_id",
+            name: {
+              $ifNull: ["$name", "Unknown Employee"],
+            },
+          },
+        },
 
-      customerName: transaction.customerName || "",
+        {
+          $sort: {
+            name: 1,
+          },
+        },
+      ])
+      .toArray();
 
-      customerPhone: transaction.customerPhone || "",
+    // =======================================================
+    // 15. DYNAMIC CATEGORY OPTIONS
+    // =======================================================
 
-      productName: transaction.productName || "",
+    const categoryOptions = await salesCollection
+      .aggregate([
+        {
+          $match: {
+            categoryId: {
+              $exists: true,
+            },
+          },
+        },
 
-      categoryId: transaction.categoryId
-        ? transaction.categoryId.toString()
-        : "",
+        {
+          $group: {
+            _id: "$categoryId",
+            name: {
+              $first: "$categoryName",
+            },
+          },
+        },
 
-      categoryName: transaction.categoryName || "",
+        {
+          $project: {
+            _id: 0,
+            id: "$_id",
+            name: {
+              $ifNull: ["$name", "Unknown Category"],
+            },
+          },
+        },
 
-      quantity: Number(transaction.quantity) || 0,
+        {
+          $sort: {
+            name: 1,
+          },
+        },
+      ])
+      .toArray();
 
-      totalPrice: Number(transaction.totalPrice) || 0,
+    // =======================================================
+    // 16. PAYMENT METHODS
+    // =======================================================
 
-      total: Number(transaction.total) || 0,
+    const paymentOptions = await salesCollection.distinct("paymentMethod");
 
-      rawExpense:
-        Number(transaction.rawExpense) || Number(transaction.expenseCost) || 0,
+    // =======================================================
+    // 17. SERIALIZE DATA
+    // =======================================================
 
-      totalExpense: Number(transaction.totalExpense) || 0,
+    const formattedTransactions = transactions.map((item) => ({
+      id: item._id.toString(),
 
-      netProfit: Number(transaction.netProfit) || 0,
+      invoiceNumber: item.invoiceNumber || "",
 
-      commission: Number(transaction.commission) || 0,
+      employeeId: item.sellerId || "",
 
-      paidAmount: Number(transaction.paidAmount) || 0,
+      employee: item.sellerName || "Unknown Employee",
 
-      due: Number(transaction.due) || 0,
+      customer: item.customerName || "",
 
-      paymentMethod: transaction.paymentMethod || "",
+      phone: item.customerPhone || "",
 
-      note: transaction.note || "",
+      product: item.productName || "",
 
-      createdAt: transaction.createdAt,
+      categoryId: item.categoryId ? item.categoryId.toString() : "",
+
+      category: item.categoryName || "",
+
+      quantity: Number(item.quantity) || 0,
+
+      revenue: Number(item.totalPrice ?? item.total) || 0,
+
+      expense:
+        Number(item.totalExpense ?? item.rawExpense ?? item.expenseCost ?? 0) ||
+        0,
+
+      profit: Number(item.netProfit) || 0,
+
+      commission: Number(item.commission) || 0,
+
+      paymentMethod: item.paymentMethod || "",
+
+      paidAmount: Number(item.paidAmount) || 0,
+
+      due: Number(item.due) || 0,
+
+      date: item.createdAt,
+
+      note: item.note || "",
     }));
 
-    // =========================================================
-    // 13. PAGINATION
-    // =========================================================
-
-    const totalPages = Math.ceil(totalResults / limit);
-
-    // =========================================================
-    // 14. RESPONSE
-    // =========================================================
+    // =======================================================
+    // 18. RESPONSE
+    // =======================================================
 
     return NextResponse.json(
       {
@@ -493,27 +690,14 @@ export async function GET(request) {
 
         data: formattedTransactions,
 
-        pagination: {
-          totalResults,
-          totalPages,
-          currentPage: page,
-          limit,
-
-          hasNextPage: page < totalPages,
-
-          hasPreviousPage: page > 1,
-        },
-
         summary: {
           totalRevenue: Number(summary.totalRevenue) || 0,
 
           totalProfit: Number(summary.totalProfit) || 0,
 
-          totalCommission: Number(summary.totalCommission) || 0,
-
           totalExpense: Number(summary.totalExpense) || 0,
 
-          totalPaid: Number(summary.totalPaid) || 0,
+          totalCommission: Number(summary.totalCommission) || 0,
 
           totalDue: Number(summary.totalDue) || 0,
 
@@ -523,17 +707,30 @@ export async function GET(request) {
         },
 
         filters: {
-          dateFilter,
-          startDate,
-          endDate,
-          search,
-          employeeId,
-          categoryId,
+          employees: employeeOptions.map((item) => ({
+            id: item.id,
+            name: item.name,
+          })),
+
+          categories: categoryOptions.map((item) => ({
+            id: item.id?.toString(),
+            name: item.name,
+          })),
+
+          paymentMethods: paymentOptions.filter(Boolean).sort(),
+        },
+
+        pagination: {
+          currentPage: page,
+
+          limit,
+
+          totalResults,
+
+          totalPages: Math.max(1, Math.ceil(totalResults / limit)),
         },
       },
-      {
-        status: 200,
-      },
+      { status: 200 },
     );
   } catch (error) {
     console.error("ADMIN TRANSACTIONS API ERROR:", error);
@@ -541,13 +738,13 @@ export async function GET(request) {
     return NextResponse.json(
       {
         success: false,
+
         message: "Failed to load transactions",
+
         error:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      {
-        status: 500,
-      },
+      { status: 500 },
     );
   }
 }
