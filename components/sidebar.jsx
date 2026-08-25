@@ -56,6 +56,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
     { href: "/admin/dashboard", label: "Dashboard", icon: <Home /> },
     { href: "/admin/sales/add", label: "Sales Entry", icon: <ListPlus /> },
     { href: "/admin/sales", label: "Sales List", icon: <List /> },
+    { href: "/admin/transactions", label: "Transactions", icon: <Store /> },
     { href: "/admin/reports", label: "Reports", icon: <FileText /> },
   ];
 
