@@ -636,20 +636,20 @@ export default function AdminTransactions() {
             <CardContent className="flex items-start justify-between p-5">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Transactions
+                  Total Commission
                 </p>
 
                 <p className="mt-2 text-2xl font-bold">
-                  {Number(summary.transactionCount).toLocaleString("en-BD")}
+                  {formatCurrency(summary.totalCommission)}
                 </p>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Matching current filters
+                  Commission from matching transactions
                 </p>
               </div>
 
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
-                <FileText className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                <CircleDollarSign className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
             </CardContent>
           </Card>

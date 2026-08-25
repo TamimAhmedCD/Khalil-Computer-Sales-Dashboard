@@ -411,7 +411,7 @@ export default function AdminReport() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1600px] space-y-8">
+      <div className="mx-auto max-w-400 space-y-8">
         {/* =====================================================
             HEADER
         ====================================================== */}
@@ -780,7 +780,7 @@ export default function AdminReport() {
           </CardHeader>
 
           <CardContent>
-            <div className="flex h-[320px] items-end gap-3 overflow-x-auto px-2 pb-8 pt-5">
+            <div className="flex h-80 items-end gap-3 overflow-x-auto px-2 pb-8 pt-5">
               {reportData.revenueTrend.map((item) => {
                 const revenueHeight = (item.revenue / maxRevenue) * 100;
 
@@ -789,9 +789,9 @@ export default function AdminReport() {
                 return (
                   <div
                     key={item.label}
-                    className="flex min-w-[70px] flex-1 flex-col items-center justify-end gap-2"
+                    className="flex min-w-17.5 flex-1 flex-col items-center justify-end gap-2"
                   >
-                    <div className="flex h-[250px] w-full max-w-[72px] items-end justify-center gap-1">
+                    <div className="flex h-62.5 w-full max-w-18 items-end justify-center gap-1">
                       <div
                         className="w-5 rounded-t-md bg-primary transition-all"
                         style={{
