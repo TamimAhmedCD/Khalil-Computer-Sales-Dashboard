@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -735,25 +736,27 @@ export default function AdminTransactions() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {/* <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" /> */}
 
                     <SelectValue placeholder="Select date range" />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="today">Today</SelectItem>
 
-                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                      <SelectItem value="yesterday">Yesterday</SelectItem>
 
-                    <SelectItem value="week">This Week</SelectItem>
+                      <SelectItem value="week">This Week</SelectItem>
 
-                    <SelectItem value="month">This Month</SelectItem>
+                      <SelectItem value="month">This Month</SelectItem>
 
-                    <SelectItem value="last-month">Last Month</SelectItem>
+                      <SelectItem value="last-month">Last Month</SelectItem>
 
-                    <SelectItem value="custom">Custom Range</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
 
-                    <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="all">All Time</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>

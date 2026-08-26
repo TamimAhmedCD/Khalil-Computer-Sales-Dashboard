@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -45,246 +45,6 @@ import { Calendar } from "@/components/ui/calendar";
 // =========================================================
 // DEMO DATA
 // =========================================================
-
-const reportData = {
-  summary: {
-    totalRevenue: 125500,
-    totalExpense: 32400,
-    totalProfit: 93100,
-    totalCommission: 8250,
-    totalDue: 12500,
-    transactionCount: 184,
-    totalQuantity: 1284,
-  },
-
-  revenueTrend: [
-    { label: "Aug 18", revenue: 12500, profit: 9100 },
-    { label: "Aug 19", revenue: 9800, profit: 7100 },
-    { label: "Aug 20", revenue: 15400, profit: 11200 },
-    { label: "Aug 21", revenue: 18200, profit: 13400 },
-    { label: "Aug 22", revenue: 21800, profit: 15900 },
-    { label: "Aug 23", revenue: 24200, profit: 18100 },
-    { label: "Aug 24", revenue: 23600, profit: 18300 },
-  ],
-
-  sellerPerformance: [
-    {
-      name: "Md Khalil Uddin",
-      transactions: 42,
-      revenue: 32500,
-      profit: 25300,
-      commission: 2100,
-    },
-    {
-      name: "Rahim Ahmed",
-      transactions: 38,
-      revenue: 28400,
-      profit: 21900,
-      commission: 1850,
-    },
-    {
-      name: "Nusrat Jahan",
-      transactions: 31,
-      revenue: 24500,
-      profit: 17200,
-      commission: 1450,
-    },
-    {
-      name: "Sabbir Hossain",
-      transactions: 25,
-      revenue: 18500,
-      profit: 13200,
-      commission: 1100,
-    },
-    {
-      name: "Owner",
-      transactions: 32,
-      revenue: 21500,
-      profit: 15500,
-      commission: 1750,
-    },
-  ],
-
-  categoryPerformance: [
-    {
-      name: "DCR",
-      transactions: 35,
-      quantity: 40,
-      revenue: 25000,
-      expense: 7000,
-      profit: 18000,
-    },
-    {
-      name: "Namjari",
-      transactions: 18,
-      quantity: 20,
-      revenue: 22000,
-      expense: 6000,
-      profit: 16000,
-    },
-    {
-      name: "Printing",
-      transactions: 52,
-      quantity: 430,
-      revenue: 18500,
-      expense: 5000,
-      profit: 13500,
-    },
-    {
-      name: "Photocopy",
-      transactions: 40,
-      quantity: 650,
-      revenue: 12000,
-      expense: 0,
-      profit: 12000,
-    },
-    {
-      name: "Design",
-      transactions: 12,
-      quantity: 14,
-      revenue: 14500,
-      expense: 3000,
-      profit: 11500,
-    },
-    {
-      name: "Scanning",
-      transactions: 27,
-      quantity: 130,
-      revenue: 9000,
-      expense: 1500,
-      profit: 7500,
-    },
-  ],
-
-  paymentMethods: [
-    {
-      name: "Cash",
-      amount: 65000,
-      percentage: 52,
-    },
-    {
-      name: "bKash",
-      amount: 35500,
-      percentage: 28,
-    },
-    {
-      name: "Nagad",
-      amount: 18000,
-      percentage: 14,
-    },
-    {
-      name: "Other",
-      amount: 7000,
-      percentage: 6,
-    },
-  ],
-
-  outstandingDues: [
-    {
-      invoice: "INV-2026-5200",
-      customer: "Abdul Karim",
-      seller: "Rahim Ahmed",
-      total: 2500,
-      paid: 2000,
-      due: 500,
-    },
-    {
-      invoice: "INV-2026-5192",
-      customer: "Morshed Alam",
-      seller: "Rahim Ahmed",
-      total: 2500,
-      paid: 2000,
-      due: 500,
-    },
-    {
-      invoice: "INV-2026-5184",
-      customer: "Delara Begum",
-      seller: "Owner",
-      total: 3000,
-      paid: 2000,
-      due: 1000,
-    },
-    {
-      invoice: "INV-2026-5177",
-      customer: "Sakina Begum",
-      seller: "Md Khalil Uddin",
-      total: 4200,
-      paid: 3200,
-      due: 1000,
-    },
-  ],
-
-  topProducts: [
-    {
-      name: "Photocopy",
-      quantity: 650,
-      revenue: 12000,
-      profit: 12000,
-    },
-    {
-      name: "Printing",
-      quantity: 430,
-      revenue: 18500,
-      profit: 13500,
-    },
-    {
-      name: "Namjari Application",
-      quantity: 20,
-      revenue: 22000,
-      profit: 16000,
-    },
-    {
-      name: "DCR Application",
-      quantity: 40,
-      revenue: 25000,
-      profit: 18000,
-    },
-    {
-      name: "Graphic Design",
-      quantity: 14,
-      revenue: 14500,
-      profit: 11500,
-    },
-  ],
-
-  recentTransactions: [
-    {
-      invoice: "INV-2026-5201",
-      product: "Photocopy",
-      seller: "Md Khalil Uddin",
-      amount: 250,
-      time: "02:35 PM",
-    },
-    {
-      invoice: "INV-2026-5200",
-      product: "Online Application",
-      seller: "Rahim Ahmed",
-      amount: 800,
-      time: "01:48 PM",
-    },
-    {
-      invoice: "INV-2026-5199",
-      product: "Namjari Application",
-      seller: "Nusrat Jahan",
-      amount: 1500,
-      time: "12:22 PM",
-    },
-    {
-      invoice: "INV-2026-5198",
-      product: "Khatian Application",
-      seller: "Md Khalil Uddin",
-      amount: 1200,
-      time: "11:16 AM",
-    },
-    {
-      invoice: "INV-2026-5197",
-      product: "Printing",
-      seller: "Sabbir Hossain",
-      amount: 500,
-      time: "10:45 AM",
-    },
-  ],
-};
 
 // =========================================================
 // HELPERS
@@ -358,6 +118,8 @@ function PerformanceBar({ value, max, className = "" }) {
 // =========================================================
 
 export default function AdminReport() {
+  const API_URL = "/api/admin/reports";
+
   const [dateFilter, setDateFilter] = useState("month");
   const [sellerFilter, setSellerFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -366,38 +128,159 @@ export default function AdminReport() {
   const [customStartDate, setCustomStartDate] = useState();
   const [customEndDate, setCustomEndDate] = useState();
 
-  const sellers = useMemo(
-    () => reportData.sellerPerformance.map((item) => item.name),
-    [],
+  const [reportData, setReportData] = useState({
+    summary: {
+      totalRevenue: 0,
+      totalExpense: 0,
+      totalProfit: 0,
+      totalCommission: 0,
+      totalDue: 0,
+      totalPaid: 0,
+      transactionCount: 0,
+      totalQuantity: 0,
+    },
+    profitMargin: 0,
+    revenueTrend: [],
+    sellerPerformance: [],
+    categoryPerformance: [],
+    paymentMethods: [],
+    outstandingDues: [],
+    topProducts: [],
+    recentTransactions: [],
+    insights: {
+      topSeller: null,
+      leadingCategory: null,
+    },
+  });
+
+  const [sellers, setSellers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [paymentOptions, setPaymentOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchReport = useCallback(
+    async (signal) => {
+      try {
+        // Custom range is only sent when both dates exist.
+        if (dateFilter === "custom" && (!customStartDate || !customEndDate)) {
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        const params = new URLSearchParams();
+
+        params.set("dateFilter", dateFilter);
+        params.set("sellerId", sellerFilter);
+        params.set("categoryId", categoryFilter);
+        params.set("paymentMethod", paymentFilter);
+
+        if (dateFilter === "custom") {
+          params.set(
+            "customStartDate",
+            customStartDate.toISOString().split("T")[0],
+          );
+          params.set(
+            "customEndDate",
+            customEndDate.toISOString().split("T")[0],
+          );
+        }
+
+        const response = await fetch(`${API_URL}?${params.toString()}`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          signal,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to load report");
+        }
+
+        setReportData({
+          summary: {
+            totalRevenue: 0,
+            totalExpense: 0,
+            totalProfit: 0,
+            totalCommission: 0,
+            totalDue: 0,
+            totalPaid: 0,
+            transactionCount: 0,
+            totalQuantity: 0,
+            ...(result.data?.summary || {}),
+          },
+          profitMargin: Number(result.data?.profitMargin) || 0,
+          revenueTrend: result.data?.revenueTrend || [],
+          sellerPerformance: result.data?.sellerPerformance || [],
+          categoryPerformance: result.data?.categoryPerformance || [],
+          paymentMethods: result.data?.paymentMethods || [],
+          outstandingDues: result.data?.outstandingDues || [],
+          topProducts: result.data?.topProducts || [],
+          recentTransactions: result.data?.recentTransactions || [],
+          insights: result.data?.insights || {
+            topSeller: null,
+            leadingCategory: null,
+          },
+        });
+
+        setSellers(result.filters?.sellers || result.filters?.employees || []);
+        setCategories(result.filters?.categories || []);
+        setPaymentOptions(result.filters?.paymentMethods || []);
+      } catch (err) {
+        if (err?.name === "AbortError") return;
+
+        console.error("Admin report fetch error:", err);
+        setError(err?.message || "Failed to load report");
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [
+      dateFilter,
+      sellerFilter,
+      categoryFilter,
+      paymentFilter,
+      customStartDate,
+      customEndDate,
+    ],
   );
 
-  const categories = useMemo(
-    () => reportData.categoryPerformance.map((item) => item.name),
-    [],
-  );
+  useEffect(() => {
+    const controller = new AbortController();
 
-  const paymentMethods = useMemo(
-    () => reportData.paymentMethods.map((item) => item.name),
-    [],
-  );
+    fetchReport(controller.signal);
+
+    return () => controller.abort();
+  }, [fetchReport]);
 
   const summary = reportData.summary;
 
   const profitMargin =
-    summary.totalRevenue > 0
+    Number(reportData.profitMargin) ||
+    (summary.totalRevenue > 0
       ? (summary.totalProfit / summary.totalRevenue) * 100
-      : 0;
+      : 0);
 
   const maxRevenue = Math.max(
-    ...reportData.revenueTrend.map((item) => item.revenue),
+    0,
+    ...reportData.revenueTrend.map((item) => Number(item.revenue) || 0),
   );
 
   const maxSellerRevenue = Math.max(
-    ...reportData.sellerPerformance.map((item) => item.revenue),
+    0,
+    ...reportData.sellerPerformance.map((item) => Number(item.revenue) || 0),
   );
 
   const maxCategoryRevenue = Math.max(
-    ...reportData.categoryPerformance.map((item) => item.revenue),
+    0,
+    ...reportData.categoryPerformance.map((item) => Number(item.revenue) || 0),
   );
 
   const resetFilters = () => {
@@ -407,6 +290,19 @@ export default function AdminReport() {
     setPaymentFilter("all");
     setCustomStartDate(undefined);
     setCustomEndDate(undefined);
+  };
+
+  const formatReportTime = (value) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return date.toLocaleTimeString("en-BD", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -419,7 +315,7 @@ export default function AdminReport() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Link
-              href="/admin"
+              href="dashboard"
               className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -491,7 +387,7 @@ export default function AdminReport() {
                 </label>
 
                 <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className={"w-full"}>
                     <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue />
                   </SelectTrigger>
@@ -518,7 +414,7 @@ export default function AdminReport() {
                 <label className="mb-2 block text-sm font-medium">Seller</label>
 
                 <Select value={sellerFilter} onValueChange={setSellerFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <UserRound className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="All Sellers" />
                   </SelectTrigger>
@@ -527,8 +423,8 @@ export default function AdminReport() {
                     <SelectItem value="all">All Sellers</SelectItem>
 
                     {sellers.map((seller) => (
-                      <SelectItem key={seller} value={seller}>
-                        {seller}
+                      <SelectItem key={seller.id} value={seller.id}>
+                        {seller.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -546,7 +442,7 @@ export default function AdminReport() {
                   value={categoryFilter}
                   onValueChange={setCategoryFilter}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <Package className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
@@ -555,8 +451,8 @@ export default function AdminReport() {
                     <SelectItem value="all">All Categories</SelectItem>
 
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -571,7 +467,7 @@ export default function AdminReport() {
                 </label>
 
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <Wallet className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="All Methods" />
                   </SelectTrigger>
@@ -579,7 +475,7 @@ export default function AdminReport() {
                   <SelectContent>
                     <SelectItem value="all">All Methods</SelectItem>
 
-                    {paymentMethods.map((method) => (
+                    {paymentOptions.map((method) => (
                       <SelectItem key={method} value={method}>
                         {method}
                       </SelectItem>
@@ -661,6 +557,18 @@ export default function AdminReport() {
             )}
           </CardContent>
         </Card>
+
+        {error && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="p-4 text-sm text-destructive">
+              {error}
+            </CardContent>
+          </Card>
+        )}
+
+        {loading && (
+          <div className="text-sm text-muted-foreground">Loading report...</div>
+        )}
 
         {/* =====================================================
             KPI SECTION
@@ -1382,10 +1290,14 @@ export default function AdminReport() {
                     <p className="font-medium">Leading category</p>
 
                     <p className="mt-1 text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">DCR</span>{" "}
+                      <span className="font-medium text-foreground">
+                        {reportData.insights.leadingCategory?.name || "—"}
+                      </span>{" "}
                       generated the highest category revenue at{" "}
                       <span className="font-medium text-foreground">
-                        {formatCurrency(25000)}
+                        {formatCurrency(
+                          reportData.insights.leadingCategory?.revenue || 0,
+                        )}
                       </span>
                       .
                     </p>
@@ -1404,12 +1316,12 @@ export default function AdminReport() {
 
                     <p className="mt-1 text-sm text-muted-foreground">
                       <span className="font-medium text-foreground">
-                        {reportData.sellerPerformance[0].name}
+                        {reportData.insights.topSeller?.name || "—"}
                       </span>{" "}
                       generated{" "}
                       <span className="font-medium text-foreground">
                         {formatCurrency(
-                          reportData.sellerPerformance[0].revenue,
+                          reportData.insights.topSeller?.revenue || 0,
                         )}
                       </span>{" "}
                       in revenue.
@@ -1516,7 +1428,7 @@ export default function AdminReport() {
                       </td>
 
                       <td className="px-5 py-4 text-right text-muted-foreground">
-                        {transaction.time}
+                        {formatReportTime(transaction.time)}
                       </td>
                     </tr>
                   ))}

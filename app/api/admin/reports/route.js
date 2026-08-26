@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
+
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 
@@ -12,39 +14,14 @@ const BD_OFFSET = 6 * 60 * 60 * 1000;
 // DATE HELPERS
 // =========================================================
 
-function getBDStartOfDay(dateString) {
-  const date = dateString
-    ? new Date(`${dateString}T00:00:00+06:00`)
-    : new Date();
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
-}
-
-function getBDEndOfDay(dateString) {
-  const date = dateString
-    ? new Date(`${dateString}T23:59:59.999+06:00`)
-    : new Date();
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
-}
-
-function getTodayBD() {
+function getBDToday() {
   const now = new Date();
-
-  const bdDate = new Date(now.getTime() + BD_OFFSET);
+  const bd = new Date(now.getTime() + BD_OFFSET);
 
   return {
-    year: bdDate.getUTCFullYear(),
-    month: bdDate.getUTCMonth(),
-    day: bdDate.getUTCDate(),
+    year: bd.getUTCFullYear(),
+    month: bd.getUTCMonth(),
+    day: bd.getUTCDate(),
   };
 }
 
@@ -55,12 +32,242 @@ function formatBDDate(year, month, day) {
   )}`;
 }
 
+function getBDStartOfDay(dateString) {
+  const date = new Date(`${dateString}T00:00:00+06:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+function getBDEndOfDay(dateString) {
+  const date = new Date(`${dateString}T23:59:59.999+06:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+function getDateRange(dateFilter, customStartDate, customEndDate) {
+  const today = getBDToday();
+
+  const todayString = formatBDDate(today.year, today.month, today.day);
+
+  switch (dateFilter) {
+    // -------------------------------------------------------
+    // TODAY
+    // -------------------------------------------------------
+
+    case "today": {
+      return {
+        start: getBDStartOfDay(todayString),
+        end: getBDEndOfDay(todayString),
+      };
+    }
+
+    // -------------------------------------------------------
+    // YESTERDAY
+    // -------------------------------------------------------
+
+    case "yesterday": {
+      const yesterday = new Date(
+        Date.UTC(today.year, today.month, today.day - 1),
+      );
+
+      const dateString = formatBDDate(
+        yesterday.getUTCFullYear(),
+        yesterday.getUTCMonth(),
+        yesterday.getUTCDate(),
+      );
+
+      return {
+        start: getBDStartOfDay(dateString),
+        end: getBDEndOfDay(dateString),
+      };
+    }
+
+    // -------------------------------------------------------
+    // THIS WEEK
+    // Saturday -> Friday
+    // -------------------------------------------------------
+
+    case "week": {
+      const current = new Date(Date.UTC(today.year, today.month, today.day));
+
+      const dayOfWeek = current.getUTCDay();
+
+      const daysSinceSaturday = (dayOfWeek + 1) % 7;
+
+      const weekStart = new Date(current);
+
+      weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceSaturday);
+
+      const weekEnd = new Date(weekStart);
+
+      weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+
+      const startString = formatBDDate(
+        weekStart.getUTCFullYear(),
+        weekStart.getUTCMonth(),
+        weekStart.getUTCDate(),
+      );
+
+      const endString = formatBDDate(
+        weekEnd.getUTCFullYear(),
+        weekEnd.getUTCMonth(),
+        weekEnd.getUTCDate(),
+      );
+
+      return {
+        start: getBDStartOfDay(startString),
+        end: getBDEndOfDay(endString),
+      };
+    }
+
+    // -------------------------------------------------------
+    // THIS MONTH
+    // -------------------------------------------------------
+
+    case "month": {
+      const startString = formatBDDate(today.year, today.month, 1);
+
+      const monthEnd = new Date(Date.UTC(today.year, today.month + 1, 0));
+
+      const endString = formatBDDate(
+        monthEnd.getUTCFullYear(),
+        monthEnd.getUTCMonth(),
+        monthEnd.getUTCDate(),
+      );
+
+      return {
+        start: getBDStartOfDay(startString),
+        end: getBDEndOfDay(endString),
+      };
+    }
+
+    // -------------------------------------------------------
+    // LAST MONTH
+    // -------------------------------------------------------
+
+    case "last-month": {
+      const start = new Date(Date.UTC(today.year, today.month - 1, 1));
+
+      const end = new Date(Date.UTC(today.year, today.month, 0));
+
+      const startString = formatBDDate(
+        start.getUTCFullYear(),
+        start.getUTCMonth(),
+        start.getUTCDate(),
+      );
+
+      const endString = formatBDDate(
+        end.getUTCFullYear(),
+        end.getUTCMonth(),
+        end.getUTCDate(),
+      );
+
+      return {
+        start: getBDStartOfDay(startString),
+        end: getBDEndOfDay(endString),
+      };
+    }
+
+    // -------------------------------------------------------
+    // CUSTOM
+    // -------------------------------------------------------
+
+    case "custom": {
+      if (!customStartDate || !customEndDate) {
+        return {
+          error: "customStartDate and customEndDate are required",
+        };
+      }
+
+      const start = getBDStartOfDay(customStartDate);
+      const end = getBDEndOfDay(customEndDate);
+
+      if (!start || !end) {
+        return {
+          error: "Invalid custom date range",
+        };
+      }
+
+      if (start > end) {
+        return {
+          error: "Custom start date cannot be greater than end date",
+        };
+      }
+
+      return {
+        start,
+        end,
+      };
+    }
+
+    // -------------------------------------------------------
+    // ALL
+    // -------------------------------------------------------
+
+    case "all":
+      return {
+        start: null,
+        end: null,
+      };
+
+    // -------------------------------------------------------
+    // DEFAULT
+    // -------------------------------------------------------
+
+    default:
+      return {
+        start: getBDStartOfDay(todayString),
+        end: getBDEndOfDay(todayString),
+      };
+  }
+}
+
 // =========================================================
 // NUMBER HELPER
 // =========================================================
 
-function safeNumber(value) {
-  return Number(value) || 0;
+function number(value) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+// =========================================================
+// EXPENSE EXPRESSION
+// =========================================================
+
+function expenseExpression() {
+  return {
+    $ifNull: [
+      "$totalExpense",
+      {
+        $ifNull: [
+          "$rawExpense",
+          {
+            $ifNull: ["$expenseCost", 0],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+// =========================================================
+// REVENUE EXPRESSION
+// =========================================================
+
+function revenueExpression() {
+  return {
+    $ifNull: ["$totalPrice", "$total"],
+  };
 }
 
 // =========================================================
@@ -101,7 +308,14 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
 
-    const dateFilter = searchParams.get("dateFilter") || "month";
+    const dateFilter = searchParams.get("dateFilter") || "today";
+
+    const sellerId =
+      searchParams.get("sellerId") || searchParams.get("employeeId") || "all";
+
+    const categoryId = searchParams.get("categoryId") || "all";
+
+    const paymentMethod = searchParams.get("paymentMethod") || "all";
 
     const customStartDate = searchParams.get("customStartDate");
 
@@ -111,198 +325,16 @@ export async function GET(request) {
     // 4. DATE RANGE
     // =======================================================
 
-    let startDate = null;
-    let endDate = null;
+    const dateRange = getDateRange(dateFilter, customStartDate, customEndDate);
 
-    const today = getTodayBD();
-
-    const todayString = formatBDDate(today.year, today.month, today.day);
-
-    switch (dateFilter) {
-      // -----------------------------------------------------
-      // TODAY
-      // -----------------------------------------------------
-
-      case "today": {
-        startDate = getBDStartOfDay(todayString);
-
-        endDate = getBDEndOfDay(todayString);
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // YESTERDAY
-      // -----------------------------------------------------
-
-      case "yesterday": {
-        const yesterday = new Date(
-          Date.UTC(today.year, today.month, today.day - 1),
-        );
-
-        const yesterdayString = formatBDDate(
-          yesterday.getUTCFullYear(),
-          yesterday.getUTCMonth(),
-          yesterday.getUTCDate(),
-        );
-
-        startDate = getBDStartOfDay(yesterdayString);
-
-        endDate = getBDEndOfDay(yesterdayString);
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // THIS WEEK
-      // Saturday -> Friday
-      // -----------------------------------------------------
-
-      case "week": {
-        const current = new Date(Date.UTC(today.year, today.month, today.day));
-
-        const dayOfWeek = current.getUTCDay();
-
-        const daysSinceSaturday = (dayOfWeek + 1) % 7;
-
-        const weekStart = new Date(current);
-
-        weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceSaturday);
-
-        const weekEnd = new Date(weekStart);
-
-        weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
-
-        const startString = formatBDDate(
-          weekStart.getUTCFullYear(),
-          weekStart.getUTCMonth(),
-          weekStart.getUTCDate(),
-        );
-
-        const endString = formatBDDate(
-          weekEnd.getUTCFullYear(),
-          weekEnd.getUTCMonth(),
-          weekEnd.getUTCDate(),
-        );
-
-        startDate = getBDStartOfDay(startString);
-
-        endDate = getBDEndOfDay(endString);
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // THIS MONTH
-      // -----------------------------------------------------
-
-      case "month": {
-        const monthStartString = formatBDDate(today.year, today.month, 1);
-
-        const monthEnd = new Date(Date.UTC(today.year, today.month + 1, 0));
-
-        const monthEndString = formatBDDate(
-          monthEnd.getUTCFullYear(),
-          monthEnd.getUTCMonth(),
-          monthEnd.getUTCDate(),
-        );
-
-        startDate = getBDStartOfDay(monthStartString);
-
-        endDate = getBDEndOfDay(monthEndString);
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // LAST MONTH
-      // -----------------------------------------------------
-
-      case "last-month": {
-        const lastMonthStart = new Date(
-          Date.UTC(today.year, today.month - 1, 1),
-        );
-
-        const lastMonthEnd = new Date(Date.UTC(today.year, today.month, 0));
-
-        const startString = formatBDDate(
-          lastMonthStart.getUTCFullYear(),
-          lastMonthStart.getUTCMonth(),
-          lastMonthStart.getUTCDate(),
-        );
-
-        const endString = formatBDDate(
-          lastMonthEnd.getUTCFullYear(),
-          lastMonthEnd.getUTCMonth(),
-          lastMonthEnd.getUTCDate(),
-        );
-
-        startDate = getBDStartOfDay(startString);
-
-        endDate = getBDEndOfDay(endString);
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // CUSTOM
-      // -----------------------------------------------------
-
-      case "custom": {
-        if (!customStartDate || !customEndDate) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "customStartDate and customEndDate are required",
-            },
-            { status: 400 },
-          );
-        }
-
-        startDate = getBDStartOfDay(customStartDate);
-
-        endDate = getBDEndOfDay(customEndDate);
-
-        if (!startDate || !endDate) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Invalid custom date range",
-            },
-            { status: 400 },
-          );
-        }
-
-        if (startDate > endDate) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Custom start date cannot be greater than end date",
-            },
-            { status: 400 },
-          );
-        }
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // ALL
-      // -----------------------------------------------------
-
-      case "all": {
-        break;
-      }
-
-      // -----------------------------------------------------
-      // DEFAULT
-      // -----------------------------------------------------
-
-      default: {
-        startDate = getBDStartOfDay(todayString);
-
-        endDate = getBDEndOfDay(todayString);
-      }
+    if (dateRange.error) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: dateRange.error,
+        },
+        { status: 400 },
+      );
     }
 
     // =======================================================
@@ -311,15 +343,53 @@ export async function GET(request) {
 
     const query = {};
 
-    if (startDate && endDate) {
+    // =======================================================
+    // 6. SELLER FILTER
+    // =======================================================
+
+    if (sellerId !== "all") {
+      query.sellerId = sellerId;
+    }
+
+    // =======================================================
+    // 7. CATEGORY FILTER
+    // =======================================================
+
+    if (categoryId !== "all") {
+      if (!ObjectId.isValid(categoryId)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid category ID",
+          },
+          { status: 400 },
+        );
+      }
+
+      query.categoryId = new ObjectId(categoryId);
+    }
+
+    // =======================================================
+    // 8. PAYMENT FILTER
+    // =======================================================
+
+    if (paymentMethod !== "all") {
+      query.paymentMethod = paymentMethod;
+    }
+
+    // =======================================================
+    // 9. DATE QUERY
+    // =======================================================
+
+    if (dateRange.start && dateRange.end) {
       query.createdAt = {
-        $gte: startDate,
-        $lte: endDate,
+        $gte: dateRange.start,
+        $lte: dateRange.end,
       };
     }
 
     // =======================================================
-    // 6. OVERALL SUMMARY
+    // 10. SUMMARY
     // =======================================================
 
     const summaryResult = await salesCollection
@@ -333,31 +403,17 @@ export async function GET(request) {
             _id: null,
 
             totalRevenue: {
-              $sum: {
-                $ifNull: ["$totalPrice", "$total"],
-              },
-            },
-
-            totalExpense: {
-              $sum: {
-                $ifNull: [
-                  "$totalExpense",
-                  {
-                    $ifNull: [
-                      "$rawExpense",
-                      {
-                        $ifNull: ["$expenseCost", 0],
-                      },
-                    ],
-                  },
-                ],
-              },
+              $sum: revenueExpression(),
             },
 
             totalProfit: {
               $sum: {
                 $ifNull: ["$netProfit", 0],
               },
+            },
+
+            totalExpense: {
+              $sum: expenseExpression(),
             },
 
             totalCommission: {
@@ -392,45 +448,193 @@ export async function GET(request) {
       ])
       .toArray();
 
-    const summaryData = summaryResult[0] || {};
+    const summaryRaw = summaryResult[0] || {};
 
-    const totalRevenue = safeNumber(summaryData.totalRevenue);
-
-    const totalExpense = safeNumber(summaryData.totalExpense);
-
-    const totalProfit = safeNumber(summaryData.totalProfit);
-
-    const totalCommission = safeNumber(summaryData.totalCommission);
-
-    const totalDue = safeNumber(summaryData.totalDue);
-
-    const totalPaid = safeNumber(summaryData.totalPaid);
-
-    const totalQuantity = safeNumber(summaryData.totalQuantity);
-
-    const transactionCount = safeNumber(summaryData.transactionCount);
+    const summary = {
+      totalRevenue: number(summaryRaw.totalRevenue),
+      totalProfit: number(summaryRaw.totalProfit),
+      totalExpense: number(summaryRaw.totalExpense),
+      totalCommission: number(summaryRaw.totalCommission),
+      totalDue: number(summaryRaw.totalDue),
+      totalPaid: number(summaryRaw.totalPaid),
+      totalQuantity: number(summaryRaw.totalQuantity),
+      transactionCount: number(summaryRaw.transactionCount),
+    };
 
     // =======================================================
-    // 7. CALCULATED METRICS
+    // 11. PROFIT MARGIN
     // =======================================================
-
-    const averageTransactionValue =
-      transactionCount > 0 ? totalRevenue / transactionCount : 0;
 
     const profitMargin =
-      totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-
-    const averageProfitPerTransaction =
-      transactionCount > 0 ? totalProfit / transactionCount : 0;
-
-    const averageCommissionPerTransaction =
-      transactionCount > 0 ? totalCommission / transactionCount : 0;
+      summary.totalRevenue > 0
+        ? (summary.totalProfit / summary.totalRevenue) * 100
+        : 0;
 
     // =======================================================
-    // 8. PAYMENT METHOD BREAKDOWN
+    // 12. SELLER PERFORMANCE
     // =======================================================
 
-    const paymentBreakdown = await salesCollection
+    const sellerPerformanceRaw = await salesCollection
+      .aggregate([
+        {
+          $match: query,
+        },
+
+        {
+          $group: {
+            _id: "$sellerId",
+
+            name: {
+              $first: "$sellerName",
+            },
+
+            transactions: {
+              $sum: 1,
+            },
+
+            revenue: {
+              $sum: revenueExpression(),
+            },
+
+            profit: {
+              $sum: {
+                $ifNull: ["$netProfit", 0],
+              },
+            },
+
+            commission: {
+              $sum: {
+                $ifNull: ["$commission", 0],
+              },
+            },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+
+            sellerId: "$_id",
+
+            name: {
+              $ifNull: ["$name", "Unknown Seller"],
+            },
+
+            transactions: 1,
+            revenue: 1,
+            profit: 1,
+            commission: 1,
+          },
+        },
+
+        {
+          $sort: {
+            revenue: -1,
+          },
+        },
+      ])
+      .toArray();
+
+    const sellerPerformance = sellerPerformanceRaw.map((seller) => ({
+      sellerId: seller.sellerId || "",
+      name: seller.name || "Unknown Seller",
+      transactions: number(seller.transactions),
+      revenue: number(seller.revenue),
+      profit: number(seller.profit),
+      commission: number(seller.commission),
+    }));
+
+    // =======================================================
+    // 13. CATEGORY PERFORMANCE
+    // =======================================================
+
+    const categoryPerformanceRaw = await salesCollection
+      .aggregate([
+        {
+          $match: query,
+        },
+
+        {
+          $group: {
+            _id: "$categoryId",
+
+            name: {
+              $first: "$categoryName",
+            },
+
+            transactions: {
+              $sum: 1,
+            },
+
+            quantity: {
+              $sum: {
+                $ifNull: ["$quantity", 0],
+              },
+            },
+
+            revenue: {
+              $sum: revenueExpression(),
+            },
+
+            expense: {
+              $sum: expenseExpression(),
+            },
+
+            profit: {
+              $sum: {
+                $ifNull: ["$netProfit", 0],
+              },
+            },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+
+            categoryId: "$_id",
+
+            name: {
+              $ifNull: ["$name", "Unknown Category"],
+            },
+
+            transactions: 1,
+            quantity: 1,
+            revenue: 1,
+            expense: 1,
+            profit: 1,
+          },
+        },
+
+        {
+          $sort: {
+            revenue: -1,
+          },
+        },
+      ])
+      .toArray();
+
+    const categoryPerformance = categoryPerformanceRaw.map((category) => ({
+      categoryId: category.categoryId ? category.categoryId.toString() : "",
+
+      name: category.name || "Unknown Category",
+
+      transactions: number(category.transactions),
+
+      quantity: number(category.quantity),
+
+      revenue: number(category.revenue),
+
+      expense: number(category.expense),
+
+      profit: number(category.profit),
+    }));
+
+    // =======================================================
+    // 14. PAYMENT METHOD BREAKDOWN
+    // =======================================================
+
+    const paymentRaw = await salesCollection
       .aggregate([
         {
           $match: query,
@@ -442,323 +646,70 @@ export async function GET(request) {
               $ifNull: ["$paymentMethod", "Unknown"],
             },
 
-            transactionCount: {
-              $sum: 1,
-            },
-
-            revenue: {
-              $sum: {
-                $ifNull: ["$totalPrice", "$total"],
-              },
-            },
-
-            paidAmount: {
+            amount: {
               $sum: {
                 $ifNull: ["$paidAmount", 0],
               },
             },
 
-            due: {
-              $sum: {
-                $ifNull: ["$due", 0],
-              },
-            },
-          },
-        },
-
-        {
-          $project: {
-            _id: 0,
-
-            paymentMethod: "$_id",
-
-            transactionCount: 1,
-
-            revenue: 1,
-
-            paidAmount: 1,
-
-            due: 1,
-          },
-        },
-
-        {
-          $sort: {
-            revenue: -1,
-          },
-        },
-      ])
-      .toArray();
-
-    // =======================================================
-    // 9. CATEGORY PERFORMANCE
-    // =======================================================
-
-    const categoryPerformance = await salesCollection
-      .aggregate([
-        {
-          $match: query,
-        },
-
-        {
-          $group: {
-            _id: {
-              id: "$categoryId",
-              name: "$categoryName",
+            revenue: {
+              $sum: revenueExpression(),
             },
 
-            transactionCount: {
+            transactions: {
               $sum: 1,
             },
-
-            quantity: {
-              $sum: {
-                $ifNull: ["$quantity", 0],
-              },
-            },
-
-            revenue: {
-              $sum: {
-                $ifNull: ["$totalPrice", "$total"],
-              },
-            },
-
-            expense: {
-              $sum: {
-                $ifNull: [
-                  "$totalExpense",
-                  {
-                    $ifNull: [
-                      "$rawExpense",
-                      {
-                        $ifNull: ["$expenseCost", 0],
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
-
-            profit: {
-              $sum: {
-                $ifNull: ["$netProfit", 0],
-              },
-            },
-
-            commission: {
-              $sum: {
-                $ifNull: ["$commission", 0],
-              },
-            },
           },
         },
 
         {
           $project: {
             _id: 0,
-
-            categoryId: {
-              $cond: [
-                {
-                  $ne: ["$_id.id", null],
-                },
-                {
-                  $toString: "$_id.id",
-                },
-                "",
-              ],
-            },
-
-            category: {
-              $ifNull: ["$_id.name", "Unknown Category"],
-            },
-
-            transactionCount: 1,
-
-            quantity: 1,
-
+            name: "$_id",
+            amount: 1,
             revenue: 1,
-
-            expense: 1,
-
-            profit: 1,
-
-            commission: 1,
+            transactions: 1,
           },
         },
 
         {
           $sort: {
-            revenue: -1,
+            amount: -1,
           },
         },
       ])
       .toArray();
 
+    const totalPaymentAmount = paymentRaw.reduce(
+      (sum, item) => sum + number(item.amount),
+      0,
+    );
+
+    const paymentMethods = paymentRaw.map((item) => ({
+      name: item.name || "Unknown",
+
+      amount: number(item.amount),
+
+      revenue: number(item.revenue),
+
+      transactions: number(item.transactions),
+
+      percentage:
+        totalPaymentAmount > 0
+          ? Number(
+              ((number(item.amount) / totalPaymentAmount) * 100).toFixed(1),
+            )
+          : 0,
+    }));
+
     // =======================================================
-    // 10. SELLER / EMPLOYEE PERFORMANCE
-    // =======================================================
-    //
-    // IMPORTANT:
-    // Owner/Admin sales are NOT separated.
-    //
-    // Every seller in the sales collection is included.
-    //
+    // 15. REVENUE / PROFIT TREND
     // =======================================================
 
-    const sellerPerformance = await salesCollection
+    const trendRaw = await salesCollection
       .aggregate([
         {
           $match: query,
-        },
-
-        {
-          $group: {
-            _id: {
-              id: "$sellerId",
-              name: "$sellerName",
-            },
-
-            transactionCount: {
-              $sum: 1,
-            },
-
-            quantity: {
-              $sum: {
-                $ifNull: ["$quantity", 0],
-              },
-            },
-
-            revenue: {
-              $sum: {
-                $ifNull: ["$totalPrice", "$total"],
-              },
-            },
-
-            expense: {
-              $sum: {
-                $ifNull: [
-                  "$totalExpense",
-                  {
-                    $ifNull: [
-                      "$rawExpense",
-                      {
-                        $ifNull: ["$expenseCost", 0],
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
-
-            profit: {
-              $sum: {
-                $ifNull: ["$netProfit", 0],
-              },
-            },
-
-            commission: {
-              $sum: {
-                $ifNull: ["$commission", 0],
-              },
-            },
-
-            due: {
-              $sum: {
-                $ifNull: ["$due", 0],
-              },
-            },
-          },
-        },
-
-        {
-          $project: {
-            _id: 0,
-
-            sellerId: {
-              $cond: [
-                {
-                  $ne: ["$_id.id", null],
-                },
-                {
-                  $toString: "$_id.id",
-                },
-                "",
-              ],
-            },
-
-            sellerName: {
-              $ifNull: ["$_id.name", "Unknown Seller"],
-            },
-
-            transactionCount: 1,
-
-            quantity: 1,
-
-            revenue: 1,
-
-            expense: 1,
-
-            profit: 1,
-
-            commission: 1,
-
-            due: 1,
-          },
-        },
-
-        {
-          $sort: {
-            revenue: -1,
-          },
-        },
-      ])
-      .toArray();
-
-    // =======================================================
-    // 11. DAILY SALES TREND
-    // =======================================================
-
-    const dailySalesTrend = await salesCollection
-      .aggregate([
-        {
-          $match: query,
-        },
-
-        {
-          $project: {
-            createdAt: 1,
-
-            revenue: {
-              $ifNull: ["$totalPrice", "$total"],
-            },
-
-            expense: {
-              $ifNull: [
-                "$totalExpense",
-                {
-                  $ifNull: [
-                    "$rawExpense",
-                    {
-                      $ifNull: ["$expenseCost", 0],
-                    },
-                  ],
-                },
-              ],
-            },
-
-            profit: {
-              $ifNull: ["$netProfit", 0],
-            },
-
-            commission: {
-              $ifNull: ["$commission", 0],
-            },
-
-            quantity: {
-              $ifNull: ["$quantity", 0],
-            },
-          },
         },
 
         {
@@ -772,64 +723,52 @@ export async function GET(request) {
             },
 
             revenue: {
-              $sum: "$revenue",
-            },
-
-            expense: {
-              $sum: "$expense",
+              $sum: revenueExpression(),
             },
 
             profit: {
-              $sum: "$profit",
+              $sum: {
+                $ifNull: ["$netProfit", 0],
+              },
             },
 
-            commission: {
-              $sum: "$commission",
+            expense: {
+              $sum: expenseExpression(),
             },
 
-            quantity: {
-              $sum: "$quantity",
-            },
-
-            transactionCount: {
+            transactions: {
               $sum: 1,
             },
           },
         },
 
         {
-          $project: {
-            _id: 0,
-
-            date: "$_id",
-
-            revenue: 1,
-
-            expense: 1,
-
-            profit: 1,
-
-            commission: 1,
-
-            quantity: 1,
-
-            transactionCount: 1,
-          },
-        },
-
-        {
           $sort: {
-            date: 1,
+            _id: 1,
           },
         },
       ])
       .toArray();
 
+    const revenueTrend = trendRaw.map((item) => ({
+      date: item._id,
+
+      label: item._id,
+
+      revenue: number(item.revenue),
+
+      profit: number(item.profit),
+
+      expense: number(item.expense),
+
+      transactions: number(item.transactions),
+    }));
+
     // =======================================================
-    // 12. TOP PRODUCTS
+    // 16. TOP PRODUCTS
     // =======================================================
 
-    const topProducts = await salesCollection
+    const topProductsRaw = await salesCollection
       .aggregate([
         {
           $match: query,
@@ -837,14 +776,7 @@ export async function GET(request) {
 
         {
           $group: {
-            _id: {
-              name: "$productName",
-              category: "$categoryName",
-            },
-
-            transactionCount: {
-              $sum: 1,
-            },
+            _id: "$productName",
 
             quantity: {
               $sum: {
@@ -853,15 +785,17 @@ export async function GET(request) {
             },
 
             revenue: {
-              $sum: {
-                $ifNull: ["$totalPrice", "$total"],
-              },
+              $sum: revenueExpression(),
             },
 
             profit: {
               $sum: {
                 $ifNull: ["$netProfit", 0],
               },
+            },
+
+            transactions: {
+              $sum: 1,
             },
           },
         },
@@ -870,21 +804,14 @@ export async function GET(request) {
           $project: {
             _id: 0,
 
-            productName: {
-              $ifNull: ["$_id.name", "Unknown Product"],
+            name: {
+              $ifNull: ["$_id", "Unknown Product"],
             },
-
-            category: {
-              $ifNull: ["$_id.category", "Unknown Category"],
-            },
-
-            transactionCount: 1,
 
             quantity: 1,
-
             revenue: 1,
-
             profit: 1,
+            transactions: 1,
           },
         },
 
@@ -900,159 +827,227 @@ export async function GET(request) {
       ])
       .toArray();
 
+    const topProducts = topProductsRaw.map((item) => ({
+      name: item.name || "Unknown Product",
+
+      quantity: number(item.quantity),
+
+      revenue: number(item.revenue),
+
+      profit: number(item.profit),
+
+      transactions: number(item.transactions),
+    }));
+
     // =======================================================
-    // 13. RECENT TRANSACTIONS
+    // 17. OUTSTANDING DUES
     // =======================================================
 
-    const recentTransactions = await salesCollection
-      .find(query, {
-        projection: {
-          _id: 1,
-          invoiceNumber: 1,
-          sellerId: 1,
-          sellerName: 1,
-          customerName: 1,
-          productName: 1,
-          categoryName: 1,
-          quantity: 1,
-          totalPrice: 1,
-          total: 1,
-          netProfit: 1,
-          commission: 1,
-          paymentMethod: 1,
-          paidAmount: 1,
-          due: 1,
-          createdAt: 1,
+    const outstandingDuesRaw = await salesCollection
+      .find({
+        ...query,
+
+        due: {
+          $gt: 0,
         },
       })
+      .sort({
+        due: -1,
+        createdAt: -1,
+      })
+      .limit(10)
+      .project({
+        _id: 1,
+        invoiceNumber: 1,
+        customerName: 1,
+        sellerName: 1,
+        totalPrice: 1,
+        total: 1,
+        paidAmount: 1,
+        due: 1,
+        createdAt: 1,
+      })
+      .toArray();
+
+    const outstandingDues = outstandingDuesRaw.map((item) => ({
+      id: item._id.toString(),
+
+      invoice: item.invoiceNumber || "",
+
+      customer: item.customerName || "",
+
+      seller: item.sellerName || "Unknown Seller",
+
+      total: number(item.totalPrice ?? item.total),
+
+      paid: number(item.paidAmount),
+
+      due: number(item.due),
+
+      date: item.createdAt,
+    }));
+
+    // =======================================================
+    // 18. RECENT TRANSACTIONS
+    // =======================================================
+
+    const recentRaw = await salesCollection
+      .find(query)
       .sort({
         createdAt: -1,
       })
       .limit(10)
+      .project({
+        _id: 1,
+        invoiceNumber: 1,
+        productName: 1,
+        sellerName: 1,
+        totalPrice: 1,
+        total: 1,
+        createdAt: 1,
+      })
       .toArray();
 
-    // =======================================================
-    // 14. SERIALIZE RECENT TRANSACTIONS
-    // =======================================================
-
-    const formattedRecentTransactions = recentTransactions.map((item) => ({
+    const recentTransactions = recentRaw.map((item) => ({
       id: item._id.toString(),
 
-      invoiceNumber: item.invoiceNumber || "",
+      invoice: item.invoiceNumber || "",
 
-      sellerId: item.sellerId || "",
+      product: item.productName || "",
 
-      sellerName: item.sellerName || "Unknown Seller",
+      seller: item.sellerName || "Unknown Seller",
 
-      customerName: item.customerName || "",
+      amount: number(item.totalPrice ?? item.total),
 
-      productName: item.productName || "",
+      time: item.createdAt,
 
-      categoryName: item.categoryName || "",
-
-      quantity: safeNumber(item.quantity),
-
-      revenue: safeNumber(item.totalPrice ?? item.total),
-
-      profit: safeNumber(item.netProfit),
-
-      commission: safeNumber(item.commission),
-
-      paymentMethod: item.paymentMethod || "",
-
-      paidAmount: safeNumber(item.paidAmount),
-
-      due: safeNumber(item.due),
-
-      createdAt: item.createdAt,
+      date: item.createdAt,
     }));
 
     // =======================================================
-    // 15. FORMAT AGGREGATION DATA
+    // 19. SELLER OPTIONS
     // =======================================================
 
-    const formattedPaymentBreakdown = paymentBreakdown.map((item) => ({
-      paymentMethod: item.paymentMethod || "Unknown",
+    const sellerOptionsRaw = await salesCollection
+      .aggregate([
+        {
+          $match: {
+            sellerId: {
+              $nin: [null, ""],
+            },
+          },
+        },
 
-      transactionCount: safeNumber(item.transactionCount),
+        {
+          $group: {
+            _id: "$sellerId",
 
-      revenue: safeNumber(item.revenue),
+            name: {
+              $first: "$sellerName",
+            },
+          },
+        },
 
-      paidAmount: safeNumber(item.paidAmount),
+        {
+          $project: {
+            _id: 0,
 
-      due: safeNumber(item.due),
-    }));
+            id: "$_id",
 
-    const formattedCategoryPerformance = categoryPerformance.map((item) => ({
-      categoryId: item.categoryId || "",
+            name: {
+              $ifNull: ["$name", "Unknown Seller"],
+            },
+          },
+        },
 
-      category: item.category || "Unknown Category",
+        {
+          $sort: {
+            name: 1,
+          },
+        },
+      ])
+      .toArray();
 
-      transactionCount: safeNumber(item.transactionCount),
-
-      quantity: safeNumber(item.quantity),
-
-      revenue: safeNumber(item.revenue),
-
-      expense: safeNumber(item.expense),
-
-      profit: safeNumber(item.profit),
-
-      commission: safeNumber(item.commission),
-    }));
-
-    const formattedSellerPerformance = sellerPerformance.map((item) => ({
-      sellerId: item.sellerId || "",
-
-      sellerName: item.sellerName || "Unknown Seller",
-
-      transactionCount: safeNumber(item.transactionCount),
-
-      quantity: safeNumber(item.quantity),
-
-      revenue: safeNumber(item.revenue),
-
-      expense: safeNumber(item.expense),
-
-      profit: safeNumber(item.profit),
-
-      commission: safeNumber(item.commission),
-
-      due: safeNumber(item.due),
-    }));
-
-    const formattedDailySalesTrend = dailySalesTrend.map((item) => ({
-      date: item.date,
-
-      revenue: safeNumber(item.revenue),
-
-      expense: safeNumber(item.expense),
-
-      profit: safeNumber(item.profit),
-
-      commission: safeNumber(item.commission),
-
-      quantity: safeNumber(item.quantity),
-
-      transactionCount: safeNumber(item.transactionCount),
-    }));
-
-    const formattedTopProducts = topProducts.map((item) => ({
-      productName: item.productName || "Unknown Product",
-
-      category: item.category || "Unknown Category",
-
-      transactionCount: safeNumber(item.transactionCount),
-
-      quantity: safeNumber(item.quantity),
-
-      revenue: safeNumber(item.revenue),
-
-      profit: safeNumber(item.profit),
+    const sellers = sellerOptionsRaw.map((item) => ({
+      id: item.id || "",
+      name: item.name || "Unknown Seller",
     }));
 
     // =======================================================
-    // 16. RESPONSE
+    // 20. CATEGORY OPTIONS
+    // =======================================================
+
+    const categoryOptionsRaw = await salesCollection
+      .aggregate([
+        {
+          $match: {
+            categoryId: {
+              $exists: true,
+              $ne: null,
+            },
+          },
+        },
+
+        {
+          $group: {
+            _id: "$categoryId",
+
+            name: {
+              $first: "$categoryName",
+            },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+
+            id: "$_id",
+
+            name: {
+              $ifNull: ["$name", "Unknown Category"],
+            },
+          },
+        },
+
+        {
+          $sort: {
+            name: 1,
+          },
+        },
+      ])
+      .toArray();
+
+    const categories = categoryOptionsRaw.map((item) => ({
+      id: item.id ? item.id.toString() : "",
+
+      name: item.name || "Unknown Category",
+    }));
+
+    // =======================================================
+    // 21. PAYMENT OPTIONS
+    // =======================================================
+
+    const paymentOptionsRaw = await salesCollection.distinct("paymentMethod");
+
+    const paymentOptions = paymentOptionsRaw.filter(Boolean).sort();
+
+    // =======================================================
+    // 22. LEADING CATEGORY
+    // =======================================================
+
+    const leadingCategory =
+      categoryPerformance.length > 0 ? categoryPerformance[0] : null;
+
+    // =======================================================
+    // 23. TOP SELLER
+    // =======================================================
+
+    const topSeller =
+      sellerPerformance.length > 0 ? sellerPerformance[0] : null;
+
+    // =======================================================
+    // 24. RESPONSE
     // =======================================================
 
     return NextResponse.json(
@@ -1060,50 +1055,57 @@ export async function GET(request) {
         success: true,
 
         data: {
+          summary,
+
+          profitMargin,
+
+          revenueTrend,
+
+          sellerPerformance,
+
+          categoryPerformance,
+
+          paymentMethods,
+
+          outstandingDues,
+
+          topProducts,
+
+          recentTransactions,
+
+          insights: {
+            topSeller,
+
+            leadingCategory,
+          },
+        },
+
+        filters: {
+          sellers,
+
+          employees: sellers,
+
+          categories,
+
+          paymentMethods: paymentOptions,
+        },
+
+        meta: {
           dateFilter,
 
-          dateRange: {
-            start: startDate,
-            end: endDate,
-          },
+          sellerId,
 
-          summary: {
-            totalRevenue,
+          categoryId,
 
-            totalExpense,
+          paymentMethod,
 
-            totalProfit,
+          customStartDate: customStartDate || null,
 
-            totalCommission,
+          customEndDate: customEndDate || null,
 
-            totalDue,
+          startDate: dateRange.start || null,
 
-            totalPaid,
-
-            totalQuantity,
-
-            transactionCount,
-
-            averageTransactionValue,
-
-            averageProfitPerTransaction,
-
-            averageCommissionPerTransaction,
-
-            profitMargin: Number(profitMargin.toFixed(2)),
-          },
-
-          paymentBreakdown: formattedPaymentBreakdown,
-
-          categoryPerformance: formattedCategoryPerformance,
-
-          sellerPerformance: formattedSellerPerformance,
-
-          dailySalesTrend: formattedDailySalesTrend,
-
-          topProducts: formattedTopProducts,
-
-          recentTransactions: formattedRecentTransactions,
+          endDate: dateRange.end || null,
         },
       },
       {
@@ -1117,7 +1119,7 @@ export async function GET(request) {
       {
         success: false,
 
-        message: "Failed to load admin report",
+        message: "Failed to generate admin report",
 
         error:
           process.env.NODE_ENV === "development" ? error.message : undefined,
