@@ -1,6 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axios from "axios";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,39 +31,155 @@ import {
   Save,
   Upload,
 } from "lucide-react";
+import { useAddProduct } from "@/lib/hooks/products/useAddProduct";
+
+const schema = z.object({
+  name: z.string().min(2, "Product name is required"),
+  categoryId: z.string().min(1, "Please select a category"),
+  brand: z.string().optional(),
+  description: z.string().optional(),
+  buyRate: z
+    .number({ invalid_type_error: "Enter a valid buy rate" })
+    .min(0, "Cannot be negative"),
+  saleRate: z
+    .number({ invalid_type_error: "Enter a valid sale rate" })
+    .min(0, "Cannot be negative"),
+  stock: z
+    .number({ invalid_type_error: "Enter a valid quantity" })
+    .min(0, "Cannot be negative"),
+  lowStockAlert: z
+    .number({ invalid_type_error: "Enter a valid quantity" })
+    .min(0, "Cannot be negative"),
+  unit: z.string().optional(),
+  isActive: z.boolean(),
+  isFeatured: z.boolean(),
+});
+
+const defaultValues = {
+  name: "",
+  categoryId: "",
+  brand: "",
+  description: "",
+  buyRate: 0,
+  saleRate: 0,
+  stock: 0,
+  lowStockAlert: 0,
+  unit: "pcs",
+  isActive: true,
+  isFeatured: false,
+};
 
 export default function AddProductPage() {
-  const [pricing, setPricing] = useState({
-    buyRate: 0,
-    saleRate: 0,
-    profit: 0,
+  const router = useRouter();
+  const addProduct = useAddProduct();
+  const addAnotherRef = useRef(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    mode: "onChange",
+    defaultValues,
   });
-  const [images, setImages] = useState([]);
+
+  // Fetch categories (reuse the existing categories collection)
+  const { data: categories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await axios.get("/api/products/categories");
+      return data?.data || [];
+    },
+  });
+
+  // --- Images: keep the real File objects + object-URL previews ---
+  const [imageFiles, setImageFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+
+  const previewsRef = useRef([]);
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+  useEffect(
+    () => () => previewsRef.current.forEach((u) => u && URL.revokeObjectURL(u)),
+    [],
+  );
 
   const handleImageChange = (e, index) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
-    const imageUrl = URL.createObjectURL(file);
-    const updatedImages = [...images];
-    updatedImages[index] = imageUrl;
-    setImages(updatedImages);
+
+    setImageFiles((prev) => {
+      const next = [...prev];
+      next[index] = file;
+      return next;
+    });
+    setPreviews((prev) => {
+      const next = [...prev];
+      if (next[index]) URL.revokeObjectURL(next[index]);
+      next[index] = URL.createObjectURL(file);
+      return next;
+    });
   };
 
-  // Auto-calculate profit when rates change
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPricing((prev) => ({
-      ...prev,
-      profit: prev.saleRate - prev.buyRate,
-    }));
-  }, [pricing.buyRate, pricing.saleRate]);
+  const clearImages = () => {
+    previews.forEach((u) => u && URL.revokeObjectURL(u));
+    setImageFiles([]);
+    setPreviews([]);
+  };
+
+  // --- Derived profit (no state, no effect) ---
+  const buyRate = watch("buyRate");
+  const saleRate = watch("saleRate");
+  const profit =
+    (Number.isFinite(saleRate) ? saleRate : 0) -
+    (Number.isFinite(buyRate) ? buyRate : 0);
+
+  const onValid = (values) => {
+    const fd = new FormData();
+    fd.append("name", values.name);
+    fd.append("categoryId", values.categoryId);
+    fd.append("brand", values.brand || "");
+    fd.append("description", values.description || "");
+    fd.append("buyRate", String(values.buyRate));
+    fd.append("saleRate", String(values.saleRate));
+    fd.append("stock", String(values.stock ?? 0));
+    fd.append("lowStockAlert", String(values.lowStockAlert ?? 0));
+    fd.append("unit", values.unit || "pcs");
+    fd.append("isActive", String(values.isActive));
+    fd.append("isFeatured", String(values.isFeatured));
+    imageFiles.forEach((file) => file && fd.append("images", file));
+
+    addProduct.mutate(fd, {
+      onSuccess: () => {
+        reset(defaultValues);
+        clearImages();
+        if (!addAnotherRef.current) router.push("/admin/products");
+      },
+    });
+  };
+
+  const onInvalid = () => {
+    toast.error("Please fix the highlighted fields before saving.");
+  };
+
+  const submitting = addProduct.isPending;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 md:p-8">
+    <form
+      onSubmit={handleSubmit(onValid, onInvalid)}
+      className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 md:p-8"
+    >
       {/* --- Page Header --- */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Button
+            type="button"
+            onClick={() => router.back()}
             variant="outline"
             size="icon"
             className="rounded-full h-10 w-10 border-zinc-200 dark:border-zinc-800"
@@ -73,13 +197,21 @@ export default function AddProductPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button
+            type="button"
+            onClick={() => router.back()}
+            disabled={submitting}
             variant="outline"
             className="rounded-xl font-bold uppercase text-[10px] tracking-widest h-11 px-6"
           >
             Cancel
           </Button>
-          <Button className="rounded-xl font-bold uppercase text-[10px] tracking-widest h-11 px-6 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 gap-2">
-            <Save className="h-4 w-4" /> Save Product
+          <Button
+            type="submit"
+            onClick={() => (addAnotherRef.current = false)}
+            disabled={submitting}
+            className="rounded-xl font-bold uppercase text-[10px] tracking-widest h-11 px-6 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 gap-2"
+          >
+            <Save className="h-4 w-4" /> {submitting ? "Saving..." : "Save Product"}
           </Button>
         </div>
       </div>
@@ -98,39 +230,67 @@ export default function AddProductPage() {
                   Product Name
                 </Label>
                 <Input
+                  {...register("name")}
                   placeholder="Enter product name..."
                   className="rounded-xl h-12 bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800"
                 />
+                {errors.name && (
+                  <p className="text-xs text-red-500 ml-1">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1">
                   Category
                 </Label>
-                <Select>
+                <Select
+                  disabled={loadingCategories}
+                  value={watch("categoryId") || ""}
+                  onValueChange={(v) =>
+                    setValue("categoryId", v, { shouldValidate: true })
+                  }
+                >
                   <SelectTrigger
                     size="4"
                     className="rounded-xl h-12 w-full bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800"
                   >
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue
+                      placeholder={
+                        loadingCategories ? "Loading..." : "Select category"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="electronics">Electronics</SelectItem>
-                    <SelectItem value="apparel">Apparel</SelectItem>
-                    <SelectItem value="home">Home & Living</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {errors.categoryId && (
+                  <p className="text-xs text-red-500 ml-1">
+                    {errors.categoryId.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1">
                   Brand (Optional)
                 </Label>
-                <Input placeholder="Brand name" className="rounded-xl h-12" />
+                <Input
+                  {...register("brand")}
+                  placeholder="Brand name"
+                  className="rounded-xl h-12"
+                />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1">
                   Description
                 </Label>
                 <Textarea
+                  {...register("description")}
                   placeholder="Describe the asset features..."
                   className="rounded-xl min-h-[120px] resize-none"
                 />
@@ -154,15 +314,17 @@ export default function AddProductPage() {
                   </span>
                   <Input
                     type="number"
+                    step="any"
+                    min={0}
+                    {...register("buyRate", { valueAsNumber: true })}
                     className="rounded-xl h-12 pl-8"
-                    onChange={(e) =>
-                      setPricing({
-                        ...pricing,
-                        buyRate: Number(e.target.value),
-                      })
-                    }
                   />
                 </div>
+                {errors.buyRate && (
+                  <p className="text-xs text-red-500 ml-1">
+                    {errors.buyRate.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1">
@@ -174,24 +336,28 @@ export default function AddProductPage() {
                   </span>
                   <Input
                     type="number"
+                    step="any"
+                    min={0}
+                    {...register("saleRate", { valueAsNumber: true })}
                     className="rounded-xl h-12 pl-8"
-                    onChange={(e) =>
-                      setPricing({
-                        ...pricing,
-                        saleRate: Number(e.target.value),
-                      })
-                    }
                   />
                 </div>
+                {errors.saleRate && (
+                  <p className="text-xs text-red-500 ml-1">
+                    {errors.saleRate.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest ml-1">
                   Estimated Profit
                 </Label>
                 <div className="h-12 flex items-center px-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                  <span className="text-sm font-black text-emerald-600">
+                  <span
+                    className={`text-sm font-black ${profit < 0 ? "text-red-500" : "text-emerald-600"}`}
+                  >
                     <span className="font-hind-siliguri">৳</span>
-                    {pricing.profit.toLocaleString()}
+                    {profit.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -247,7 +413,6 @@ export default function AddProductPage() {
         {/* --- RIGHT COLUMN: STATUS & MEDIA --- */}
         <div className="space-y-8">
           {/* Images Section */}
-          {/* Images Section */}
           <Card className="rounded-[2rem] p-8 border-zinc-200 dark:border-zinc-800 shadow-sm">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-zinc-400">
               Media Nodes
@@ -263,8 +428,12 @@ export default function AddProductPage() {
                   onChange={(e) => handleImageChange(e, 0)}
                 />
 
-                {images[0] ? (
-                  <img src={images[0]} className="w-full h-full object-cover" />
+                {previews[0] ? (
+                  <img
+                    src={previews[0]}
+                    alt="Product image 1"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <PlusCircle className="h-8 w-8 text-zinc-400" />
                 )}
@@ -279,8 +448,12 @@ export default function AddProductPage() {
                   onChange={(e) => handleImageChange(e, 1)}
                 />
 
-                {images[1] ? (
-                  <img src={images[1]} className="w-full h-full object-cover" />
+                {previews[1] ? (
+                  <img
+                    src={previews[1]}
+                    alt="Product image 2"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <ImageIcon className="h-5 w-5 text-zinc-300" />
                 )}
@@ -295,8 +468,12 @@ export default function AddProductPage() {
                   onChange={(e) => handleImageChange(e, 2)}
                 />
 
-                {images[2] ? (
-                  <img src={images[2]} className="w-full h-full object-cover" />
+                {previews[2] ? (
+                  <img
+                    src={previews[2]}
+                    alt="Product image 3"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <ImageIcon className="h-5 w-5 text-zinc-300" />
                 )}
@@ -317,15 +494,25 @@ export default function AddProductPage() {
                   </Label>
                   <Input
                     type="number"
+                    min={0}
+                    {...register("stock", { valueAsNumber: true })}
                     placeholder="0"
                     className="rounded-xl h-12"
                   />
+                  {errors.stock && (
+                    <p className="text-xs text-red-500 ml-1">
+                      {errors.stock.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest ml-1">
                     Unit Type
                   </Label>
-                  <Select>
+                  <Select
+                    value={watch("unit") || "pcs"}
+                    onValueChange={(v) => setValue("unit", v)}
+                  >
                     <SelectTrigger size="4" className="rounded-xl h-12 w-full">
                       <SelectValue placeholder="Pcs" />
                     </SelectTrigger>
@@ -345,9 +532,16 @@ export default function AddProductPage() {
                   <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-300" />
                   <Input
                     type="number"
+                    min={0}
+                    {...register("lowStockAlert", { valueAsNumber: true })}
                     placeholder="Warn at qty..."
                     className="rounded-xl h-12"
                   />
+                  {errors.lowStockAlert && (
+                    <p className="text-xs text-red-500 ml-1">
+                      {errors.lowStockAlert.message}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -368,7 +562,11 @@ export default function AddProductPage() {
                     Visible to users
                   </p>
                 </div>
-                <Switch className="data-[state=checked]:bg-emerald-500" />
+                <Switch
+                  checked={watch("isActive")}
+                  onCheckedChange={(v) => setValue("isActive", v)}
+                  className="data-[state=checked]:bg-emerald-500"
+                />
               </div>
               <div className="flex items-center justify-between border-t border-zinc-800 pt-6">
                 <div className="space-y-0.5">
@@ -379,19 +577,27 @@ export default function AddProductPage() {
                     Top of grid view
                   </p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={watch("isFeatured")}
+                  onCheckedChange={(v) => setValue("isFeatured", v)}
+                />
               </div>
             </div>
           </Card>
 
           {/* Bottom Actions for Mobile */}
           <div className="flex flex-col gap-3 pt-4">
-            <Button className="w-full rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] h-14 bg-white text-black hover:bg-zinc-100">
-              Save & Add Another
+            <Button
+              type="submit"
+              onClick={() => (addAnotherRef.current = true)}
+              disabled={submitting}
+              className="w-full rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] h-14 bg-white text-black hover:bg-zinc-100"
+            >
+              {submitting ? "Saving..." : "Save & Add Another"}
             </Button>
           </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
