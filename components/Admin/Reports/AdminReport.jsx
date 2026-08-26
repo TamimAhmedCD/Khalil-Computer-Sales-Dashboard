@@ -11,20 +11,38 @@ import {
   ChevronDown,
   CircleDollarSign,
   Download,
+  FileSpreadsheet,
   FileText,
   Filter,
   Landmark,
   Package,
+  Printer,
   Receipt,
   ShoppingBag,
   TrendingUp,
   UserRound,
   Wallet,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import {
+  exportReportToExcel,
+  exportReportToPdf,
+  printReport,
+} from "@/lib/reports/exportReport";
 
 import {
   Select,
@@ -54,6 +72,16 @@ const formatCurrency = (value) =>
   `৳${Number(value || 0).toLocaleString("en-BD")}`;
 
 const formatNumber = (value) => Number(value || 0).toLocaleString("en-BD");
+
+// Human-readable labels for the date filter, echoed onto exported reports.
+const DATE_LABELS = {
+  today: "Today",
+  yesterday: "Yesterday",
+  week: "This Week",
+  month: "This Month",
+  "last-month": "Last Month",
+  custom: "Custom Range",
+};
 
 // =========================================================
 // KPI CARD
@@ -158,6 +186,7 @@ export default function AdminReport() {
   const [paymentOptions, setPaymentOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const fetchReport = useCallback(
     async (signal) => {
@@ -305,6 +334,82 @@ export default function AdminReport() {
     });
   };
 
+  // Resolve the current filter selection into readable labels + file naming
+  // that get stamped onto every exported report.
+  const buildMeta = () => {
+    const fmtDate = (d) =>
+      d
+        ? new Date(d).toLocaleDateString("en-BD", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "";
+
+    let periodLabel = DATE_LABELS[dateFilter] || "This Month";
+    if (dateFilter === "custom" && customStartDate && customEndDate) {
+      periodLabel = `${fmtDate(customStartDate)} – ${fmtDate(customEndDate)}`;
+    }
+
+    const sellerLabel =
+      sellerFilter === "all"
+        ? "All Sellers"
+        : sellers.find((s) => String(s.id) === String(sellerFilter))?.name ||
+          "—";
+
+    const categoryLabel =
+      categoryFilter === "all"
+        ? "All Categories"
+        : categories.find((c) => String(c.id) === String(categoryFilter))
+            ?.name || "—";
+
+    const paymentLabel =
+      paymentFilter === "all" ? "All Methods" : paymentFilter;
+
+    const now = new Date();
+
+    return {
+      title: "Reports & Analytics",
+      periodLabel,
+      sellerLabel,
+      categoryLabel,
+      paymentLabel,
+      profitMargin,
+      generatedAt: now.toLocaleString("en-BD", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      fileBase: `khalil-report-${dateFilter}-${now.toISOString().slice(0, 10)}`,
+    };
+  };
+
+  const runExport = async (kind) => {
+    if (loading || exporting) return;
+
+    setExporting(true);
+    try {
+      const meta = buildMeta();
+
+      if (kind === "pdf") {
+        await exportReportToPdf(reportData, meta);
+        toast.success("PDF report downloaded");
+      } else if (kind === "excel") {
+        await exportReportToExcel(reportData, meta);
+        toast.success("Excel report downloaded");
+      } else if (kind === "print") {
+        printReport(reportData, meta);
+      }
+    } catch (err) {
+      console.error("Report export failed:", err);
+      toast.error("Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-400 space-y-8">
@@ -341,11 +446,50 @@ export default function AdminReport() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <Download className="h-4 w-4" />
-              Export Report
-              <ChevronDown className="h-3.5 w-3.5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={loading || exporting}
+                >
+                  <Download className="h-4 w-4" />
+                  {exporting ? "Exporting…" : "Export Report"}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>Export report</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => runExport("pdf")}
+                >
+                  <FileText className="h-4 w-4" />
+                  Download PDF
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => runExport("excel")}
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Download Excel
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => runExport("print")}
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
