@@ -1,366 +1,538 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Edit2, Package, PackageX, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Eye, Edit2, Trash2, Plus, X, Grid3X3, List, Image as ImageIcon, Package, AlertCircle, TrendingUp, DollarSign, Download } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import Header from '@/components/Admin/Producct/Header';
-import SummaryCards from '@/components/Admin/Producct/SummaryCards';
-import FilterSection from '@/components/Admin/Producct/FilterSection';
-import TableView from '@/components/Admin/Producct/TableView';
-import InventoryGrid from '@/components/Admin/Producct/GridView';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
+import Header from "@/components/Admin/Producct/Header";
+import SummaryCards from "@/components/Admin/Producct/SummaryCards";
+import FilterSection from "@/components/Admin/Producct/FilterSection";
+import TableView from "@/components/Admin/Producct/TableView";
+import InventoryGrid from "@/components/Admin/Producct/GridView";
 
-const mockProducts = [
-    { id: '1', name: 'Laptop Pro', category: 'Electronics', costPrice: 45000, sellingPrice: 65000, profit: 20000, stock: 12, status: 'In Stock' },
-    { id: '2', name: 'Wireless Mouse', category: 'Electronics', costPrice: 1200, sellingPrice: 1800, profit: 600, stock: 45, status: 'In Stock' },
-    { id: '3', name: 'USB-C Cable', category: 'Electronics', costPrice: 300, sellingPrice: 500, profit: 200, stock: 3, status: 'Low Stock' },
-    { id: '4', name: 'Designer T-Shirt', category: 'Clothing', costPrice: 800, sellingPrice: 1500, profit: 700, stock: 28, status: 'In Stock' },
-    { id: '5', name: 'Running Shoes', category: 'Sports & Outdoors', costPrice: 2500, sellingPrice: 4500, profit: 2000, stock: 15, status: 'In Stock' },
-    { id: '6', name: 'Coffee Machine', category: 'Home & Garden', costPrice: 8000, sellingPrice: 12000, profit: 4000, stock: 0, status: 'Out of Stock' },
-    { id: '7', name: 'Novel Book', category: 'Books', costPrice: 400, sellingPrice: 650, profit: 250, stock: 50, status: 'In Stock' },
-    { id: '8', name: 'Yoga Mat', category: 'Sports & Outdoors', costPrice: 1500, sellingPrice: 2500, profit: 1000, stock: 5, status: 'Low Stock' },
-];
+import { useProducts } from "@/lib/hooks/products/useProducts";
+import { useDeleteProduct } from "@/lib/hooks/products/useDeleteProduct";
 
 const ITEMS_PER_PAGE = 8;
 
-export default function Products({ onNavigate }) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('all');
-    const [stockFilter, setStockFilter] = useState('all');
-    const [sortBy, setSortBy] = useState('name');
-    const [viewMode, setViewMode] = useState('table');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [showModal, setShowModal] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [selectedProducts, setSelectedProducts] = useState([]);
-    const [newProduct, setNewProduct] = useState({
-        name: '',
-        category: '',
-        costPrice: '',
-        sellingPrice: '',
-        stock: '',
-        description: '',
-        commission: '',
+const STATUS_STYLES = {
+  "In Stock":
+    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-transparent",
+  "Low Stock":
+    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-transparent",
+  "Out of Stock":
+    "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-transparent",
+};
+
+const formatCurrency = (value) =>
+  `৳${Number(value || 0).toLocaleString("en-BD")}`;
+
+const deriveStatus = (stock, lowStockAlert) => {
+  if (stock <= 0) return "Out of Stock";
+  if (lowStockAlert > 0 && stock <= lowStockAlert) return "Low Stock";
+  return "In Stock";
+};
+
+const normalize = (p) => {
+  const stock = Number(p.stock) || 0;
+  const lowStockAlert = Number(p.lowStockAlert) || 0;
+  const costPrice = Number(p.buyRate) || 0;
+  const sellingPrice = Number(p.saleRate) || 0;
+  return {
+    id: p._id,
+    name: p.name || "Untitled product",
+    category: p.categoryName || "Uncategorized",
+    image: p.images?.[0]?.url || null,
+    images: Array.isArray(p.images) ? p.images : [],
+    costPrice,
+    sellingPrice,
+    profit: Number.isFinite(p.profit) ? p.profit : sellingPrice - costPrice,
+    stock,
+    unit: p.unit || "pcs",
+    brand: p.brand || "",
+    description: p.description || "",
+    lowStockAlert,
+    status: deriveStatus(stock, lowStockAlert),
+  };
+};
+
+export default function ProductsPage() {
+  const router = useRouter();
+  const {
+    data: rawProducts,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useProducts();
+  const deleteProduct = useDeleteProduct();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [viewMode, setViewMode] = useState("table");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const products = useMemo(
+    () => (Array.isArray(rawProducts) ? rawProducts.map(normalize) : []),
+    [rawProducts],
+  );
+
+  // Reset to the first page whenever a filter changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, stockFilter, sortBy]);
+
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))).sort(),
+    [products],
+  );
+
+  // KPIs — computed across the full dataset, not the filtered view
+  const kpis = useMemo(() => {
+    const lowStock = products.filter(
+      (p) => p.status === "Low Stock" || p.status === "Out of Stock",
+    ).length;
+    const inventoryValue = products.reduce(
+      (sum, p) => sum + p.sellingPrice * p.stock,
+      0,
+    );
+    const potentialProfit = products.reduce(
+      (sum, p) => sum + p.profit * p.stock,
+      0,
+    );
+    return {
+      totalProducts: products.length,
+      lowStock,
+      inventoryValue,
+      potentialProfit,
+    };
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    const filtered = products.filter((p) => {
+      const matchesSearch =
+        !term ||
+        p.name.toLowerCase().includes(term) ||
+        p.brand.toLowerCase().includes(term);
+      const matchesCategory =
+        categoryFilter === "all" || p.category === categoryFilter;
+      const matchesStock =
+        stockFilter === "all" ||
+        (stockFilter === "in" && p.status === "In Stock") ||
+        (stockFilter === "low" && p.status === "Low Stock") ||
+        (stockFilter === "out" && p.status === "Out of Stock");
+      return matchesSearch && matchesCategory && matchesStock;
     });
 
-    const filteredAndSortedProducts = useMemo(() => {
-        let filtered = mockProducts.filter((product) => {
-            const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-            const matchesStock =
-                stockFilter === 'all' ||
-                (stockFilter === 'low' && product.status === 'Low Stock') ||
-                (stockFilter === 'out' && product.status === 'Out of Stock');
-            return matchesSearch && matchesCategory && matchesStock;
-        });
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "price":
+          return b.sellingPrice - a.sellingPrice;
+        case "stock":
+          return b.stock - a.stock;
+        case "profit":
+          return b.profit - a.profit;
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+  }, [products, searchTerm, categoryFilter, stockFilter, sortBy]);
 
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'price':
-                    return b.sellingPrice - a.sellingPrice;
-                case 'stock':
-                    return b.stock - a.stock;
-                case 'profit':
-                    return b.profit - a.profit;
-                default:
-                    return a.name.localeCompare(b.name);
-            }
-        });
+  const totalPages = Math.max(
+    Math.ceil(filteredProducts.length / ITEMS_PER_PAGE),
+    1,
+  );
+  const page = Math.min(currentPage, totalPages);
+  const paginatedProducts = filteredProducts.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE,
+  );
 
-        return filtered;
-    }, [searchTerm, categoryFilter, stockFilter, sortBy]);
+  const hasActiveFilters =
+    searchTerm.trim() !== "" ||
+    categoryFilter !== "all" ||
+    stockFilter !== "all";
 
-    const totalPages = Math.ceil(filteredAndSortedProducts.length / ITEMS_PER_PAGE);
-    const paginatedProducts = filteredAndSortedProducts.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
+  const clearFilters = () => {
+    setSearchTerm("");
+    setCategoryFilter("all");
+    setStockFilter("all");
+    setSortBy("name");
+  };
+
+  const handleExport = () => {
+    const rows = [
+      [
+        "Name",
+        "Category",
+        "Brand",
+        "Cost Price",
+        "Selling Price",
+        "Profit",
+        "Stock",
+        "Unit",
+        "Status",
+      ],
+      ...filteredProducts.map((p) => [
+        p.name,
+        p.category,
+        p.brand,
+        p.costPrice,
+        p.sellingPrice,
+        p.profit,
+        p.stock,
+        p.unit,
+        p.status,
+      ]),
+    ];
+    const csv = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const str = String(cell ?? "");
+            return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+          })
+          .join(","),
+      )
+      .join("\n");
+
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
     );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "products.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
-    const totalProducts = mockProducts.length;
-    const lowStockProducts = mockProducts.filter((p) => p.status === 'Low Stock' || p.status === 'Out of Stock').length;
-    const topSellingProduct = mockProducts.reduce((max, p) => (p.sellingPrice * p.stock > max.sellingPrice * max.stock ? p : max));
-    const totalInventoryValue = mockProducts.reduce((sum, p) => sum + p.sellingPrice * p.stock, 0);
-    const avgProfit = mockProducts.length > 0 ? mockProducts.reduce((sum, p) => sum + p.profit, 0) / mockProducts.length : 0;
+  const goToAdd = () => router.push("/admin/add-product");
+  const goToEdit = (product) =>
+    router.push(`/admin/products/edit/${product.id}`);
 
-    const handleAddProduct = () => {
-        if (newProduct.name && newProduct.category && newProduct.costPrice && newProduct.sellingPrice) {
-            setShowModal(false);
-            setNewProduct({ name: '', category: '', costPrice: '', sellingPrice: '', stock: '', description: '', commission: '' });
-        }
-    };
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteProduct.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setSelectedProduct((current) =>
+          current?.id === deleteTarget.id ? null : current,
+        );
+      },
+    });
+  };
 
-    const handleBulkDelete = () => {
-        if (selectedProducts.length > 0) {
-            alert(`Deleted ${selectedProducts.length} products`);
-            setSelectedProducts([]);
-        }
-    };
+  return (
+    <>
+      <div className="space-y-8">
+        <Header
+          onAdd={goToAdd}
+          onExport={handleExport}
+          canExport={products.length > 0}
+        />
 
-    const handleExport = () => {
-        const csv = [
-            ['Name', 'Category', 'Cost Price', 'Selling Price', 'Profit', 'Stock', 'Status'],
-            ...filteredAndSortedProducts.map(p => [
-                p.name, p.category, p.costPrice, p.sellingPrice, p.profit, p.stock, p.status
-            ])
-        ].map(row => row.join(',')).join('\n');
+        {isLoading ? (
+          <ProductsSkeleton />
+        ) : isError ? (
+          <Card className="border-destructive/40">
+            <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-destructive">
+                  Failed to load products
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Something went wrong while fetching your inventory.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isFetching}
+              >
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : products.length === 0 ? (
+          <Card className="border-border/70 shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Package className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold">No products yet</h3>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  Add your first product to start tracking stock, pricing, and
+                  profit.
+                </p>
+              </div>
+              <Button onClick={goToAdd} className="gap-2">
+                <Package className="h-4 w-4" />
+                Add product
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <SummaryCards
+              totalProducts={kpis.totalProducts}
+              lowStock={kpis.lowStock}
+              inventoryValue={kpis.inventoryValue}
+              potentialProfit={kpis.potentialProfit}
+              formatCurrency={formatCurrency}
+            />
+            <FilterSection
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              stockFilter={stockFilter}
+              setStockFilter={setStockFilter}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              categories={categoryOptions}
+              totalResults={filteredProducts.length}
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={clearFilters}
+            />
+          </>
+        )}
+      </div>
 
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
-        element.setAttribute('download', 'products.csv');
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-    };
-
-    return (
-        <>
-            <div className="space-y-8">
-                {/* --- Header Section --- */}
-                <Header setShowModal={setShowModal} selectedProducts={selectedProducts} handleBulkDelete={handleBulkDelete} handleExport={handleExport} />
-                {/* Summary Cards */}
-                <SummaryCards totalProducts={totalProducts} lowStockProducts={lowStockProducts} topSellingProduct={topSellingProduct} totalInventoryValue={totalInventoryValue} />
-
-                {/* Filters Section */}
-                <FilterSection
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    categoryFilter={categoryFilter}
-                    setCategoryFilter={setCategoryFilter}
-                    stockFilter={stockFilter}
-                    setStockFilter={setStockFilter}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
-                    onPageReset={setCurrentPage}
-                    totalResults={filteredAndSortedProducts.length}
-                    startIndex={filteredAndSortedProducts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}
-                    endIndex={Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedProducts.length)}
-                />
-            </div>
-
-            <div className="mt-8">
-                {viewMode === 'table' ? (
-                    <TableView
-                        products={paginatedProducts}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        setCurrentPage={setCurrentPage}
-                        setSelectedProduct={setSelectedProduct}
-                    />
-                ) : (
-                    <InventoryGrid
-                        products={paginatedProducts}
-                        setSelectedProduct={setSelectedProduct}
-                    />
+      {!isLoading && !isError && products.length > 0 && (
+        <div className="mt-8">
+          {filteredProducts.length === 0 ? (
+            <Card className="border-border/70 shadow-sm">
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <PackageX className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">No matching products</h3>
+                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                    No products match your current search and filters.
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
                 )}
-            </div>
+              </CardContent>
+            </Card>
+          ) : viewMode === "table" ? (
+            <TableView
+              products={paginatedProducts}
+              currentPage={page}
+              totalPages={totalPages}
+              setCurrentPage={setCurrentPage}
+              onView={setSelectedProduct}
+              onEdit={goToEdit}
+              onDelete={setDeleteTarget}
+              formatCurrency={formatCurrency}
+            />
+          ) : (
+            <InventoryGrid
+              products={paginatedProducts}
+              onView={setSelectedProduct}
+              onEdit={goToEdit}
+              onDelete={setDeleteTarget}
+              formatCurrency={formatCurrency}
+            />
+          )}
+        </div>
+      )}
 
-            {/* Add Product Modal */}
-            {
-                showModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                        <Card className="bg-card w-full max-w-md rounded-lg shadow-lg border border-border max-h-[90vh] overflow-y-auto">
-                            <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card">
-                                <h2 className="text-xl font-bold text-foreground">Add New Product</h2>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowModal(false)}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Product Name</label>
-                                    <Input
-                                        value={newProduct.name}
-                                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                        placeholder="Enter product name"
-                                        className="bg-input border-border text-foreground"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Category</label>
-                                    <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
-                                        <SelectTrigger className="bg-input border-border text-foreground">
-                                            <SelectValue placeholder="Select category" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Electronics">Electronics</SelectItem>
-                                            <SelectItem value="Clothing">Clothing</SelectItem>
-                                            <SelectItem value="Home & Garden">Home & Garden</SelectItem>
-                                            <SelectItem value="Sports & Outdoors">Sports & Outdoors</SelectItem>
-                                            <SelectItem value="Books">Books</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Cost Price</label>
-                                    <Input
-                                        type="number"
-                                        value={newProduct.costPrice}
-                                        onChange={(e) => setNewProduct({ ...newProduct, costPrice: e.target.value })}
-                                        placeholder="Enter cost price"
-                                        className="bg-input border-border text-foreground"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Selling Price</label>
-                                    <Input
-                                        type="number"
-                                        value={newProduct.sellingPrice}
-                                        onChange={(e) => setNewProduct({ ...newProduct, sellingPrice: e.target.value })}
-                                        placeholder="Enter selling price"
-                                        className="bg-input border-border text-foreground"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Stock Quantity</label>
-                                    <Input
-                                        type="number"
-                                        value={newProduct.stock}
-                                        onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                                        placeholder="Enter stock quantity"
-                                        className="bg-secondary/50 border-border/50 text-foreground"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Commission % (Optional)</label>
-                                    <Input
-                                        type="number"
-                                        value={newProduct.commission}
-                                        onChange={(e) => setNewProduct({ ...newProduct, commission: e.target.value })}
-                                        placeholder="Enter commission percentage"
-                                        className="bg-secondary/50 border-border/50 text-foreground"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Description</label>
-                                    <textarea
-                                        value={newProduct.description}
-                                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                                        placeholder="Enter product description"
-                                        className="w-full px-3 py-2 rounded-md bg-secondary/50 border border-border/50 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
-                                        rows={3}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">Product Image</label>
-                                    <div className="border-2 border-dashed border-border/50 rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
-                                        <ImageIcon className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                                        <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                                        <input type="file" className="hidden" accept="image/*" />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 pt-4">
-                                    <Button
-                                        onClick={handleAddProduct}
-                                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                    >
-                                        Add Product
-                                    </Button>
-                                    <Button
-                                        onClick={() => setShowModal(false)}
-                                        variant="outline"
-                                        className="flex-1 border-border text-foreground"
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                )
-            }
+      {/* Quick view */}
+      <Dialog
+        open={!!selectedProduct}
+        onOpenChange={(open) => !open && setSelectedProduct(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          {selectedProduct && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedProduct.name}</DialogTitle>
+                <DialogDescription>
+                  {selectedProduct.category}
+                  {selectedProduct.brand ? ` · ${selectedProduct.brand}` : ""}
+                </DialogDescription>
+              </DialogHeader>
 
-            {/* Product Quick View Modal */}
-            {
-                selectedProduct && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                        <Card className="bg-card w-full max-w-2xl rounded-lg shadow-lg border border-border max-h-[90vh] overflow-y-auto">
-                            <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card">
-                                <h2 className="text-xl font-bold text-foreground">{selectedProduct.name}</h2>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSelectedProduct(null)}
-                                    className="h-8 w-8"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                <div className="h-48 bg-muted/40 rounded-lg flex items-center justify-center">
-                                    <ImageIcon className="h-16 w-16 text-muted-foreground/30" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground mb-1">Category</p>
-                                        <p className="text-sm font-semibold text-foreground">{selectedProduct.category}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-muted-foreground mb-1">Status</p>
-                                        <span className={cn(
-                                            'px-3 py-1 rounded-full text-xs font-medium inline-block',
-                                            selectedProduct.status === 'In Stock' && 'bg-green-100/50 text-green-700',
-                                            selectedProduct.status === 'Low Stock' && 'bg-amber-100/50 text-amber-700',
-                                            selectedProduct.status === 'Out of Stock' && 'bg-red-100/50 text-red-700'
-                                        )}>
-                                            {selectedProduct.status}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-muted/30 p-4 rounded-lg">
-                                        <p className="text-xs font-medium text-muted-foreground mb-1">Cost Price</p>
-                                        <p className="text-lg font-bold text-foreground">₹{selectedProduct.costPrice.toLocaleString()}</p>
-                                    </div>
-                                    <div className="bg-muted/30 p-4 rounded-lg">
-                                        <p className="text-xs font-medium text-muted-foreground mb-1">Selling Price</p>
-                                        <p className="text-lg font-bold text-foreground">₹{selectedProduct.sellingPrice.toLocaleString()}</p>
-                                    </div>
-                                    <div className="bg-green-100/20 p-4 rounded-lg">
-                                        <p className="text-xs font-medium text-muted-foreground mb-1">Profit</p>
-                                        <p className="text-lg font-bold text-green-600">₹{selectedProduct.profit.toLocaleString()}</p>
-                                    </div>
-                                    <div className="bg-muted/30 p-4 rounded-lg">
-                                        <p className="text-xs font-medium text-muted-foreground mb-1">Stock Available</p>
-                                        <p className="text-lg font-bold text-foreground">{selectedProduct.stock} units</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 pt-4 border-t border-border">
-                                    <Button className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-                                        <Edit2 className="h-4 w-4" />
-                                        Edit Product
-                                    </Button>
-                                    <Button variant="destructive" className="flex-1 gap-2">
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete
-                                    </Button>
-                                    <Button variant="outline" className="flex-1" onClick={() => setSelectedProduct(null)}>
-                                        Close
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                )
-            }
+              <div className="space-y-5">
+                <div className="flex aspect-video items-center justify-center overflow-hidden rounded-lg border bg-muted">
+                  {selectedProduct.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selectedProduct.image}
+                      alt={selectedProduct.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Package className="h-10 w-10 text-muted-foreground/40" />
+                  )}
+                </div>
 
-        </>
-    );
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <Badge
+                    variant="outline"
+                    className={STATUS_STYLES[selectedProduct.status]}
+                  >
+                    {selectedProduct.status}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Cost price
+                    </p>
+                    <p className="mt-1 text-lg font-bold">
+                      {formatCurrency(selectedProduct.costPrice)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Selling price
+                    </p>
+                    <p className="mt-1 text-lg font-bold">
+                      {formatCurrency(selectedProduct.sellingPrice)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Profit / unit
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(selectedProduct.profit)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      In stock
+                    </p>
+                    <p className="mt-1 text-lg font-bold">
+                      {selectedProduct.stock} {selectedProduct.unit}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedProduct.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedProduct.description}
+                  </p>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => {
+                    const target = selectedProduct;
+                    setSelectedProduct(null);
+                    goToEdit(target);
+                  }}
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="gap-2"
+                  onClick={() => setDeleteTarget(selectedProduct)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes{" "}
+              <strong className="text-foreground">{deleteTarget?.name}</strong>{" "}
+              and its images. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProduct.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleteProduct.isPending}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {deleteProduct.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function ProductsSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-28 w-full rounded-xl" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
 }

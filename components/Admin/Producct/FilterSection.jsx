@@ -1,134 +1,162 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Search, List, Grid3X3, Filter, SlidersHorizontal } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Grid3x3, List, Search, SlidersHorizontal, X } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
-    Select, SelectContent, SelectItem,
-    SelectTrigger, SelectValue
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function FilterSection({
-    searchTerm,
-    setSearchTerm,
-    categoryFilter,
-    setCategoryFilter,
-    stockFilter,
-    setStockFilter,
-    sortBy,
-    setSortBy,
-    viewMode,
-    setViewMode,
-    totalResults,
-    startIndex,
-    endIndex
+  searchTerm,
+  setSearchTerm,
+  categoryFilter,
+  setCategoryFilter,
+  stockFilter,
+  setStockFilter,
+  sortBy,
+  setSortBy,
+  viewMode,
+  setViewMode,
+  categories = [],
+  totalResults = 0,
+  hasActiveFilters = false,
+  onClearFilters,
 }) {
-    return (
-        <div className="bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-zinc-800/60 rounded-[2.5rem] p-8 space-y-8 backdrop-blur-xl shadow-sm">
-
-            {/* --- Primary Control Row --- */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-
-                {/* Search Architecture */}
-                <div className="relative flex-1 group">
-                    <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
-                    </div>
-                    <Input
-                        placeholder="Query repository by asset name..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-14 h-14 bg-white dark:bg-black border-zinc-200 dark:border-zinc-800 rounded-2xl text-sm focus:ring-1 focus:ring-zinc-200 dark:focus:ring-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-500 transition-all shadow-sm placeholder:text-[10px] placeholder:uppercase placeholder:tracking-[0.2em] font-medium"
-                    />
-                </div>
-
-                {/* Tactical Filter Cluster */}
-                <div className="flex flex-wrap items-center gap-3">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger className="w-[170px] h-12 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black font-black text-[10px] uppercase tracking-tighter">
-                            <div className="flex items-center gap-2">
-                                <Filter size={12} className="text-zinc-400" />
-                                <SelectValue placeholder="Category" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-zinc-800">
-                            <SelectItem value="all">All Categories</SelectItem>
-                            <SelectItem value="Electronics">Electronics</SelectItem>
-                            <SelectItem value="Clothing">Clothing</SelectItem>
-                            <SelectItem value="Home & Garden">Home & Garden</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={stockFilter} onValueChange={setStockFilter}>
-                        <SelectTrigger className="w-[150px] h-12 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black font-black text-[10px] uppercase tracking-tighter">
-                            <SelectValue placeholder="Inventory" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-zinc-800">
-                            <SelectItem value="all">Total Stock</SelectItem>
-                            <SelectItem value="low">Low Inventory</SelectItem>
-                            <SelectItem value="out">Depleted</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <div className="h-8 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-2 hidden md:block" />
-
-                    {/* Sort Protocol */}
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-[150px] h-12 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black font-black text-[10px] uppercase tracking-tighter">
-                            <div className="flex items-center gap-2">
-                                <SlidersHorizontal size={12} className="text-zinc-400" />
-                                <SelectValue placeholder="Sort By" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-zinc-800">
-                            <SelectItem value="name">Alpha (A-Z)</SelectItem>
-                            <SelectItem value="price">Valuation</SelectItem>
-                            <SelectItem value="stock">Quantities</SelectItem>
-                            <SelectItem value="profit">Margins</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+  return (
+    <Card className="border-border/70 shadow-sm">
+      <CardContent className="space-y-5 p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
+            <div>
+              <h2 className="font-semibold leading-none">Filters</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Search and refine your product list.
+              </p>
             </div>
-
-            {/* --- Secondary Metadata Row --- */}
-            <div className="flex items-center justify-between pt-6 border-t border-zinc-200/60 dark:border-zinc-800/60">
-                <div className="flex items-center gap-4">
-                    <div className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                            Showing {startIndex}—{endIndex} <span className="text-zinc-300 dark:text-zinc-700 mx-1">of</span> {totalResults} Assets
-                        </p>
-                    </div>
-                </div>
-
-                {/* View Segment Control */}
-                <div className="flex bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 p-1 rounded-xl shadow-sm">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setViewMode('table')}
-                        className={cn(
-                            "h-9 w-9 rounded-lg transition-all",
-                            viewMode === 'table' ? "bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white" : "text-zinc-400 hover:text-zinc-600"
-                        )}
-                    >
-                        <List className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setViewMode('grid')}
-                        className={cn(
-                            "h-9 w-9 rounded-lg transition-all",
-                            viewMode === 'grid' ? "bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white" : "text-zinc-400 hover:text-zinc-600"
-                        )}
-                    >
-                        <Grid3X3 className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit gap-2"
+              onClick={onClearFilters}
+            >
+              <X className="h-3.5 w-3.5" />
+              Clear filters
+            </Button>
+          )}
         </div>
-    );
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name or brand…"
+            className="pl-9"
+          />
+        </div>
+
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Category</label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Stock</label>
+              <Select value={stockFilter} onValueChange={setStockFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All stock" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All stock</SelectItem>
+                  <SelectItem value="in">In stock</SelectItem>
+                  <SelectItem value="low">Low stock</SelectItem>
+                  <SelectItem value="out">Out of stock</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sort by</label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Name" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name (A–Z)</SelectItem>
+                  <SelectItem value="price">Price (high → low)</SelectItem>
+                  <SelectItem value="stock">Stock (high → low)</SelectItem>
+                  <SelectItem value="profit">Profit (high → low)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 self-start rounded-lg border p-1 lg:self-auto">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Table view"
+              aria-pressed={viewMode === "table"}
+              onClick={() => setViewMode("table")}
+              className={cn(
+                "h-8 w-8",
+                viewMode === "table"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "h-8 w-8",
+                viewMode === "grid"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">{totalResults}</span>{" "}
+          product{totalResults !== 1 ? "s" : ""} found
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
