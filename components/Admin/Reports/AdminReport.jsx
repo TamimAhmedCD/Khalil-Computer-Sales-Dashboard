@@ -370,10 +370,12 @@ export default function AdminReport() {
 
     return {
       title: "Reports & Analytics",
-      periodLabel,
-      sellerLabel,
-      categoryLabel,
-      paymentLabel,
+      filters: [
+        { label: "Period", value: periodLabel },
+        { label: "Seller", value: sellerLabel },
+        { label: "Category", value: categoryLabel },
+        { label: "Payment", value: paymentLabel },
+      ],
       profitMargin,
       generatedAt: now.toLocaleString("en-BD", {
         day: "2-digit",
