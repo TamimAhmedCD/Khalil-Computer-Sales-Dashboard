@@ -46,6 +46,7 @@ export async function POST(request) {
 
     const buyRate = Number(form.get("buyRate"));
     const saleRate = Number(form.get("saleRate"));
+    const commission = Number(form.get("commission") || 0);
     const stock = Number(form.get("stock") || 0);
     const lowStockAlert = Number(form.get("lowStockAlert") || 0);
     const unit = form.get("unit")?.toString().trim() || "pcs";
@@ -112,6 +113,13 @@ export async function POST(request) {
       );
     }
 
+    if (!Number.isFinite(commission) || commission < 0) {
+      return Response.json(
+        { success: false, message: "Commission must be zero or a positive percentage" },
+        { status: 400 },
+      );
+    }
+
     // 🛑 5. DB connection
     const client = await clientPromise;
     const db = client.db("products");
@@ -146,6 +154,7 @@ export async function POST(request) {
       description,
       buyRate,
       saleRate,
+      commission,
       profit,
       stock,
       unit,

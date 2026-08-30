@@ -57,6 +57,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -212,6 +213,46 @@ const gridProps = {
 };
 const axisTick = { fill: "#94a3b8", fontSize: 11 };
 
+// Placeholders shown while the first data set / chart data loads.
+function KpiGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-border/70 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="w-full space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-7 w-28" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ChartGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-border/70 shadow-sm">
+          <CardHeader>
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="mt-1 h-3 w-20" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 // =========================================================
 // PAGE
 // =========================================================
@@ -229,6 +270,7 @@ export function Reports() {
     currentPage: 1,
   });
   const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
   const [exporting, setExporting] = useState(false);
 
   const [dateFilter, setDateFilter] = useState("today");
@@ -239,7 +281,7 @@ export function Reports() {
   const [customEndDate, setCustomEndDate] = useState("");
 
   // Charts always show the last 7 days across all pages of that range.
-  const { data: chartRawData = [] } = useQuery({
+  const { data: chartRawData = [], isLoading: chartLoading } = useQuery({
     queryKey: ["employeeSalesChart"],
     queryFn: async () => (await fetchAllSalesPages({ dateFilter: "week" })).rows,
   });
@@ -298,7 +340,10 @@ export function Reports() {
           console.error("Sales fetch error:", err);
         }
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setFirstLoad(false);
+        }
       }
     };
 
@@ -562,7 +607,10 @@ export function Reports() {
       )}
 
       {/* ===================== KPIs ===================== */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {firstLoad ? (
+        <KpiGridSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           title="Total Sales"
           value={formatCurrency(summary.totalSalesAmount)}
@@ -591,10 +639,14 @@ export function Reports() {
           icon={Receipt}
           iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
         />
-      </div>
+        </div>
+      )}
 
       {/* ===================== CHARTS ===================== */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {chartLoading ? (
+        <ChartGridSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Sales */}
         <Card className="border-border/70 shadow-sm">
           <CardHeader>
@@ -707,7 +759,8 @@ export function Reports() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
 
       {/* ===================== TOP PRODUCTS ===================== */}
       <Card className="border-border/70 shadow-sm">
@@ -716,7 +769,17 @@ export function Reports() {
           <p className="text-xs text-muted-foreground">Last 7 days</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {topProducts.length ? (
+          {chartLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <Skeleton className="h-2 w-full" />
+              </div>
+            ))
+          ) : topProducts.length ? (
             topProducts.map((product) => (
               <div key={product.name}>
                 <div className="mb-2 flex items-center justify-between gap-4">
@@ -808,11 +871,15 @@ export function Reports() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                    Loading sales…
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={`sk-${i}`}>
+                    {Array.from({ length: 8 }).map((__, j) => (
+                      <TableCell key={j} className="py-4">
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : sales.length ? (
                 sales.map((item) => (
                   <TableRow key={item._id}>

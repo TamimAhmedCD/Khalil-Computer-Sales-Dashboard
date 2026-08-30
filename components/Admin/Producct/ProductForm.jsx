@@ -44,6 +44,9 @@ const schema = z.object({
   saleRate: z
     .number({ invalid_type_error: "Enter a valid sale rate" })
     .min(0, "Cannot be negative"),
+  commission: z
+    .number({ invalid_type_error: "Enter a valid commission" })
+    .min(0, "Cannot be negative"),
   stock: z
     .number({ invalid_type_error: "Enter a valid quantity" })
     .min(0, "Cannot be negative"),
@@ -62,6 +65,7 @@ const emptyValues = {
   description: "",
   buyRate: 0,
   saleRate: 0,
+  commission: 0,
   stock: 0,
   lowStockAlert: 0,
   unit: "pcs",
@@ -165,9 +169,17 @@ export default function ProductForm({
   // Derived profit (no state, no effect)
   const buyRate = watch("buyRate");
   const saleRate = watch("saleRate");
+  const commission = watch("commission");
   const profit =
     (Number.isFinite(saleRate) ? saleRate : 0) -
     (Number.isFinite(buyRate) ? buyRate : 0);
+
+  // Commission is a % of the sale price, deducted on every sale (same as service categories)
+  const commissionAmount = Math.round(
+    ((Number.isFinite(saleRate) ? saleRate : 0) *
+      (Number.isFinite(commission) ? commission : 0)) /
+      100,
+  );
 
   const onValid = (values) => {
     const fd = new FormData();
@@ -177,6 +189,7 @@ export default function ProductForm({
     fd.append("description", values.description || "");
     fd.append("buyRate", String(values.buyRate));
     fd.append("saleRate", String(values.saleRate));
+    fd.append("commission", String(values.commission ?? 0));
     fd.append("stock", String(values.stock ?? 0));
     fd.append("lowStockAlert", String(values.lowStockAlert ?? 0));
     fd.append("unit", values.unit || "pcs");
@@ -339,10 +352,11 @@ export default function ProductForm({
             <CardHeader>
               <CardTitle>Pricing</CardTitle>
               <CardDescription>
-                Profit is calculated as sale rate minus buy rate.
+                Profit is sale rate minus buy rate. Commission is a percentage
+                of the sale price, deducted on every sale.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <CardContent className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="buyRate">Buy rate</Label>
                 <div className="relative">
@@ -386,6 +400,33 @@ export default function ProductForm({
                 )}
               </div>
               <div className="space-y-2">
+                <Label htmlFor="commission">Commission (%)</Label>
+                <div className="relative">
+                  <Input
+                    id="commission"
+                    type="number"
+                    step="any"
+                    min={0}
+                    className="pr-8"
+                    {...register("commission", { valueAsNumber: true })}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    %
+                  </span>
+                </div>
+                {errors.commission ? (
+                  <p className="text-xs text-destructive">
+                    {errors.commission.message}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ <Taka />
+                    {commissionAmount.toLocaleString("en-BD")} per unit sold at
+                    the current sale rate
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
                 <Label>Estimated profit</Label>
                 <div className="flex h-9 items-center rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3">
                   <span
@@ -397,6 +438,12 @@ export default function ProductForm({
                     {Number(profit || 0).toLocaleString("en-BD")}
                   </span>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  After commission: <Taka />
+                  {Number(profit - commissionAmount || 0).toLocaleString(
+                    "en-BD",
+                  )}
+                </p>
               </div>
             </CardContent>
           </Card>

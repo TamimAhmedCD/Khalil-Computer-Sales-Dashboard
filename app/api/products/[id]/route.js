@@ -116,6 +116,7 @@ export async function PATCH(request, { params }) {
 
     const buyRate = Number(form.get("buyRate"));
     const saleRate = Number(form.get("saleRate"));
+    const commission = Number(form.get("commission") || 0);
     const stock = Number(form.get("stock") || 0);
     const lowStockAlert = Number(form.get("lowStockAlert") || 0);
     const unit = form.get("unit")?.toString().trim() || "pcs";
@@ -154,6 +155,16 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    if (!Number.isFinite(commission) || commission < 0) {
+      return Response.json(
+        {
+          success: false,
+          message: "Commission must be zero or a positive percentage",
+        },
+        { status: 400 },
+      );
+    }
+
     // 🔍 Validate category exists
     const category = await db
       .collection("categories")
@@ -178,7 +189,9 @@ export async function PATCH(request, { params }) {
       }
     }
 
-    const existingImages = Array.isArray(existing.images) ? existing.images : [];
+    const existingImages = Array.isArray(existing.images)
+      ? existing.images
+      : [];
     const keptImages = existingImages.filter((img) =>
       keepIds.includes(img.publicId),
     );
@@ -231,6 +244,7 @@ export async function PATCH(request, { params }) {
           description,
           buyRate,
           saleRate,
+          commission,
           profit,
           stock,
           unit,

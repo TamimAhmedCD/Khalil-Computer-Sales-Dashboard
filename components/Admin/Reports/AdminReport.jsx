@@ -60,6 +60,8 @@ import {
 
 import { Calendar } from "@/components/ui/calendar";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 // =========================================================
 // DEMO DATA
 // =========================================================
@@ -82,6 +84,38 @@ const DATE_LABELS = {
   "last-month": "Last Month",
   custom: "Custom Range",
 };
+
+// The admin transactions API returns up to 100 rows per page; walk every page
+// for the active filters so exports carry the complete set, not just a preview.
+async function fetchAllAdminTransactions(filterParams, { maxPages = 200 } = {}) {
+  const rows = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const params = new URLSearchParams({
+      ...filterParams,
+      page: String(page),
+      limit: "100",
+    });
+
+    const res = await fetch(`/api/admin/transactions?${params.toString()}`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const json = await res.json();
+
+    if (!res.ok || !json.success) {
+      throw new Error(json?.message || "Failed to load transactions");
+    }
+
+    rows.push(...(json.data || []));
+    totalPages = json.pagination?.totalPages || 1;
+    page += 1;
+  } while (page <= totalPages && page <= maxPages);
+
+  return rows;
+}
 
 // =========================================================
 // KPI CARD
@@ -142,13 +176,71 @@ function PerformanceBar({ value, max, className = "" }) {
 }
 
 // =========================================================
+// LOADING SKELETON
+// =========================================================
+
+function AdminReportSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* KPI grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Card key={i} className="border-border/70 shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="w-full space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-28" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Trend chart */}
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="space-y-4 p-6">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-72 w-full" />
+        </CardContent>
+      </Card>
+
+      {/* Two-up blocks */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i} className="border-border/70 shadow-sm">
+            <CardContent className="space-y-4 p-6">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-40 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Table block */}
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="space-y-3 p-6">
+          <Skeleton className="h-5 w-40" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =========================================================
 // PAGE
 // =========================================================
 
 export default function AdminReport() {
   const API_URL = "/api/admin/reports";
 
-  const [dateFilter, setDateFilter] = useState("month");
+  const [dateFilter, setDateFilter] = useState("today");
   const [sellerFilter, setSellerFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -313,7 +405,7 @@ export default function AdminReport() {
   );
 
   const resetFilters = () => {
-    setDateFilter("month");
+    setDateFilter("today");
     setSellerFilter("all");
     setCategoryFilter("all");
     setPaymentFilter("all");
@@ -346,7 +438,7 @@ export default function AdminReport() {
           })
         : "";
 
-    let periodLabel = DATE_LABELS[dateFilter] || "This Month";
+    let periodLabel = DATE_LABELS[dateFilter] || "Today";
     if (dateFilter === "custom" && customStartDate && customEndDate) {
       periodLabel = `${fmtDate(customStartDate)} – ${fmtDate(customEndDate)}`;
     }
@@ -395,14 +487,42 @@ export default function AdminReport() {
     try {
       const meta = buildMeta();
 
+      // Pull the complete transaction ledger for the active filters so the
+      // export reflects every matching sale — not just the recent preview.
+      const txFilters = { dateFilter };
+      if (sellerFilter !== "all") txFilters.employeeId = sellerFilter;
+      if (categoryFilter !== "all") txFilters.categoryId = categoryFilter;
+      if (paymentFilter !== "all") txFilters.paymentMethod = paymentFilter;
+      if (dateFilter === "custom" && customStartDate && customEndDate) {
+        txFilters.customStartDate = customStartDate.toISOString().split("T")[0];
+        txFilters.customEndDate = customEndDate.toISOString().split("T")[0];
+      }
+
+      const transactions = await fetchAllAdminTransactions(txFilters);
+      const allTransactions = transactions.map((t) => ({
+        time: t.date,
+        invoice: t.invoiceNumber,
+        seller: t.employee,
+        customer: t.customer,
+        product: t.product,
+        quantity: t.quantity,
+        revenue: t.revenue,
+        profit: t.profit,
+        commission: t.commission,
+        payment: t.paymentMethod,
+        due: t.due,
+      }));
+
+      const exportData = { ...reportData, allTransactions };
+
       if (kind === "pdf") {
-        await exportReportToPdf(reportData, meta);
+        await exportReportToPdf(exportData, meta);
         toast.success("PDF report downloaded");
       } else if (kind === "excel") {
-        await exportReportToExcel(reportData, meta);
+        await exportReportToExcel(exportData, meta);
         toast.success("Excel report downloaded");
       } else if (kind === "print") {
-        printReport(reportData, meta);
+        printReport(exportData, meta);
       }
     } catch (err) {
       console.error("Report export failed:", err);
@@ -712,9 +832,10 @@ export default function AdminReport() {
           </Card>
         )}
 
-        {loading && (
-          <div className="text-sm text-muted-foreground">Loading report...</div>
-        )}
+        {loading ? (
+          <AdminReportSkeleton />
+        ) : (
+          <div className="space-y-8">
 
         {/* =====================================================
             KPI SECTION
@@ -1583,6 +1704,8 @@ export default function AdminReport() {
             </div>
           </CardContent>
         </Card>
+          </div>
+        )}
       </div>
     </div>
   );

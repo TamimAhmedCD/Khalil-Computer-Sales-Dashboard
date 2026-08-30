@@ -164,6 +164,17 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    // 📦 2b. Restore inventory stock for product-type sales
+    if (sale.saleType === "product" && sale.productId) {
+      await db.collection("products").updateOne(
+        { _id: new ObjectId(sale.productId) },
+        {
+          $inc: { stock: Number(sale.quantity) || 0 },
+          $set: { updatedAt: new Date() },
+        },
+      );
+    }
+
     // 🗑️ 3. delete sale
     const result = await db.collection("sales").deleteOne({
       _id: new ObjectId(id),
