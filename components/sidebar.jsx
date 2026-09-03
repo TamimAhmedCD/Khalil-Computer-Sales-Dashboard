@@ -46,47 +46,74 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
 
   /* ---------------- Navigation Definitions ---------------- */
 
-  const superAdminMainNavLinks = [
-    { href: "/super-admin/dashboard", label: "Dashboard", icon: <Home /> },
-    { href: "/super-admin/sales", label: "Sales Entry", icon: <BarChart3 /> },
-    { href: "/super-admin/reports", label: "Reports", icon: <FileText /> },
+  // SUPER ADMIN - All system access
+  const superAdminNavLinks = [
+    { section: "Dashboard", links: [
+      { href: "/super-admin/dashboard", label: "Overview", icon: <Home /> },
+    ]},
+    { section: "Sales & Reports", links: [
+      { href: "/super-admin/sales", label: "Sales Entry", icon: <BarChart3 /> },
+      { href: "/super-admin/reports", label: "Reports", icon: <FileText /> },
+    ]},
+    { section: "System", links: [
+      { href: "/settings", label: "Settings", icon: <Settings /> },
+    ]},
   ];
 
-  const adminMainNavLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: <Home /> },
-    { href: "/admin/sales/add", label: "Sales Entry", icon: <ListPlus /> },
-    { href: "/admin/sales", label: "Sales List", icon: <List /> },
-    { href: "/admin/transactions", label: "Transactions", icon: <Store /> },
-    { href: "/admin/expenses", label: "Expenses", icon: <Wallet /> },
-    { href: "/admin/reports", label: "Reports", icon: <FileText /> },
-  ];
-
-  const employeeMainNavLinks = [
-    { href: "/employee/dashboard", label: "Dashboard", icon: <Home /> },
-    { href: "/employee/products", label: "Products", icon: <Package /> },
-    { href: "/employee/sales/add", label: "Add Sales", icon: <Plus /> },
-    { href: "/employee/sales", label: "Sales List", icon: <List /> },
-    { href: "/employee/reports", label: "My Reports", icon: <ClipboardList /> },
-  ];
-
+  // ADMIN - Business operations
   const adminNavLinks = [
-    { href: "/admin/products", label: "Products", icon: <Package /> },
-    { href: "/admin/add-product", label: "Add Product", icon: <Plus /> },
-    { href: "/admin/categories", label: "Categories", icon: <Layers /> },
-    { href: "/admin/employees", label: "Employees", icon: <Users /> },
+    { section: "Dashboard", links: [
+      { href: "/admin/dashboard", label: "Overview", icon: <Home /> },
+    ]},
+    { section: "Sales", links: [
+      { href: "/admin/sales/add", label: "New Sale", icon: <ListPlus /> },
+      { href: "/admin/sales", label: "Sales List", icon: <List /> },
+      { href: "/admin/transactions", label: "Transactions", icon: <Store /> },
+    ]},
+    { section: "Expenses", links: [
+      { href: "/admin/expenses", label: "Manage Expenses", icon: <Wallet /> },
+    ]},
+    { section: "Inventory", links: [
+      { href: "/admin/products", label: "Products", icon: <Package /> },
+      { href: "/admin/add-product", label: "Add Product", icon: <Plus /> },
+      { href: "/admin/categories", label: "Categories", icon: <Layers /> },
+    ]},
+    { section: "Team", links: [
+      { href: "/admin/employees", label: "Employees", icon: <Users /> },
+    ]},
+    { section: "Reports", links: [
+      { href: "/admin/reports", label: "Business Reports", icon: <FileText /> },
+    ]},
+    { section: "System", links: [
+      { href: "/settings", label: "Settings", icon: <Settings /> },
+    ]},
   ];
 
-  const settingsNavLinks = [
-    { href: "/settings", label: "Settings", icon: <Settings /> },
+  // EMPLOYEE - Limited access
+  const employeeNavLinks = [
+    { section: "Dashboard", links: [
+      { href: "/employee/dashboard", label: "My Dashboard", icon: <Home /> },
+    ]},
+    { section: "Products", links: [
+      { href: "/employee/products", label: "View Products", icon: <Package /> },
+    ]},
+    { section: "Sales", links: [
+      { href: "/employee/sales/add", label: "New Sale", icon: <Plus /> },
+      { href: "/employee/sales", label: "My Sales", icon: <List /> },
+    ]},
+    { section: "Reports", links: [
+      { href: "/employee/reports", label: "My Reports", icon: <ClipboardList /> },
+    ]},
   ];
 
-  const roleMainNav = {
-    superAdmin: superAdminMainNavLinks,
-    admin: adminMainNavLinks,
-    employee: employeeMainNavLinks,
+  // Role-based navigation
+  const roleNavigation = {
+    superAdmin: superAdminNavLinks,
+    admin: adminNavLinks,
+    employee: employeeNavLinks,
   };
 
-  const mainLinks = roleMainNav[role] || [];
+  const navigationSections = roleNavigation[role] || [];
 
   /* ---------------- Render Helper (Fixed) ---------------- */
 
@@ -213,10 +240,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-8 no-scrollbar">
-          {renderNavSection("Main Terminal", mainLinks)}
-          {(role === "admin" || role === "superAdmin") &&
-            renderNavSection("Management", adminNavLinks)}
-          {renderNavSection("System", settingsNavLinks)}
+          {navigationSections.map((section, index) => (
+            <div key={index}>
+              {renderNavSection(section.section, section.links)}
+            </div>
+          ))}
         </nav>
 
         <div
