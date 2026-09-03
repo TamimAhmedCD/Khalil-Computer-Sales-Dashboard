@@ -343,7 +343,30 @@ export async function POST(req) {
     const sale = await db.collection("sales").insertOne(saleDoc);
 
     // =========================================================
-    // 📦 10. Decrement inventory stock (product sales only, guarded)
+    // 🔔 10a. Notification: New sale recorded
+    // =========================================================
+    try {
+      const { createNotification } = await import("@/lib/notify");
+      await createNotification({
+        userId: "all-admins", // Notify all admins
+        type: "sale",
+        title: `New Sale Recorded`,
+        message: `${saleDoc.customerName || "Customer"} - ৳${saleDoc.total.toLocaleString()} via ${saleDoc.sellerName}`,
+        link: `/admin/sales/${sale.insertedId}`,
+        metadata: {
+          saleId: sale.insertedId.toString(),
+          invoiceNumber: saleDoc.invoiceNumber,
+          amount: saleDoc.total,
+          seller: saleDoc.sellerName,
+        },
+      });
+    } catch (notifyError) {
+      // Don't fail the main operation if notification fails
+      console.error("Failed to send notification:", notifyError.message);
+    }
+
+    // =========================================================
+    // 📦 10b. Decrement inventory stock (product sales only, guarded)
     // =========================================================
 
     if (saleType === "product") {

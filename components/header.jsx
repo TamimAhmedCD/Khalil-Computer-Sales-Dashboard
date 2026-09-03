@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { NotificationDropdown } from "@/components/NotificationDropdown"
 
 export function Header({ isCollapsed }) {
   const { theme, setTheme } = useTheme()
@@ -45,10 +46,7 @@ export function Header({ isCollapsed }) {
         </div>
 
         {/* Notifications */}
-        <button className="relative p-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl transition-all group">
-          <Bell className="w-5 h-5 text-zinc-500 group-hover:text-black dark:group-white transition-colors" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-black dark:bg-white rounded-full ring-2 ring-white dark:ring-[#020617]" />
-        </button>
+        <NotificationDropdown />
 
         {/* Theme Toggle */}
         <Button

@@ -465,6 +465,27 @@ export async function POST(request) {
 
     const result = await db.collection("expenses").insertOne(expenseDoc);
 
+    // =========================================================
+    // 🔔 Notification: New expense recorded
+    // =========================================================
+    try {
+      const { createNotification } = await import("@/lib/notify");
+      await createNotification({
+        userId: "all-admins",
+        type: "expense",
+        title: `New Expense Recorded`,
+        message: `${expenseDoc.title} - ৳${expenseDoc.amount.toLocaleString()} by ${expenseDoc.createdByName}`,
+        link: `/admin/expenses/${result.insertedId}`,
+        metadata: {
+          expenseId: result.insertedId.toString(),
+          amount: expenseDoc.amount,
+          category: expenseDoc.categoryName,
+        },
+      });
+    } catch (notifyError) {
+      console.error("Failed to send notification:", notifyError.message);
+    }
+
     return NextResponse.json({
       success: true,
       message: "Expense recorded successfully",
