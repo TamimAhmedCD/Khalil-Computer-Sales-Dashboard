@@ -11,7 +11,6 @@ import {
   FileText,
   Home,
   Menu,
-  X,
   ClipboardList,
   Plus,
   List,
@@ -23,6 +22,7 @@ import {
   LogOut,
   Layers,
   ListPlus,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, cloneElement } from "react";
@@ -57,11 +57,13 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
     { href: "/admin/sales/add", label: "Sales Entry", icon: <ListPlus /> },
     { href: "/admin/sales", label: "Sales List", icon: <List /> },
     { href: "/admin/transactions", label: "Transactions", icon: <Store /> },
+    { href: "/admin/expenses", label: "Expenses", icon: <Wallet /> },
     { href: "/admin/reports", label: "Reports", icon: <FileText /> },
   ];
 
   const employeeMainNavLinks = [
     { href: "/employee/dashboard", label: "Dashboard", icon: <Home /> },
+    { href: "/employee/products", label: "Products", icon: <Package /> },
     { href: "/employee/sales/add", label: "Add Sales", icon: <Plus /> },
     { href: "/employee/sales", label: "Sales List", icon: <List /> },
     { href: "/employee/reports", label: "My Reports", icon: <ClipboardList /> },
