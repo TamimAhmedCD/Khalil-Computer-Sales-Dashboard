@@ -12,6 +12,7 @@ import {
   Download,
   Edit,
   Eye,
+  FileSpreadsheet,
   Plus,
   Receipt,
   Search,
@@ -63,11 +64,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-import * as XLSX from "xlsx";
+import {
+  exportExpensesToExcel,
+  exportExpensesToPdf,
+  printExpensesReport,
+} from "@/lib/reports/exportReport";
 
 import { getExpenses, deleteExpense, createExpense, updateExpense } from "@/lib/services/expenses.api";
 import { useMutation } from "@tanstack/react-query";
@@ -82,247 +84,6 @@ const ITEMS_PER_PAGE = 15;
 
 const formatCurrency = (amount) => `৳${(amount || 0).toLocaleString()}`;
 const formatNumber = (num) => (num || 0).toLocaleString();
-
-// Export to CSV
-const exportToCSV = (expenses, summary, dateFilter) => {
-  const headers = [
-    "Date",
-    "Expense No.",
-    "Title",
-    "Category",
-    "Amount",
-    "Scope",
-    "Payment Method",
-    "Vendor/Recipient",
-    "Type",
-    "Source",
-    "Note",
-  ];
-
-  const rows = expenses.map((exp) => [
-    exp.expenseDate ? format(new Date(exp.expenseDate), "yyyy-MM-dd") : "",
-    exp.expenseNumber || "",
-    exp.title || "",
-    exp.categoryName || "",
-    exp.amount || 0,
-    exp.expenseScope || "",
-    exp.paymentMethod || "",
-    exp.vendorName || "",
-    exp.type || "",
-    exp.source === "sale" ? "Sale" : "Manual",
-    exp.note || "",
-  ]);
-
-  // Add summary at the top
-  const summaryRows = [
-    ["Expense Report"],
-    [`Generated on: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}`],
-    [`Filter: ${dateFilter}`],
-    [""],
-    ["Summary"],
-    [`Total Expenses: ৳${(summary.totalAmount || 0).toLocaleString()}`],
-    [`Total Transactions: ${summary.totalTransactions || 0}`],
-    [`Today's Total: ৳${(summary.todayTotal || 0).toLocaleString()}`],
-    [`Month Total: ৳${(summary.monthTotal || 0).toLocaleString()}`],
-    [""],
-    [""],
-  ];
-
-  const csvContent = [
-    ...summaryRows.map((row) => row.join(",")),
-    headers.join(","),
-    ...rows.map((row) =>
-      row.map((cell) => {
-        const cellStr = String(cell).replace(/"/g, '""');
-        return cellStr.includes(",") || cellStr.includes('"') || cellStr.includes("\n")
-          ? `"${cellStr}"`
-          : cellStr;
-      }).join(",")
-    ),
-  ].join("\n");
-
-  const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  link.setAttribute("href", url);
-  link.setAttribute("download", `expenses_${format(new Date(), "yyyy-MM-dd_HHmmss")}.csv`);
-  link.style.visibility = "hidden";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-// Export to Excel
-const exportToExcel = (expenses, summary, dateFilter) => {
-  const data = expenses.map((exp) => ({
-    Date: exp.expenseDate ? format(new Date(exp.expenseDate), "yyyy-MM-dd") : "",
-    "Expense No.": exp.expenseNumber || "",
-    Title: exp.title || "",
-    Category: exp.categoryName || "",
-    Amount: exp.amount || 0,
-    Scope: exp.expenseScope || "",
-    "Payment Method": exp.paymentMethod || "",
-    "Vendor/Recipient": exp.vendorName || "",
-    Type: exp.type || "",
-    Source: exp.source === "sale" ? "Sale" : "Manual",
-    Note: exp.note || "",
-  }));
-
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Expenses");
-
-  // Add summary sheet
-  const summaryData = [
-    { Metric: "Total Expenses", Value: `৳${(summary.totalAmount || 0).toLocaleString()}` },
-    { Metric: "Total Transactions", Value: summary.totalTransactions || 0 },
-    { Metric: "Today's Total", Value: `৳${(summary.todayTotal || 0).toLocaleString()}` },
-    { Metric: "Month Total", Value: `৳${(summary.monthTotal || 0).toLocaleString()}` },
-    { Metric: "Filter Applied", Value: dateFilter },
-    { Metric: "Generated On", Value: format(new Date(), "yyyy-MM-dd HH:mm:ss") },
-  ];
-  const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-  XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
-
-  XLSX.writeFile(wb, `expenses_${format(new Date(), "yyyy-MM-dd_HHmmss")}.xlsx`);
-};
-
-// Export to PDF
-const exportToPDF = (expenses, summary, dateFilter) => {
-  const doc = new jsPDF();
-
-  // Title
-  doc.setFontSize(18);
-  doc.setTextColor(40, 40, 40);
-  doc.text("Expense Report", 14, 22);
-
-  // Summary
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Generated on: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}`, 14, 32);
-  doc.text(`Filter: ${dateFilter}`, 14, 38);
-
-  // Summary box
-  doc.setFontSize(11);
-  doc.setTextColor(40, 40, 40);
-  doc.text("Summary", 14, 50);
-  doc.setFontSize(10);
-  doc.text(`Total Expenses: ৳${(summary.totalAmount || 0).toLocaleString()}`, 14, 58);
-  doc.text(`Total Transactions: ${summary.totalTransactions || 0}`, 14, 64);
-  doc.text(`Today's Total: ৳${(summary.todayTotal || 0).toLocaleString()}`, 14, 70);
-  doc.text(`Month Total: ৳${(summary.monthTotal || 0).toLocaleString()}`, 14, 76);
-
-  // Table
-  const tableData = expenses.map((exp) => [
-    exp.expenseDate ? format(new Date(exp.expenseDate), "dd MMM yyyy") : "",
-    exp.expenseNumber || "",
-    (exp.title || "").substring(0, 25),
-    exp.categoryName || "",
-    `৳${(exp.amount || 0).toLocaleString()}`,
-    exp.expenseScope || "",
-    exp.source === "sale" ? "Sale" : "Manual",
-  ]);
-
-  doc.autoTable({
-    head: [["Date", "Expense No.", "Title", "Category", "Amount", "Scope", "Source"]],
-    body: tableData,
-    startY: 85,
-    styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [66, 139, 202], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-    columnStyles: {
-      0: { cellWidth: 22 },
-      1: { cellWidth: 28 },
-      2: { cellWidth: 45 },
-      3: { cellWidth: 28 },
-      4: { cellWidth: 25, halign: "right" },
-      5: { cellWidth: 20 },
-      6: { cellWidth: 18 },
-    },
-  });
-
-  doc.save(`expenses_${format(new Date(), "yyyy-MM-dd_HHmmss")}.pdf`);
-};
-
-// Print
-const printExpenses = (expenses, summary, dateFilter) => {
-  const printWindow = window.open("", "_blank");
-  const tableRows = expenses
-    .map(
-      (exp) => `
-      <tr>
-        <td>${exp.expenseDate ? format(new Date(exp.expenseDate), "dd MMM yyyy") : ""}</td>
-        <td>${exp.expenseNumber || ""}</td>
-        <td>${exp.title || ""}</td>
-        <td>${exp.categoryName || ""}</td>
-        <td style="text-align: right;">৳${(exp.amount || 0).toLocaleString()}</td>
-        <td>${exp.expenseScope || ""}</td>
-        <td>${exp.source === "sale" ? "Sale" : "Manual"}</td>
-      </tr>
-    `
-    )
-    .join("");
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Expense Report</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #333; margin-bottom: 5px; }
-        .summary { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; }
-        .summary p { margin: 5px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-        th { background: #428bca; color: white; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .footer { margin-top: 30px; font-size: 11px; color: #666; }
-        @media print { body { margin: 0; } }
-      </style>
-    </head>
-    <body>
-      <h1>Expense Report</h1>
-      <p style="color: #666;">Generated on: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")} | Filter: ${dateFilter}</p>
-
-      <div class="summary">
-        <p><strong>Total Expenses:</strong> ৳${(summary.totalAmount || 0).toLocaleString()}</p>
-        <p><strong>Total Transactions:</strong> ${summary.totalTransactions || 0}</p>
-        <p><strong>Today's Total:</strong> ৳${(summary.todayTotal || 0).toLocaleString()}</p>
-        <p><strong>Month Total:</strong> ৳${(summary.monthTotal || 0).toLocaleString()}</p>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Expense No.</th>
-            <th>Title</th>
-            <th>Category</th>
-            <th style="text-align: right;">Amount</th>
-            <th>Scope</th>
-            <th>Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-      </table>
-
-      <div class="footer">
-        <p>Khalil Computer Management System</p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  setTimeout(() => {
-    printWindow.print();
-  }, 250);
-};
 
 const SCOPE_CONFIG = {
   Business: { icon: Building2, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800" },
@@ -482,23 +243,77 @@ export function ExpenseList() {
   const summary = data?.data?.summary || {};
   const pagination = data?.data?.pagination || { totalPages: 1, currentPage: 1, totalResults: 0 };
 
-  const handleExport = (type) => {
+  const handleExport = async (type) => {
     if (expenses.length === 0) {
       toast.error("No expenses to export");
       return;
     }
+
+    // Show loading state
+    const loadingToastId = toast.loading("Preparing export...");
+
     try {
-      if (type === "csv") {
-        exportToCSV(expenses, summary, dateFilter);
-      } else if (type === "excel") {
-        exportToExcel(expenses, summary, dateFilter);
+      // Build metadata for the report
+      const DATE_LABELS = {
+        today: "Today",
+        yesterday: "Yesterday",
+        week: "This Week",
+        month: "This Month",
+        "last-month": "Last Month",
+        year: "This Year",
+        all: "All Time",
+      };
+
+      const now = new Date();
+      const meta = {
+        title: "Expense Report",
+        filters: [
+          { label: "Period", value: DATE_LABELS[dateFilter] || "All Time" },
+          { label: "Category", value: categoryFilter === "all" ? "All Categories" : (categories.find(c => c._id === categoryFilter)?.name || "All") },
+          { label: "Scope", value: scopeFilter === "all" ? "All Scopes" : scopeFilter },
+        ],
+        generatedAt: now.toLocaleString("en-BD", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        fileBase: `khalil-expenses-${dateFilter}-${now.toISOString().slice(0, 10)}`,
+      };
+
+      // Fetch all pages for the current filters
+      let allExpenses = [];
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const response = await getExpenses({
+          dateFilter,
+          search: debouncedSearch,
+          category: categoryFilter,
+          scope: scopeFilter,
+          page,
+          limit: 100
+        });
+
+        allExpenses = [...allExpenses, ...(response.data?.expenses || [])];
+        totalPages = response.data?.pagination?.totalPages || 1;
+        page++;
+      } while(page <= totalPages);
+
+      if (type === "excel") {
+        await exportExpensesToExcel(allExpenses, summary, meta);
       } else if (type === "pdf") {
-        exportToPDF(expenses, summary, dateFilter);
+        await exportExpensesToPdf(allExpenses, summary, meta);
       } else if (type === "print") {
-        printExpenses(expenses, summary, dateFilter);
+        printExpensesReport(allExpenses, summary, meta);
       }
+
+      toast.dismiss(loadingToastId);
       toast.success(`Expenses exported successfully`);
     } catch (error) {
+      toast.dismiss(loadingToastId);
       toast.error("Failed to export expenses");
       console.error("Export error:", error);
     }
@@ -534,17 +349,13 @@ export function ExpenseList() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport("csv")}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("excel")}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export as Excel
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport("pdf")}>
                 <FileText className="h-4 w-4 mr-2" />
-                Export as PDF
+                Download PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("excel")}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Download Excel
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport("print")}>
                 <Printer className="h-4 w-4 mr-2" />
@@ -697,7 +508,6 @@ export function ExpenseList() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs font-semibold">Date</TableHead>
-                    <TableHead className="text-xs font-semibold">Expense No.</TableHead>
                     <TableHead className="text-xs font-semibold">Title</TableHead>
                     <TableHead className="text-xs font-semibold">Category</TableHead>
                     <TableHead className="text-xs font-semibold text-right">Amount</TableHead>
@@ -715,7 +525,6 @@ export function ExpenseList() {
                         <TableCell className="text-xs font-mono text-muted-foreground">
                           {expense.expenseDate ? format(new Date(expense.expenseDate), "dd MMM yyyy") : "—"}
                         </TableCell>
-                        <TableCell className="text-xs font-mono">{expense.expenseNumber || "—"}</TableCell>
                         <TableCell>
                           <p className="text-sm font-medium line-clamp-1">{expense.title}</p>
                           {expense.vendorName && (
