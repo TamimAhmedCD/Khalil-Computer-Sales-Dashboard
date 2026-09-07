@@ -25,7 +25,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, cloneElement } from "react";
+import { useState, cloneElement, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 import {
   DropdownMenu,
@@ -35,12 +35,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { ScrollArea } from "./ui/scroll-area";
 
 export function Sidebar({ isCollapsed, setIsCollapsed }) {
   const { data: session } = useSession();
   const role = session?.user?.role;
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const showFullSidebar = isMobileOpen || !isCollapsed;
 
@@ -115,18 +121,20 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
 
   const navigationSections = roleNavigation[role] || [];
 
-  /* ---------------- Render Helper (Fixed) ---------------- */
+  if (!mounted) return null;
+
+  /* ---------------- Render Helper ---------------- */
 
   const renderNavSection = (title, links) => {
     if (!Array.isArray(links) || links.length === 0) return null;
     return (
-      <div className="px-4 mb-8">
+      <div className="px-3 mb-6">
         {showFullSidebar && (
-          <p className="text-[10px] font-black text-zinc-500 mb-4 px-4 uppercase tracking-[0.3em]">
+          <p className="text-[10px] font-bold text-muted-foreground/80 mb-3 px-3 uppercase tracking-wider">
             {title}
           </p>
         )}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -134,37 +142,33 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsMobileOpen(false)}
+                title={!showFullSidebar ? link.label : undefined}
+                className={cn(
+                  "group relative flex items-center rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
+                  !showFullSidebar ? "justify-center p-2.5 mx-auto w-11" : "gap-3 px-3 py-2.5",
+                  isActive
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-accent/80 hover:text-foreground",
+                )}
               >
-                <div
-                  title={!showFullSidebar ? link.label : ""}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-full" />
+                )}
+
+                <span
                   className={cn(
-                    "group relative flex items-center rounded-2xl transition-all duration-300 cursor-pointer",
-                    !showFullSidebar ? "justify-center p-3" : "gap-4 px-4 py-3",
-                    isActive
-                      ? "bg-black dark:bg-white text-white dark:text-black shadow-lg"
-                      : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 hover:text-black dark:hover:text-white",
+                    "shrink-0 transition-transform duration-200",
+                    isActive ? "scale-110" : "group-hover:scale-110",
                   )}
                 >
-                  {isActive && showFullSidebar && (
-                    <div className="absolute left-0 w-1 h-5 bg-white dark:bg-black rounded-r-full" />
-                  )}
+                  {cloneElement(link.icon, { size: 20 })}
+                </span>
 
-                  {/* FIXED: Removed JSON.stringify. Using cloneElement to pass size safely */}
-                  <span
-                    className={cn(
-                      "shrink-0 transition-transform duration-300 group-hover:scale-110",
-                      isActive ? "scale-110" : "scale-100",
-                    )}
-                  >
-                    {cloneElement(link.icon, { size: 18 })}
+                {showFullSidebar && (
+                  <span className="text-sm tracking-tight whitespace-nowrap">
+                    {link.label}
                   </span>
-
-                  {showFullSidebar && (
-                    <span className="text-sm font-black tracking-tight whitespace-nowrap">
-                      {link.label}
-                    </span>
-                  )}
-                </div>
+                )}
               </Link>
             );
           })}
@@ -178,7 +182,8 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
       {!isMobileOpen && (
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="fixed top-4 left-4 z-50 md:hidden p-3 rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white border border-zinc-200 dark:border-zinc-800 shadow-xl"
+          className="fixed top-3 left-4 z-50 md:hidden p-2 rounded-lg bg-background/80 backdrop-blur-md text-foreground border border-border shadow-sm hover:bg-accent transition-colors"
+          aria-label="Open sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -186,15 +191,15 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
 
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 z-40 md:hidden bg-background/80 backdrop-blur-sm"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          "fixed left-0 top-0 h-screen flex flex-col transition-all duration-500 z-40",
-          " border-r",
+          "fixed left-0 top-0 h-screen flex flex-col transition-all duration-300 z-40 bg-background/95",
+          "border-r border-border backdrop-blur-xl",
           isMobileOpen
             ? "w-72 translate-x-0"
             : cn(
@@ -205,21 +210,21 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
       >
         <div
           className={cn(
-            "h-16 flex items-center border-b border-zinc-100 dark:border-zinc-800/50 px-6 shrink-0",
+            "h-16 flex items-center border-b border-border/50 px-4 shrink-0",
             !showFullSidebar ? "justify-center" : "justify-between",
           )}
         >
           {showFullSidebar && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-black dark:bg-white rounded-[1.2rem] flex items-center justify-center shadow-lg rotate-3">
-                <Cpu className="text-white dark:text-black w-6 h-6" />
+            <div className="flex items-center gap-3 pl-2">
+              <div className="w-9 h-9 bg-primary/10 rounded-[10px] flex items-center justify-center border border-primary/20">
+                <Cpu className="text-primary w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-sm font-black text-black dark:text-white tracking-tighter leading-none">
+                <h1 className="text-sm font-bold text-foreground tracking-tight leading-none">
                   KHALIL
                 </h1>
-                <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] mt-0.5">
-                  COMPUTER
+                <span className="text-[10px] font-semibold text-primary uppercase tracking-widest mt-1">
+                  Computers
                 </span>
               </div>
             </div>
@@ -228,7 +233,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
           {!isMobileOpen && (
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl text-zinc-400"
+              className={cn(
+                "p-1.5 hover:bg-accent rounded-lg text-muted-foreground transition-colors",
+                !showFullSidebar && "mx-auto"
+              )}
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isCollapsed ? (
                 <ChevronRight size={18} />
@@ -239,17 +248,19 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-8 no-scrollbar">
-          {navigationSections.map((section, index) => (
-            <div key={index}>
-              {renderNavSection(section.section, section.links)}
-            </div>
-          ))}
-        </nav>
+        <ScrollArea className="flex-1 py-6 h-[calc(100vh-8rem)]">
+          <div className="pb-8">
+            {navigationSections.map((section, index) => (
+              <div key={index}>
+                {renderNavSection(section.section, section.links)}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
 
         <div
           className={cn(
-            "p-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-auto",
+            "p-3 border-t border-border/50 mt-auto",
             !showFullSidebar && "flex justify-center",
           )}
         >
@@ -257,76 +268,71 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "flex items-center gap-3 rounded-2xl transition-all outline-none group w-full",
+                  "flex items-center gap-3 rounded-xl transition-all outline-none group w-full",
                   !showFullSidebar
                     ? "justify-center p-1"
-                    : "p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800/50",
+                    : "p-2 hover:bg-accent border border-transparent hover:border-border/50",
                 )}
               >
-                {/* Avatar Squircle */}
-                <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black font-black text-sm shadow-xl transition-transform group-hover:scale-95 group-hover:rotate-3 shrink-0">
-                  {session?.user?.name?.charAt(0).toUpperCase() || "K"}
+                <div className="w-9 h-9 bg-primary/10 rounded-[10px] flex items-center justify-center text-primary font-bold text-sm border border-primary/20 transition-transform group-hover:scale-95 shrink-0">
+                  {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
 
-                {/* User Info - Only visible when sidebar is open */}
                 {showFullSidebar && (
                   <>
                     <div className="flex-1 text-left overflow-hidden">
-                      <p className="text-xs font-black text-black dark:text-white uppercase tracking-tighter leading-none truncate">
-                        {session?.user?.name}
+                      <p className="text-sm font-semibold text-foreground tracking-tight leading-none truncate mb-1">
+                        {session?.user?.name || "User"}
                       </p>
-                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.15em] mt-1 truncate">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider truncate">
                         {session?.user?.role || "Staff"}
                       </p>
                     </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                   </>
                 )}
               </button>
             </DropdownMenuTrigger>
 
-            {/* Dropdown Content */}
             <DropdownMenuContent
               side={showFullSidebar ? "top" : "right"}
-              align={showFullSidebar ? "end" : "start"}
+              align={showFullSidebar ? "end" : "end"}
               sideOffset={12}
-              className="w-60 p-2 rounded-2xl bg-white dark:bg-[#09090b] border-zinc-200 dark:border-zinc-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="w-56 p-2 rounded-xl bg-card border-border shadow-lg"
             >
               <DropdownMenuLabel className="px-3 py-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
-                  Staff Terminal
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">
+                  Session Info
                 </p>
-                <p className="text-sm font-bold text-black dark:text-white mt-1 truncate">
-                  {session?.user?.email}
+                <p className="text-sm font-medium text-foreground truncate">
+                  {session?.user?.email || "No email"}
                 </p>
               </DropdownMenuLabel>
 
-              <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
+              <DropdownMenuSeparator className="bg-border" />
 
-              <DropdownMenuItem className="flex items-center gap-3 p-3 rounded-xl cursor-pointer focus:bg-zinc-100 dark:focus:bg-zinc-900 transition-colors group/item">
-                <User className="w-4 h-4 text-zinc-500 group-hover/item:text-black dark:group-hover/item:text-white transition-colors" />
-                <span className="text-xs font-bold uppercase tracking-tight">
-                  Profile Terminal
-                </span>
+              <DropdownMenuItem asChild className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer focus:bg-accent transition-colors">
+                <Link href="/profile">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Profile</span>
+                </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="flex items-center gap-3 p-3 rounded-xl cursor-pointer focus:bg-zinc-100 dark:focus:bg-zinc-900 transition-colors group/item">
-                <Settings className="w-4 h-4 text-zinc-400 group-hover/item:text-black dark:group-hover/item:text-white transition-colors" />
-                <span className="text-xs font-bold uppercase tracking-tight">
-                  System Settings
-                </span>
+              <DropdownMenuItem asChild className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer focus:bg-accent transition-colors">
+                <Link href="/profile">
+                  <Settings className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Preferences</span>
+                </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
+              <DropdownMenuSeparator className="bg-border" />
 
               <DropdownMenuItem
                 onClick={() => signOut()}
-                className="flex items-center gap-3 p-3 rounded-xl cursor-pointer text-red-500 focus:bg-red-50 dark:focus:bg-red-500/10 transition-colors"
+                className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer text-destructive focus:bg-destructive/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-xs font-black uppercase tracking-widest">
-                  Terminate Session
-                </span>
+                <span className="text-sm font-medium">Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
