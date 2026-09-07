@@ -1,5 +1,5 @@
 "use client";
-import { EmployeeDashboard } from "@/components/Employee/dashboard";
+import { EmployeeDashboardEnhanced } from "@/components/Employee/DashboardEnhanced";
 import { DashboardSkeleton } from "@/components/Employee/Dashboard/DashboardSkeleton";
 import { useSession } from "next-auth/react";
 
@@ -14,12 +14,9 @@ export default function EmployeeDashboardPage() {
   if (session.user.role !== "employee") {
     return <div>Unauthorized</div>;
   }
-  const onNavigate = (path) => {
-    window.location.href = `/employee/${path}`;
-  };
   return (
     <section>
-      <EmployeeDashboard onNavigate={onNavigate} session={session} />
+      <EmployeeDashboardEnhanced session={session} />
     </section>
   );
 }

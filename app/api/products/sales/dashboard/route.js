@@ -166,6 +166,120 @@ export async function GET() {
       .toArray();
 
     // =========================================================
+    // 📊 8. Weekly Sales Trend (Last 7 Days)
+    // =========================================================
+
+    const last7Days = new Date(now);
+    last7Days.setDate(now.getDate() - 6);
+    last7Days.setHours(0, 0, 0, 0);
+
+    const weeklySalesTrend = await salesCollection
+      .aggregate([
+        {
+          $match: {
+            sellerId: userId,
+            createdAt: {
+              $gte: last7Days,
+              $lte: endOfToday,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
+              },
+            },
+            sales: {
+              $sum: {
+                $ifNull: ["$totalPrice", 0],
+              },
+            },
+            profit: {
+              $sum: {
+                $ifNull: ["$netProfit", 0],
+              },
+            },
+            transactions: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+      ])
+      .toArray();
+
+    // Fill missing days with zero values
+    const chartData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      const dateStr = date.toISOString().split("T")[0];
+
+      const dayData = weeklySalesTrend.find((d) => d._id === dateStr);
+
+      chartData.push({
+        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        sales: dayData ? Number(dayData.sales) : 0,
+        profit: dayData ? Number(dayData.profit) : 0,
+        transactions: dayData ? Number(dayData.transactions) : 0,
+      });
+    }
+
+    // =========================================================
+    // 📊 9. Category Performance (This Month)
+    // =========================================================
+
+    const categoryPerformance = await salesCollection
+      .aggregate([
+        {
+          $match: {
+            sellerId: userId,
+            createdAt: {
+              $gte: startOfMonth,
+              $lte: endOfMonth,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$categoryName",
+            sales: {
+              $sum: {
+                $ifNull: ["$totalPrice", 0],
+              },
+            },
+            profit: {
+              $sum: {
+                $ifNull: ["$netProfit", 0],
+              },
+            },
+            count: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $sort: { sales: -1 },
+        },
+        {
+          $limit: 5,
+        },
+      ])
+      .toArray();
+
+    const formattedCategories = categoryPerformance.map((cat) => ({
+      category: cat._id || "Uncategorized",
+      sales: Number(cat.sales) || 0,
+      profit: Number(cat.profit) || 0,
+      count: Number(cat.count) || 0,
+    }));
+
+    // =========================================================
     // 🧮 8. Summary Values
     // =========================================================
 
@@ -227,6 +341,10 @@ export async function GET() {
           salesCount,
 
           todaysSales: formattedSales,
+
+          // Chart data
+          chartData,
+          categoryPerformance: formattedCategories,
         },
       },
       { status: 200 },
