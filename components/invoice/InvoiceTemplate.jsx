@@ -155,8 +155,8 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
                 Computer Sales &amp; Service Center
               </div>
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6, lineHeight: 1.6 }}>
-                Dhaka, Bangladesh<br />
-                Phone: +880 XXXXX XXXXX<br />
+                Barlekha, Moulvibazar, Bangladesh<br />
+                Phone: +880 1715 409109<br />
                 Email: info@khalilcomputer.com
               </div>
             </div>
