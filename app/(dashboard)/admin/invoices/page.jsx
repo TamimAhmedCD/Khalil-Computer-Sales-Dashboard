@@ -1,4 +1,5 @@
 import InvoiceList from "@/components/invoice/InvoiceList";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Invoices | Admin",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function AdminInvoicesPage() {
-  return <InvoiceList basePath="/admin" />;
+  return (
+    <Suspense fallback={<div>Loading invoices...</div>}>
+      <InvoiceList basePath="/admin" />
+    </Suspense>
+  );
 }

@@ -1,4 +1,5 @@
 import InvoiceList from "@/components/invoice/InvoiceList";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Invoices | Employee",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function EmployeeInvoicesPage() {
-  return <InvoiceList basePath="/employee" />;
+  return (
+    <Suspense fallback={<div>Loading invoices...</div>}>
+      <InvoiceList basePath="/employee" />
+    </Suspense>
+  );
 }

@@ -2,6 +2,7 @@ import InvoiceForm from "@/components/invoice/InvoiceForm";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Create Invoice | Employee",
@@ -25,7 +26,9 @@ export default function EmployeeAddInvoicePage() {
         </div>
       </div>
 
-      <InvoiceForm mode="create" isEmployee={true} />
+      <Suspense fallback={<div>Loading form...</div>}>
+        <InvoiceForm mode="create" isEmployee={true} />
+      </Suspense>
     </div>
   );
 }
