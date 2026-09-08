@@ -28,6 +28,7 @@ import {
   Search,
   AlertCircle,
   Award,
+  Receipt,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -432,6 +433,17 @@ export function SalesList() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+
+                            <Link href={`/employee/invoices/add?saleId=${sale._id}`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/5"
+                                title="Generate Invoice"
+                              >
+                                <Receipt className="w-4 h-4" />
+                              </Button>
+                            </Link>
 
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

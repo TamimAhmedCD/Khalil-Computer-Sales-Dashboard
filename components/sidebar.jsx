@@ -23,6 +23,7 @@ import {
   Layers,
   ListPlus,
   Wallet,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, cloneElement, useEffect } from "react";
@@ -74,6 +75,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
     { section: "Sales", links: [
       { href: "/admin/sales/add", label: "New Sale", icon: <ListPlus /> },
       { href: "/admin/sales", label: "Sales List", icon: <List /> },
+      { href: "/admin/invoices", label: "Invoices", icon: <Receipt /> },
       { href: "/admin/transactions", label: "Transactions", icon: <Store /> },
     ]},
     { section: "Expenses", links: [
@@ -105,6 +107,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
     ]},
     { section: "Sales", links: [
       { href: "/employee/sales/add", label: "New Sale", icon: <Plus /> },
+      { href: "/employee/invoices", label: "Invoices", icon: <Receipt /> },
       { href: "/employee/sales", label: "My Sales", icon: <List /> },
     ]},
     { section: "Reports", links: [
