@@ -5,7 +5,6 @@ import { Download, Printer } from "lucide-react";
 import { useRef } from "react";
 import { format } from "date-fns";
 import { generateInvoicePDF } from "@/lib/invoice/pdfGenerator";
-import Image from "next/image";
 
 // =========================================================
 // Invoice Template — Professional A4 Print-Ready Layout
@@ -141,9 +140,9 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 20, borderBottom: "2px solid #2563eb", marginBottom: 24 }}>
           {/* Brand */}
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {/* Logo – replace /logo-placeholder.svg with your real logo */}
+            {/* Logo */}
             <img
-              src="/logo-placeholder.svg"
+              src="/logo.svg"
               alt="Khalil Computer"
               style={{ width: 52, height: 52, borderRadius: 10, objectFit: "contain" }}
             />
