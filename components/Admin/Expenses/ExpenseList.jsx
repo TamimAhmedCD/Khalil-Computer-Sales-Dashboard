@@ -15,6 +15,7 @@ import {
   FileSpreadsheet,
   Plus,
   Receipt,
+  RefreshCw,
   Search,
   Settings,
   TrendingUp,
@@ -26,6 +27,7 @@ import {
   Package,
   Printer,
   FileText,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -70,6 +72,7 @@ import {
   exportExpensesToPdf,
   printExpensesReport,
 } from "@/lib/reports/exportReport";
+import { cn } from "@/lib/utils";
 
 import { getExpenses, deleteExpense, createExpense, updateExpense } from "@/lib/services/expenses.api";
 import { useMutation } from "@tanstack/react-query";
@@ -181,6 +184,28 @@ export function ExpenseList() {
     }, 400);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Derived: check if any non-default filter is active
+  const hasActiveFilters =
+    dateFilter !== "today" ||
+    searchTerm !== "" ||
+    categoryFilter !== "all" ||
+    scopeFilter !== "all";
+
+  // Clear all filters back to defaults
+  const handleClearFilters = () => {
+    setDateFilter("today");
+    setSearchTerm("");
+    setDebouncedSearch("");
+    setCategoryFilter("all");
+    setScopeFilter("all");
+    setCurrentPage(1);
+  };
+
+  // Manually refetch
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["expenses"] });
+  };
 
   // Fetch expenses
   const { data, isLoading, isError, error, isFetching } = useQuery({
@@ -432,6 +457,31 @@ export function ExpenseList() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearFilters}
+                className="shrink-0"
+                title="Clear all filters"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Refresh */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isFetching}
+              className="shrink-0"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -443,31 +493,39 @@ export function ExpenseList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* Card 1 — Filtered Total */}
           <KpiCard
-            title="Total Expenses"
-            value={formatCurrency(summary.totalAmount || 0)}
-            description="All expenses including sales"
+            title="Filtered Total"
+            value={formatCurrency(summary.filteredTotal ?? 0)}
+            description={`${summary.filteredCount ?? 0} record${(summary.filteredCount ?? 0) !== 1 ? "s" : ""} in filtered period`}
             icon={CircleDollarSign}
           />
+          {/* Card 2 — Today (filtered to today only if dateFilter is "today", otherwise shows static today's total) */}
           <KpiCard
-            title="Today"
-            value={formatCurrency(summary.todayTotal || 0)}
-            description="Today's expenses"
+            title={dateFilter === "today" ? "Today (Filtered)" : "Today"}
+            value={formatCurrency(dateFilter === "today" ? (summary.filteredTotal ?? 0) : (summary.todayTotal || 0))}
+            description={dateFilter === "today" ? "Filtered expenses for today" : "Today's expenses (all categories)"}
             icon={Receipt}
             iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
             valueClassName="text-emerald-600 dark:text-emerald-400"
           />
+          {/* Card 3 — This Month (filtered to month only if dateFilter is "month", otherwise shows static month's total) */}
           <KpiCard
-            title="This Month"
-            value={formatCurrency(summary.monthTotal || 0)}
-            description="Current month expenses"
+            title={dateFilter === "month" ? "This Month (Filtered)" : "This Month"}
+            value={formatCurrency(dateFilter === "month" ? (summary.filteredTotal ?? 0) : (summary.monthTotal || 0))}
+            description={dateFilter === "month" ? "Filtered expenses for this month" : "This month's expenses (all categories)"}
             icon={TrendingUp}
             iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
           />
+          {/* Card 4 — Transactions (filtered count) */}
           <KpiCard
             title="Transactions"
-            value={formatNumber(summary.totalTransactions || 0)}
-            description="Total expense records"
+            value={formatNumber(summary.filteredCount ?? 0)}
+            description={
+              dateFilter !== "all" || scopeFilter !== "all" || categoryFilter !== "all"
+                ? "Matching records"
+                : "Total expense records"
+            }
             icon={Wallet}
             iconClassName="bg-violet-500/10 text-violet-600 dark:text-violet-400"
           />

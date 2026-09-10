@@ -357,6 +357,10 @@ export async function GET(request) {
     const allTimeTotal = getSummary(manualSummary, "allTime").total + getSummary(salesSummary, "allTime").total;
     const totalTransactions = getSummary(manualSummary, "allTime").count + getSummary(salesSummary, "allTime").count;
 
+    // Filtered totals — match exactly what the table shows (sum over all pages)
+    const filteredTotal = allExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const filteredCount = allExpenses.length;
+
     // Get categories for dropdown
     const categories = await db.collection("expenseCategories").find({}).sort({ name: 1 }).toArray();
 
@@ -371,6 +375,8 @@ export async function GET(request) {
           yearTotal: monthTotal, // Simplified - you can add year aggregation if needed
           totalAmount: allTimeTotal,
           totalTransactions,
+          filteredTotal,
+          filteredCount,
         },
         pagination: {
           totalResults: totalExpenses,

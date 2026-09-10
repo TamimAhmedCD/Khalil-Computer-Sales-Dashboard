@@ -5,7 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, AlertCircle, ReceiptText, Building2, Home, User, Package } from "lucide-react";
+import { CalendarIcon, AlertCircle, ReceiptText, Building2, Home, User, Package, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useExpenseCategories } from "@/lib/hooks/expenses/useExpenseCategories";
 
 const formSchema = z.object({
@@ -65,6 +66,24 @@ export function ExpenseForm({
 
   const { data: categoriesData } = useExpenseCategories();
   const categories = categoriesData?.data || [];
+
+  // Category search functionality
+  const [categorySearch, setCategorySearch] = useState("");
+  const [filteredCategories, setFilteredCategories] = useState(categories);
+
+  // Update filtered categories when search or categories change
+  useEffect(() => {
+    if (!categorySearch.trim()) {
+      setFilteredCategories(categories);
+    } else {
+      const searchLower = categorySearch.toLowerCase();
+      const filtered = categories.filter(cat =>
+        cat.name.toLowerCase().includes(searchLower) ||
+        cat.type.toLowerCase().includes(searchLower)
+      );
+      setFilteredCategories(filtered);
+    }
+  }, [categorySearch, categories]);
 
   // Auto-detected scope based on selected category
   const [selectedCategoryId, setSelectedCategoryId] = useState(
@@ -244,7 +263,7 @@ export function ExpenseForm({
             </div>
           </div>
 
-          {/* Category */}
+          {/* Category with Search */}
           <div className="space-y-2">
             <Label htmlFor="categoryId">Category *</Label>
             <Controller
@@ -257,21 +276,44 @@ export function ExpenseForm({
                     setSelectedCategoryId(v);
                   }}
                   value={field.value}
+                  onOpenChange={(open) => {
+                    if (!open) setCategorySearch("");
+                  }}
                 >
                   <SelectTrigger id="categoryId" className="w-full">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id}>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] h-4">
-                            {cat.type}
-                          </Badge>
-                          {cat.name}
+                  <SelectContent className="p-0">
+                    <div className="sticky top-0 z-10 bg-background border-b px-3 py-2">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search categories..."
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          className="h-8 pl-8 text-xs focus-visible:ring-0"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    <ScrollArea className="h-[250px]">
+                      {filteredCategories.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-muted-foreground">
+                          No categories found
                         </div>
-                      </SelectItem>
-                    ))}
+                      ) : (
+                        filteredCategories.map((cat) => (
+                          <SelectItem key={cat._id} value={cat._id}>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px] h-4">
+                                {cat.type}
+                              </Badge>
+                              {cat.name}
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               )}
