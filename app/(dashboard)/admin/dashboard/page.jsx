@@ -1,5 +1,5 @@
 "use client"
-import { AdminDashboard } from "@/components/Admin/Dashboard/dashboard";
+import { AdminDashboardV2 } from "@/components/Admin/Dashboard/dashboard-v2";
 import { useSession } from "next-auth/react"
 
 export default function AdminDashboardPage() {
@@ -14,7 +14,7 @@ export default function AdminDashboardPage() {
         return <div>Unauthorized</div>
     }
     return (
-        <div><AdminDashboard session={session} />
+        <div><AdminDashboardV2 session={session} />
         </div>
     )
 }

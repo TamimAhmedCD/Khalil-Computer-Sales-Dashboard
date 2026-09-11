@@ -128,7 +128,7 @@ export function SalesList() {
 
       await axios.delete(`/api/products/sales/${id}`);
 
-      toast.success("Deleted");
+      toast.success("Sale deleted successfully");
 
       refetch();
     } catch (error) {
@@ -303,7 +303,7 @@ export function SalesList() {
           </div>
         ) : isError ? (
           <Card className="p-8 rounded-xl bg-white/40 dark:bg-zinc-900/10 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 text-center space-y-2">
-            <AlertCircle className="h-6 w-6 text-zinc-400 mx-auto" />
+            <AlertCircle className="h-6 w-6 text-red-500 mx-auto" />
             <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
               Sync Timeout Error
             </p>
@@ -314,36 +314,36 @@ export function SalesList() {
             </p>
           </Card>
         ) : sales.length > 0 ? (
-          <Card className="bg-white/70 dark:bg-zinc-900/10 backdrop-blur-xl rounded-xl border border-zinc-200 dark:border-zinc-800/60 overflow-hidden shadow-md">
+          <Card className="bg-white/60 dark:bg-zinc-900/20 backdrop-blur-xl rounded-xl border border-zinc-200 dark:border-zinc-800/50 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800/80 bg-gradient-to-r from-zinc-50 via-zinc-100/50 to-zinc-50 dark:from-zinc-800/30 dark:via-zinc-900/40 dark:to-zinc-800/30">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Date
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Invoice
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Product Details
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Category
                     </th>
-                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Units
                     </th>
-                    <th className="px-6 py-3.5 text-right text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-right text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Net Amount
                     </th>
-                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                    <th className="px-6 py-3.5 text-center text-[11px] font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                       Options
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/30">
-                  {sales.map((sale) => (
+                  {sales.map((sale, index) => (
                     <tr
                       key={sale._id}
                       className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors duration-150 group"
@@ -385,6 +385,7 @@ export function SalesList() {
                             size="icon"
                             className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
                             onClick={() => setSelectedSale(sale)}
+                            title="View Details"
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
@@ -393,7 +394,7 @@ export function SalesList() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-all"
+                              className="h-7 w-7 text-emerald-500 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded transition-all"
                               title="Generate Invoice"
                             >
                               <Receipt className="h-3.5 w-3.5" />
@@ -407,6 +408,7 @@ export function SalesList() {
                                 size="icon"
                                 className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all"
                                 disabled={loadingId === sale._id}
+                                title="Delete Sale"
                               >
                                 {loadingId === sale._id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
@@ -415,15 +417,13 @@ export function SalesList() {
                                 )}
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-sm shadow-xl">
+                            <AlertDialogContent className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl max-w-sm shadow-2xl">
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-200">
                                   Confirm Records Purge
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="text-xs text-zinc-500 dark:text-zinc-400 leading-normal">
-                                  This operational event will completely
-                                  eliminate the selected invoice tracking data
-                                  permanently.
+                                  This operational event will completely eliminate the selected invoice tracking data permanently.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="mt-4 gap-1.5">
@@ -432,9 +432,9 @@ export function SalesList() {
                                 </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDelete(sale._id)}
-                                  className="h-8 rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium text-[11px]"
+                                  className="h-8 rounded-lg bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:text-white dark:hover:bg-red-600 font-medium text-[11px]"
                                 >
-                                  Confirm
+                                  Confirm Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -447,33 +447,30 @@ export function SalesList() {
               </table>
             </div>
 
-            {/* Corporate Pagination Footer */}
-            <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/10">
+            {/* Professional Pagination Footer */}
+            <div className="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-zinc-200 dark:border-zinc-800/50 bg-gradient-to-r from-zinc-50/50 via-transparent to-zinc-50/50 dark:from-zinc-900/10 dark:via-transparent dark:to-zinc-900/10">
               <div className="text-xs text-zinc-500 dark:text-zinc-400">
                 Showing{" "}
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
-                  {Math.min(
-                    (currentPage - 1) * 10 + 1,
-                    pagination.totalResults,
-                  )}
+                <span className="text-zinc-900 dark:text-zinc-200 font-bold font-mono">
+                  {Math.min((currentPage - 1) * 10 + 1, pagination.totalResults)}
                 </span>{" "}
                 to{" "}
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
+                <span className="text-zinc-900 dark:text-zinc-200 font-bold font-mono">
                   {Math.min(currentPage * 10, pagination.totalResults)}
                 </span>{" "}
                 of{" "}
-                <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">
+                <span className="text-zinc-900 dark:text-zinc-200 font-bold font-mono">
                   {pagination.totalResults}
                 </span>{" "}
                 records
               </div>
               <div className="flex items-center gap-1.5 self-end sm:self-auto">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
+                  className="h-7 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white disabled:opacity-40 font-medium"
                 >
                   <ChevronLeft className="h-3 w-3 mr-1" /> Prev
                 </Button>
@@ -489,15 +486,13 @@ export function SalesList() {
                       return (
                         <Button
                           key={pageNum}
-                          variant={
-                            currentPage === pageNum ? "default" : "outline"
-                          }
+                          variant={currentPage === pageNum ? "default" : "ghost"}
                           size="sm"
                           onClick={() => handlePageChange(pageNum)}
-                          className={`h-7 w-7 p-0 font-mono text-[11px] rounded ${
+                          className={`h-7 w-7 p-0 font-mono text-[11px] rounded font-medium ${
                             currentPage === pageNum
-                              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-100"
-                              : "border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
+                              ? "bg-gradient-to-r from-zinc-800 to-zinc-700 text-white dark:from-zinc-100 dark:to-zinc-200 dark:text-zinc-950"
+                              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white"
                           }`}
                         >
                           {pageNum}
@@ -509,11 +504,11 @@ export function SalesList() {
                 </div>
 
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === pagination.totalPages}
-                  className="h-7 text-xs border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40"
+                  className="h-7 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white disabled:opacity-40 font-medium"
                 >
                   Next <ChevronRight className="h-3 w-3 ml-1" />
                 </Button>

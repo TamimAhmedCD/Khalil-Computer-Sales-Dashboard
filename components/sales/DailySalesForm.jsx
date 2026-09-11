@@ -181,7 +181,6 @@ function SearchableDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [position, setPosition] = useState(null);
   const containerRef = useRef(null);
 
   const selected = items.find((i) => i._id === value);
@@ -197,19 +196,7 @@ function SearchableDropdown({
   const handleOpen = () => {
     setOpen(true);
     setTimeout(() => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setPosition({
-          top: rect.bottom + 4,
-          left: rect.left,
-          width: rect.width,
-        });
-      }
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setMounted(true);
-        });
-      });
+      setMounted(true);
     }, 0);
   };
 
@@ -219,8 +206,7 @@ function SearchableDropdown({
     setTimeout(() => {
       setOpen(false);
       setSearch("");
-      setPosition(null);
-    }, 200);
+    }, 150);
   };
 
   const handleToggle = () => {
@@ -255,25 +241,8 @@ function SearchableDropdown({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Update position on scroll
-  useEffect(() => {
-    if (!open) return;
-    const handleScroll = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setPosition({
-          top: rect.bottom + 4,
-          left: rect.left,
-          width: rect.width,
-        });
-      }
-    };
-    window.addEventListener("scroll", handleScroll, true);
-    return () => window.removeEventListener("scroll", handleScroll, true);
-  }, [open]);
-
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative w-full z-30">
       {/* Trigger button */}
       <button
         type="button"
@@ -281,9 +250,9 @@ function SearchableDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-accent/40",
-          error ? "border-destructive" : "border-input",
-          open && "ring-2 ring-ring ring-offset-2",
+          "flex w-full items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50",
+          error ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30" : "",
+          open && "ring-2 ring-blue-500/30 border-blue-500/50",
           loading && "opacity-60 cursor-not-allowed"
         )}
         disabled={loading}
@@ -303,41 +272,36 @@ function SearchableDropdown({
         />
       </button>
 
-      {/* Dropdown panel - Fixed positioning to avoid z-index/overflow issues */}
-      {open && position && (
+      {/* Dropdown panel - Simple absolute positioning */}
+      {open && (
         <div
           role="listbox"
           className={cn(
-            "fixed z-[9999] mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
-            "transition-all duration-200 ease-out origin-top",
+            "absolute left-0 right-0 top-full z-[9999] mt-1 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl",
+            "transition-all duration-150 ease-out",
             mounted
-              ? "opacity-100 scale-y-100 translate-y-0"
-              : "opacity-0 scale-y-95 -translate-y-1"
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-2"
           )}
-          style={{
-            top: position.top,
-            left: position.left,
-            width: position.width,
-          }}
         >
           {/* Search input */}
-          <div className="sticky top-0 z-10 border-b bg-popover px-2 py-2">
+          <div className="sticky top-0 z-10 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur px-3 py-2.5">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-sm border border-input bg-background py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 py-2 pl-9 pr-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all"
               />
             </div>
           </div>
 
           {/* List */}
-          <div className="max-h-60 overflow-y-auto overscroll-contain py-1">
+          <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
             {filtered.length === 0 ? (
-              <div className="py-6 text-center text-xs text-muted-foreground">
+              <div className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                 No items found
               </div>
             ) : (
@@ -349,13 +313,13 @@ function SearchableDropdown({
                   aria-selected={item._id === value}
                   onClick={() => handleSelect(item)}
                   className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground",
-                    item._id === value && "bg-accent/60 font-medium"
+                    "flex w-full items-center gap-3 px-4 py-3 text-sm text-left transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800/50",
+                    item._id === value && "bg-zinc-50 dark:bg-zinc-800/30 font-medium"
                   )}
                 >
-                  {displayValue ? displayValue(item) : <span className="flex-1 truncate">{item.name}</span>}
+                  {displayValue ? displayValue(item) : <span className="flex-1 truncate text-zinc-700 dark:text-zinc-300">{item.name}</span>}
                   {item._id === value && (
-                    <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />
+                    <Check className="ml-auto h-4 w-4 text-blue-500 dark:text-blue-400 shrink-0" />
                   )}
                 </button>
               ))
@@ -745,37 +709,43 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
   }, [isValid, errors]);
 
   return (
-    <div className="min-h-screen w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
-      {/* 📱 মোবাইল ফ্রেন্ডলি প্যাডিং: ছোট ফোনে py-4, বড় স্ক্রিনে py-10 */}
-      <div className="max-w-350 mx-auto px-4 py-4 md:py-10 pb-24 md:pb-10">
+    <div className="min-h-screen text-zinc-800 dark:text-zinc-100 py-8 transition-colors duration-200">
+      {/* Professional Ambient Soft Underlays */}
+      <div className="absolute top-0 left-1/4 w-150 h-75 bg-zinc-200/40 dark:bg-zinc-800/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-100 h-100 bg-zinc-300/30 dark:bg-zinc-900/20 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
         <form
           onSubmit={handlePreSubmit}
           className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start"
         >
-          {/* Header - Mobile Responsive Flex */}
-          <header className="col-span-12 flex flex-col sm:flex-row sm:items-end justify-between pb-4 md:pb-8 border-b border-zinc-200 dark:border-zinc-800 gap-4">
+          {/* Enterprise Header */}
+          <header className="col-span-12 flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-zinc-200 dark:border-zinc-800/60 gap-4">
             <div>
-              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
-                <ShieldCheck size={13} /> Sales desk
+              <div className="mb-2 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                <span className="text-xs font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                  Sales Desk
+                </span>
               </div>
-              <h1 className="text-2xl md:text-4xl font-semibold tracking-tight">
-                New sale
+              <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
+                New Sale
               </h1>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                 {isProduct
-                  ? "Sell an item from inventory — stock and cost are applied automatically."
+                  ? "Sell an item from inventory - stock and cost applied automatically."
                   : "Record a service. Commission is set on the category."}
               </p>
             </div>
 
-            {/* Top Buttons - Desktop view only (Hidden on Mobile bottom sheet triggers it instead) */}
-            <div className="hidden sm:flex items-center gap-3">
+            {/* Top Buttons */}
+            <div className="flex items-center gap-2">
               <Button
-                size="lg"
+                size="sm"
                 type="button"
                 variant="outline"
                 onClick={() => reset(DEFAULTS)}
-                className="px-8 h-12 rounded-xl"
+                className="h-9 px-4 text-xs border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium rounded-lg"
               >
                 Discard
               </Button>
@@ -784,7 +754,7 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                 disabled={
                   !isValid || Object.keys(errors).length > 0 || isSubmitting
                 }
-                className="px-8 h-12 rounded-xl font-medium bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                className="h-9 px-6 text-xs bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 font-medium rounded-lg shadow-xs"
               >
                 {!isValid || Object.keys(errors).length > 0
                   ? "Fill required fields"
@@ -796,44 +766,52 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
           {/* Main Inputs Form */}
           <main className="col-span-12 lg:col-span-8 space-y-6 md:space-y-10">
             {/* Sale type toggle: Service | Product */}
-            <div
-              role="group"
-              aria-label="Sale type"
-              className="inline-flex w-full sm:w-auto gap-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1"
-            >
-              {[
-                { key: "service", label: "Service", Icon: Wrench },
-                { key: "product", label: "Product", Icon: Package },
-              ].map(({ key, label, Icon }) => {
-                const active = watchedFields.saleType === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => handleModeChange(key)}
-                    className={cn(
-                      "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-7 h-10 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40",
-                      active
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
-                    )}
-                  >
-                    <Icon size={15} /> {label}
-                  </button>
-                );
-              })}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                <span className="text-xs font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
+                  Sale Type
+                </span>
+              </div>
+              <div
+                role="group"
+                aria-label="Sale type"
+                className="inline-flex w-full gap-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md p-1"
+              >
+                {[
+                  { key: "service", label: "Service", Icon: Wrench },
+                  { key: "product", label: "Product", Icon: Package },
+                ].map(({ key, label, Icon }) => {
+                  const active = watchedFields.saleType === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => handleModeChange(key)}
+                      className={cn(
+                        "flex-1 inline-flex items-center justify-center gap-2 px-4 h-9 rounded-full text-xs font-medium transition-all duration-200",
+                        active
+                          ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm"
+                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                      )}
+                    >
+                      <Icon size={14} /> {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Section 1: Client & Order Details */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2.5 px-1">
-                <User size={16} className="text-indigo-600 dark:text-indigo-400" />
-                <h2 className="text-sm font-semibold uppercase tracking-[0.12em]">
-                  Customer &amp; item
+              <div className="flex items-center gap-2 px-1">
+                <User className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                <h2 className="text-sm font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
+                  Customer & Item
                 </h2>
               </div>
-              <Card className="shadow-sm rounded-xl md:rounded-2xl">
+              <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 shadow-xs overflow-visible relative z-20">
                 <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-1.5">
                     <label className={CAPTION}>
@@ -990,16 +968,13 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
 
             {/* Section 2: Payment Reconciliation */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2.5 px-1">
-                <CreditCard
-                  size={16}
-                  className="text-indigo-600 dark:text-indigo-400"
-                />
-                <h2 className="text-sm font-semibold uppercase tracking-[0.12em]">
+              <div className="flex items-center gap-2 px-1">
+                <CreditCard className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                <h2 className="text-sm font-bold tracking-wider text-zinc-600 dark:text-zinc-300 uppercase">
                   Payment
                 </h2>
               </div>
-              <Card className="shadow-sm rounded-xl md:rounded-2xl">
+              <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 shadow-xs">
                 <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
                   {/* Grid fields responsive breakdown */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1093,25 +1068,25 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
             </section>
           </main>
 
-          {/* 🧾 Cash memo — sticky on desktop, collapses under the form on mobile */}
+          {/* 🧾 Cash memo — sticky on desktop */}
           <aside className="col-span-12 lg:col-span-4 lg:sticky lg:top-8">
-            <div className="drop-shadow-xl">
-              {/* Perforated top edge: the memo's signature detail */}
+            <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 shadow-xl overflow-visible">
+              {/* Perforated top edge */}
               <div
                 aria-hidden
-                className="h-3 bg-white dark:bg-zinc-900"
+                className="h-3 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-800 dark:via-zinc-900 dark:to-zinc-800"
                 style={PERFORATION}
               />
-              <div className="rounded-b-2xl border-x border-b border-zinc-200 bg-white px-5 pb-6 md:px-7 md:pb-7 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="px-6 pb-6">
                 {/* Memo head */}
-                <div className="flex items-start justify-between gap-3 border-b border-dashed border-zinc-300 pb-4 dark:border-zinc-700">
+                <div className="flex items-start justify-between gap-3 border-b border-dashed border-zinc-300 dark:border-zinc-700 pb-4">
                   <div className="min-w-0">
                     <p className={CAPTION}>Cash memo</p>
-                    <p className="mt-1 truncate text-sm font-medium">
+                    <p className="mt-1 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       {watchedFields.productName || "No item selected yet"}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+                  <span className="shrink-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                     {isProduct ? "Product" : "Service"}
                   </span>
                 </div>
@@ -1197,49 +1172,28 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                   disabled={
                     !isValid || Object.keys(errors).length > 0 || isSubmitting
                   }
-                  className="mt-6 hidden h-12 w-full items-center justify-center rounded-xl bg-zinc-900 font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 sm:inline-flex dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  className="mt-6 h-11 w-full rounded-lg bg-gradient-to-r from-zinc-800 to-zinc-700 font-semibold text-white transition-all hover:from-zinc-700 hover:to-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:from-zinc-100 dark:to-zinc-200 dark:text-zinc-950 dark:hover:from-zinc-200 dark:hover:to-zinc-300 shadow-md"
                 >
                   {!isValid || Object.keys(errors).length > 0
                     ? "Fill required fields"
                     : "Complete sale"}
                 </Button>
-                <p className="mt-3 text-center text-[10px] uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+                <p className="mt-3 text-center text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                   Invoice number is issued on save
                 </p>
               </div>
-            </div>
+            </Card>
           </aside>
-
-          {/* 📱 Mobile Only Floating Bottom Bar (স্ক্রিনের নিচে ফিক্সড থাকবে সহজে প্রেস করার জন্য) */}
-          <div className="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex gap-2 z-50">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => reset(DEFAULTS)}
-              className="w-1/3 h-12 rounded-xl text-xs"
-            >
-              Discard
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                !isValid || Object.keys(errors).length > 0 || isSubmitting
-              }
-              className="w-2/3 h-12 rounded-xl text-xs font-bold bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-            >
-              {!isValid || Object.keys(errors).length > 0
-                ? "Fill required fields"
-                : "Review sale"}
-            </Button>
-          </div>
         </form>
 
         {/* Confirmation Modal */}
         <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-          <AlertDialogContent className="w-[90%] max-w-100 rounded-2xl">
+          <AlertDialogContent className="w-[90%] max-w-md rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 shadow-2xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Record this sale?</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                Record this sale?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 {isProduct ? "Product" : "Service"} sale of{" "}
                 <strong className="font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
                   {taka(calculations.total)}
@@ -1251,13 +1205,13 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex flex-row gap-2 mt-4">
-              <AlertDialogCancel className="w-1/2 mt-0 rounded-xl">
+              <AlertDialogCancel className="w-1/2 mt-0 rounded-lg h-10 text-sm border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 Review
               </AlertDialogCancel>
               <AlertDialogAction
                 disabled={isSubmitting}
                 onClick={handleSubmit(onSubmit)}
-                className="w-1/2 bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                className="w-1/2 rounded-lg h-10 text-sm bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold shadow-md"
               >
                 {isSubmitting ? "Processing..." : "Confirm"}
               </AlertDialogAction>
