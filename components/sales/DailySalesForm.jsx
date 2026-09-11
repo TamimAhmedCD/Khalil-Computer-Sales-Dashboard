@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   Wrench,
   Package,
+  Search,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -19,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -158,6 +162,172 @@ function MemoRow({ label, value, tone = "default", strong = false }) {
       >
         {value}
       </span>
+    </div>
+  );
+}
+
+// ─── Custom Searchable Dropdown Component ───────────────────────────────────
+
+function SearchableDropdown({
+  value,
+  onChange,
+  items,
+  loading = false,
+  displayValue,
+  displayLabel,
+  error,
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const containerRef = useRef(null);
+
+  const selected = items.find((i) => i._id === value);
+
+  // Filter items by search term
+  const filtered = search.trim()
+    ? items.filter((item) =>
+        item.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : items;
+
+  // Open → trigger animation
+  const handleOpen = () => {
+    setOpen(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setMounted(true);
+      });
+    });
+  };
+
+  // Close → animate out first, then remove from DOM
+  const handleClose = () => {
+    setMounted(false);
+    setTimeout(() => {
+      setOpen(false);
+      setSearch("");
+    }, 200);
+  };
+
+  const handleToggle = () => {
+    if (open) handleClose();
+    else handleOpen();
+  };
+
+  const handleSelect = (item) => {
+    onChange(item._id);
+    handleClose();
+  };
+
+  // Click outside to close
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        handleClose();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") handleClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-accent/40",
+          error ? "border-destructive" : "border-input",
+          open && "ring-2 ring-ring ring-offset-2",
+          loading && "opacity-60 cursor-not-allowed"
+        )}
+        disabled={loading}
+      >
+        {selected ? (
+          <span className="truncate">{displayLabel ? displayLabel(selected) : selected.name}</span>
+        ) : loading ? (
+          <span className="text-muted-foreground">Loading...</span>
+        ) : (
+          <span className="text-muted-foreground">Select...</span>
+        )}
+        <ChevronDown
+          className={cn(
+            "ml-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div
+          role="listbox"
+          className={cn(
+            "absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
+            "transition-all duration-200 ease-out origin-top",
+            mounted
+              ? "opacity-100 scale-y-100 translate-y-0"
+              : "opacity-0 scale-y-95 -translate-y-1"
+          )}
+        >
+          {/* Search input */}
+          <div className="sticky top-0 z-10 border-b bg-popover px-2 py-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-sm border border-input bg-background py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="max-h-60 overflow-y-auto overscroll-contain py-1">
+            {filtered.length === 0 ? (
+              <div className="py-6 text-center text-xs text-muted-foreground">
+                No items found
+              </div>
+            ) : (
+              filtered.map((item) => (
+                <button
+                  key={item._id}
+                  type="button"
+                  role="option"
+                  aria-selected={item._id === value}
+                  onClick={() => handleSelect(item)}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground",
+                    item._id === value && "bg-accent/60 font-medium"
+                  )}
+                >
+                  {displayValue ? displayValue(item) : <span className="flex-1 truncate">{item.name}</span>}
+                  {item._id === value && (
+                    <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -677,63 +847,31 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                       {isProduct ? "Product *" : "Category *"}
                     </label>
                     {isProduct ? (
-                      <Select
-                        disabled={loadingProducts}
-                        onValueChange={handleProductSelect}
-                        value={watchedFields.productId || ""}
-                      >
-                        <SelectTrigger size="4" className="w-full h-11 md:h-10">
-                          <SelectValue
-                            placeholder={
-                              loadingProducts
-                                ? "Loading products..."
-                                : "Select Product"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {activeProducts.length === 0 ? (
-                            <div className="px-2 py-2 text-sm text-zinc-400">
-                              No products available
-                            </div>
-                          ) : (
-                            activeProducts.map((p) => (
-                              <SelectItem
-                                key={p._id}
-                                value={p._id}
-                                disabled={Number(p.stock) <= 0}
-                              >
-                                {p.name} — {taka(p.saleRate)} ·{" "}
-                                {Number(p.commission || 0)}% comm ·{" "}
-                                {Number(p.stock || 0)} {p.unit || "pcs"} in stock
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <SearchableDropdown
+                        value={watchedFields.productId}
+                        onChange={handleProductSelect}
+                        items={activeProducts}
+                        loading={loadingProducts}
+                        error={!!errors.productId}
+                        displayValue={(product) => (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium">{product.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {taka(product.saleRate)} · {Number(product.commission || 0)}% comm ·{" "}
+                              {Number(product.stock || 0)} {product.unit || "pcs"} in stock
+                            </span>
+                          </div>
+                        )}
+                        displayLabel={(product) => product.name}
+                      />
                     ) : (
-                      <Select
-                        disabled={loadingCategories}
-                        onValueChange={handleCategorySelect}
-                        value={watchedFields.categoryId || ""}
-                      >
-                        <SelectTrigger size="4" className="w-full h-11 md:h-10">
-                          <SelectValue
-                            placeholder={
-                              loadingCategories
-                                ? "Loading categories..."
-                                : "Select Category"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat._id} value={cat._id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <SearchableDropdown
+                        value={watchedFields.categoryId}
+                        onChange={handleCategorySelect}
+                        items={categories}
+                        loading={loadingCategories}
+                        error={!!errors.categoryId}
+                      />
                     )}
                     {isProduct
                       ? errors.productId && (

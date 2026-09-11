@@ -176,28 +176,6 @@ export async function POST(req) {
     const result = await db.collection("invoices").insertOne(invoiceDoc);
 
     // =========================================================
-    // 🔔 Notification: New invoice created
-    // =========================================================
-    try {
-      const { createNotification } = await import("@/lib/notify");
-      await createNotification({
-        userId: "all-admins",
-        type: "invoice",
-        title: `New Invoice Created`,
-        message: `${invoiceDoc.customerName} - ৳${invoiceDoc.grandTotal.toLocaleString()} by ${invoiceDoc.createdBy}`,
-        link: `/admin/invoices/${result.insertedId}`,
-        metadata: {
-          invoiceId: result.insertedId.toString(),
-          invoiceNumber: invoiceDoc.invoiceNumber,
-          amount: invoiceDoc.grandTotal,
-          creator: invoiceDoc.createdBy,
-        },
-      });
-    } catch (notifyError) {
-      console.error("Failed to send notification:", notifyError.message);
-    }
-
-    // =========================================================
     // ✅ Success Response
     // =========================================================
     return Response.json(

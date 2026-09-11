@@ -1,11 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, AlertCircle, ReceiptText, Building2, Home, User, Package, Search } from "lucide-react";
+import {
+  CalendarIcon,
+  AlertCircle,
+  ReceiptText,
+  Building2,
+  Home,
+  User,
+  Package,
+  Search,
+  ChevronDown,
+  Check,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -13,13 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -35,7 +39,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useExpenseCategories } from "@/lib/hooks/expenses/useExpenseCategories";
 
 const formSchema = z.object({
@@ -53,6 +56,192 @@ const SCOPE_META = {
   Other: { icon: Package, color: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800" },
 };
 
+// ─── Custom Searchable Category Dropdown ────────────────────────────────────
+
+function CategorySearchSelect({ value, onChange, categories, error }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [mounted, setMounted] = useState(false); // drives CSS animation
+  const containerRef = useRef(null);
+  const searchRef = useRef(null);
+  const listRef = useRef(null);
+
+  const selected = categories.find((c) => c._id === value);
+
+  // Filter categories by search term
+  const filtered = search.trim()
+    ? categories.filter(
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.type.toLowerCase().includes(search.toLowerCase())
+      )
+    : categories;
+
+  // Open → wait a tick so the element is in the DOM, then set mounted=true to trigger animation
+  const handleOpen = () => {
+    setOpen(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setMounted(true);
+        searchRef.current?.focus();
+      });
+    });
+  };
+
+  // Close → unmount animation first, then remove from DOM
+  const handleClose = () => {
+    setMounted(false);
+    setTimeout(() => {
+      setOpen(false);
+      setSearch("");
+    }, 200); // matches transition duration
+  };
+
+  const handleToggle = () => {
+    if (open) handleClose();
+    else handleOpen();
+  };
+
+  const handleSelect = (cat) => {
+    onChange(cat._id);
+    handleClose();
+  };
+
+  // Click outside to close
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        handleClose();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") handleClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm",
+          "ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "hover:bg-accent/40",
+          error ? "border-destructive" : "border-input",
+          open && "ring-2 ring-ring ring-offset-2"
+        )}
+      >
+        {selected ? (
+          <span className="flex items-center gap-2 min-w-0">
+            <Badge variant="outline" className="text-[10px] h-4 shrink-0">
+              {selected.type}
+            </Badge>
+            <span className="truncate">{selected.name}</span>
+          </span>
+        ) : (
+          <span className="text-muted-foreground">Select category</span>
+        )}
+        <ChevronDown
+          className={cn(
+            "ml-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+
+      {/* Dropdown panel — rendered in DOM when open, animated by mounted flag */}
+      {open && (
+        <div
+          role="listbox"
+          className={cn(
+            // layout
+            "absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md",
+            // animation base
+            "transition-all duration-200 ease-out origin-top",
+            // enter state (mounted=true) / exit state (mounted=false)
+            mounted
+              ? "opacity-100 scale-y-100 translate-y-0"
+              : "opacity-0 scale-y-95 -translate-y-1"
+          )}
+        >
+          {/* Search input */}
+          <div className="sticky top-0 z-10 border-b bg-popover px-2 py-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                ref={searchRef}
+                type="text"
+                placeholder="Search categories..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={cn(
+                  "w-full rounded-sm border border-input bg-background py-1.5 pl-8 pr-3 text-xs",
+                  "placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                )}
+              />
+            </div>
+          </div>
+
+          {/* List */}
+          <div
+            ref={listRef}
+            className="max-h-56 overflow-y-auto overscroll-contain py-1"
+          >
+            {filtered.length === 0 ? (
+              <div className="py-6 text-center text-xs text-muted-foreground">
+                No categories found
+              </div>
+            ) : (
+              filtered.map((cat) => {
+                const isSelected = cat._id === value;
+                return (
+                  <button
+                    key={cat._id}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => handleSelect(cat)}
+                    className={cn(
+                      "flex w-full items-center gap-2 px-3 py-2 text-sm text-left",
+                      "transition-colors duration-100",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      isSelected && "bg-accent/60 font-medium"
+                    )}
+                  >
+                    <Badge variant="outline" className="text-[10px] h-4 shrink-0">
+                      {cat.type}
+                    </Badge>
+                    <span className="flex-1 truncate">{cat.name}</span>
+                    {isSelected && (
+                      <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ExpenseForm ─────────────────────────────────────────────────────────────
+
 export function ExpenseForm({
   mode = "create",
   expense = null,
@@ -66,24 +255,6 @@ export function ExpenseForm({
 
   const { data: categoriesData } = useExpenseCategories();
   const categories = categoriesData?.data || [];
-
-  // Category search functionality
-  const [categorySearch, setCategorySearch] = useState("");
-  const [filteredCategories, setFilteredCategories] = useState(categories);
-
-  // Update filtered categories when search or categories change
-  useEffect(() => {
-    if (!categorySearch.trim()) {
-      setFilteredCategories(categories);
-    } else {
-      const searchLower = categorySearch.toLowerCase();
-      const filtered = categories.filter(cat =>
-        cat.name.toLowerCase().includes(searchLower) ||
-        cat.type.toLowerCase().includes(searchLower)
-      );
-      setFilteredCategories(filtered);
-    }
-  }, [categorySearch, categories]);
 
   // Auto-detected scope based on selected category
   const [selectedCategoryId, setSelectedCategoryId] = useState(
@@ -131,6 +302,10 @@ export function ExpenseForm({
   const ScopeIcon = SCOPE_META[autoScope]?.icon || Package;
   const scopeColor = SCOPE_META[autoScope]?.color || SCOPE_META.Other.color;
 
+  const scopeLabel = selectedCategory
+    ? `${autoScope} scope auto-applied from category`
+    : "Scope auto-detected from selected category";
+
   const onSubmit = async (values) => {
     try {
       setLoading(true);
@@ -141,8 +316,6 @@ export function ExpenseForm({
       formData.append("categoryId", values.categoryId);
       formData.append("expenseDate", format(values.expenseDate, "yyyy-MM-dd"));
       formData.append("note", values.note || "");
-
-      // Scope is auto-derived from category on the server; pass it along too
       formData.append("expenseScope", autoScope);
 
       if (mode === "create") {
@@ -161,10 +334,6 @@ export function ExpenseForm({
       setLoading(false);
     }
   };
-
-  const scopeLabel = selectedCategory
-    ? `${autoScope} scope auto-applied from category`
-    : "Scope auto-detected from selected category";
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -232,7 +401,7 @@ export function ExpenseForm({
                         variant="outline"
                         className={cn(
                           "w-full justify-start pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground",
+                          !field.value && "text-muted-foreground"
                         )}
                       >
                         {field.value ? (
@@ -263,59 +432,22 @@ export function ExpenseForm({
             </div>
           </div>
 
-          {/* Category with Search */}
+          {/* Category — custom searchable dropdown */}
           <div className="space-y-2">
             <Label htmlFor="categoryId">Category *</Label>
             <Controller
               control={control}
               name="categoryId"
               render={({ field }) => (
-                <Select
-                  onValueChange={(v) => {
+                <CategorySearchSelect
+                  value={field.value}
+                  onChange={(v) => {
                     field.onChange(v);
                     setSelectedCategoryId(v);
                   }}
-                  value={field.value}
-                  onOpenChange={(open) => {
-                    if (!open) setCategorySearch("");
-                  }}
-                >
-                  <SelectTrigger id="categoryId" className="w-full">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="p-0">
-                    <div className="sticky top-0 z-10 bg-background border-b px-3 py-2">
-                      <div className="relative">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input
-                          placeholder="Search categories..."
-                          value={categorySearch}
-                          onChange={(e) => setCategorySearch(e.target.value)}
-                          className="h-8 pl-8 text-xs focus-visible:ring-0"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    </div>
-                    <ScrollArea className="h-[250px]">
-                      {filteredCategories.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-muted-foreground">
-                          No categories found
-                        </div>
-                      ) : (
-                        filteredCategories.map((cat) => (
-                          <SelectItem key={cat._id} value={cat._id}>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-[10px] h-4">
-                                {cat.type}
-                              </Badge>
-                              {cat.name}
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </ScrollArea>
-                  </SelectContent>
-                </Select>
+                  categories={categories}
+                  error={!!errors.categoryId}
+                />
               )}
             />
             {errors.categoryId && (
