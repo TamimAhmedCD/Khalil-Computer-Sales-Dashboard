@@ -9,53 +9,49 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ChevronLeft, Package, Save, Upload, X } from "lucide-react";
+import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import { AlertCircle, ChevronLeft, Package, Save, Upload, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const schema = z.object({
-  name: z.string().min(2, "Product name is required"),
+  name: z.string().min(2, "Product name must be at least 2 characters").max(100, "Product name is too long"),
   categoryId: z.string().min(1, "Please select a category"),
-  brand: z.string().optional(),
-  description: z.string().optional(),
+  brand: z.string().max(50, "Brand name is too long").optional(),
+  description: z.string().max(1000, "Description is too long").optional(),
   buyRate: z
-    .number({ invalid_type_error: "Enter a valid buy rate" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid numeric buy rate", required_error: "Buy rate is required" })
+    .min(0, "Buy rate cannot be negative")
+    .max(9999999, "Buy rate is too high"),
   saleRate: z
-    .number({ invalid_type_error: "Enter a valid sale rate" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid numeric sale rate", required_error: "Sale rate is required" })
+    .min(0, "Sale rate cannot be negative")
+    .max(9999999, "Sale rate is too high"),
   commission: z
-    .number({ invalid_type_error: "Enter a valid commission" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid commission percentage" })
+    .min(0, "Commission cannot be negative")
+    .max(100, "Commission cannot exceed 100%"),
   stock: z
-    .number({ invalid_type_error: "Enter a valid quantity" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid stock quantity" })
+    .min(0, "Stock cannot be negative")
+    .int("Stock must be a whole number"),
   lowStockAlert: z
-    .number({ invalid_type_error: "Enter a valid quantity" })
-    .min(0, "Cannot be negative"),
-  unit: z.string().optional(),
+    .number({ invalid_type_error: "Enter a valid alert quantity" })
+    .min(0, "Alert quantity cannot be negative")
+    .int("Alert quantity must be a whole number"),
+  unit: z.string().min(1, "Unit is required"),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
+}).refine(data => data.saleRate >= data.buyRate, {
+  message: "Selling price should generally be higher than cost price",
+  path: ["saleRate"],
 });
 
 const emptyValues = {
@@ -79,7 +75,7 @@ const Taka = () => <span className="font-hind-siliguri">৳</span>;
  * Shared create/edit product form.
  * - mode: "create" | "edit"
  * - initialValues: partial field values (edit)
- * - initialImages: [{ url, publicId }] already on the product (edit)
+ * - initialImages: [{ url }] already on the product (edit)
  * - onSubmit(formData, { reset, addAnother }): parent runs the mutation
  */
 export default function ProductForm({
@@ -155,8 +151,8 @@ export default function ProductForm({
     ]);
   };
 
-  const removeExisting = (publicId) =>
-    setExistingImages((prev) => prev.filter((i) => i.publicId !== publicId));
+  const removeExisting = (url) =>
+    setExistingImages((prev) => prev.filter((i) => i.url !== url));
 
   const removeNew = (index) =>
     setNewImages((prev) => {
@@ -198,7 +194,7 @@ export default function ProductForm({
     if (isEdit) {
       fd.append(
         "keepImages",
-        JSON.stringify(existingImages.map((i) => i.publicId)),
+        JSON.stringify(existingImages.map((i) => i.url)),
       );
     }
     newImages.forEach((n) => fd.append("images", n.file));
@@ -275,54 +271,49 @@ export default function ProductForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left column */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Details */}
-          <Card className="border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>Product details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="space-y-8 lg:col-span-2">
+          {/* Product Details */}
+          <section>
+            <div className="mb-4">
+              <h3 className="text-base font-medium">Product details</h3>
+              <p className="text-sm text-muted-foreground mt-1">Basic information about the product</p>
+            </div>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="name">Product name</Label>
                 <Input
                   id="name"
+                  className={cn(errors.name && "border-destructive")}
                   {...register("name")}
                   placeholder="e.g. Logitech MX Master 3S"
                 />
                 {errors.name && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
                     {errors.name.message}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select
-                  disabled={loadingCategories}
+                <SearchableDropdown
                   value={watch("categoryId") || ""}
-                  onValueChange={(v) =>
+                  onChange={(v) =>
                     setValue("categoryId", v, { shouldValidate: true })
                   }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={
-                        loadingCategories ? "Loading…" : "Select category"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  items={categories}
+                  loading={loadingCategories}
+                  placeholder="Select category"
+                  searchPlaceholder="Search categories..."
+                  emptyMessage="No categories found"
+                  icon={Package}
+                  error={!!errors.categoryId}
+                />
                 {errors.categoryId && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
                     {errors.categoryId.message}
                   </p>
                 )}
@@ -331,32 +322,43 @@ export default function ProductForm({
                 <Label htmlFor="brand">Brand</Label>
                 <Input
                   id="brand"
+                  className={cn(errors.brand && "border-destructive")}
                   {...register("brand")}
                   placeholder="Optional"
                 />
+                {errors.brand && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.brand.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
+                  className={cn(errors.description && "border-destructive")}
                   {...register("description")}
                   placeholder="Short description of the product"
                   className="min-h-[110px] resize-none"
                 />
+                {errors.description && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.description.message}
+                  </p>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Pricing */}
-          <Card className="border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>Pricing</CardTitle>
-              <CardDescription>
-                Profit is sale rate minus buy rate. Commission is a percentage
-                of the sale price, deducted on every sale.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <section>
+            <div className="mb-4">
+              <h3 className="text-base font-medium">Pricing</h3>
+              <p className="text-sm text-muted-foreground mt-1">Set pricing and commission</p>
+            </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="buyRate">Buy rate</Label>
                 <div className="relative">
@@ -368,12 +370,13 @@ export default function ProductForm({
                     type="number"
                     step="any"
                     min={0}
-                    className="pl-7"
+                    className={cn("pl-7", errors.buyRate && "border-destructive")}
                     {...register("buyRate", { valueAsNumber: true })}
                   />
                 </div>
                 {errors.buyRate && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
                     {errors.buyRate.message}
                   </p>
                 )}
@@ -389,12 +392,13 @@ export default function ProductForm({
                     type="number"
                     step="any"
                     min={0}
-                    className="pl-7"
+                    className={cn("pl-7", errors.saleRate && "border-destructive")}
                     {...register("saleRate", { valueAsNumber: true })}
                   />
                 </div>
                 {errors.saleRate && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
                     {errors.saleRate.message}
                   </p>
                 )}
@@ -407,7 +411,7 @@ export default function ProductForm({
                     type="number"
                     step="any"
                     min={0}
-                    className="pr-8"
+                    className={cn("pr-8", errors.commission && "border-destructive")}
                     {...register("commission", { valueAsNumber: true })}
                   />
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -415,7 +419,8 @@ export default function ProductForm({
                   </span>
                 </div>
                 {errors.commission ? (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
                     {errors.commission.message}
                   </p>
                 ) : (
@@ -427,108 +432,102 @@ export default function ProductForm({
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Estimated profit</Label>
-                <div className="flex h-9 items-center rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3">
-                  <span
-                    className={`text-sm font-semibold ${
-                      profit < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"
-                    }`}
-                  >
-                    <Taka />
-                    {Number(profit || 0).toLocaleString("en-BD")}
-                  </span>
+                <Label>Profit summary</Label>
+                <div className="pt-2 text-sm space-y-1">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Estimated profit</span>
+                    <span className={profit < 0 ? "text-destructive font-medium" : "text-emerald-600 dark:text-emerald-400 font-medium"}>
+                      <Taka />{Number(profit || 0).toLocaleString("en-BD")}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>After commission</span>
+                    <span><Taka />{Number(profit - commissionAmount || 0).toLocaleString("en-BD")}</span>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  After commission: <Taka />
-                  {Number(profit - commissionAmount || 0).toLocaleString(
-                    "en-BD",
-                  )}
-                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Images */}
-          <Card className="border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>Images</CardTitle>
-              <CardDescription>
-                Up to {MAX_IMAGES} images, 5MB each. The first image is used as
-                the thumbnail.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                {existingImages.map((img) => (
-                  <div
-                    key={img.publicId}
-                    className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+          <section>
+            <div className="mb-4">
+              <h3 className="text-base font-medium">Images</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Up to {MAX_IMAGES} images, 5MB each. The first image is used as the thumbnail.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {existingImages.map((img) => (
+                <div
+                  key={img.url}
+                  className="relative aspect-square overflow-hidden rounded-lg border border-border/50 bg-transparent"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt="Product"
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExisting(img.url)}
+                    aria-label="Remove image"
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow ring-1 ring-border transition-colors hover:bg-destructive hover:text-white"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.url}
-                      alt="Product"
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeExisting(img.publicId)}
-                      aria-label="Remove image"
-                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow ring-1 ring-border transition-colors hover:bg-destructive hover:text-white"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
 
-                {newImages.map((n, i) => (
-                  <div
-                    key={i}
-                    className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+              {newImages.map((n, i) => (
+                <div
+                  key={i}
+                  className="relative aspect-square overflow-hidden rounded-lg border border-border/50 bg-transparent"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={n.preview}
+                    alt="New product"
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeNew(i)}
+                    aria-label="Remove image"
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow ring-1 ring-border transition-colors hover:bg-destructive hover:text-white"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={n.preview}
-                      alt="New product"
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeNew(i)}
-                      aria-label="Remove image"
-                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow ring-1 ring-border transition-colors hover:bg-destructive hover:text-white"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
 
-                {totalImages < MAX_IMAGES && (
-                  <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={addImage}
-                    />
-                    <Upload className="h-5 w-5" />
-                    <span className="text-xs font-medium">Add image</span>
-                  </label>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              {totalImages < MAX_IMAGES && (
+                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border/50 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={addImage}
+                  />
+                  <Upload className="h-5 w-5" />
+                  <span className="text-xs font-medium">Add image</span>
+                </label>
+              )}
+            </div>
+          </section>
         </div>
 
         {/* Right column */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Inventory */}
-          <Card className="border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>Inventory</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <section>
+            <div className="mb-4">
+              <h3 className="text-base font-medium">Inventory</h3>
+              <p className="text-sm text-muted-foreground mt-1">Manage stock and units</p>
+            </div>
+            <div className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="stock">Stock</Label>
@@ -537,10 +536,12 @@ export default function ProductForm({
                     type="number"
                     min={0}
                     placeholder="0"
+                    className={cn(errors.stock && "border-destructive")}
                     {...register("stock", { valueAsNumber: true })}
                   />
                   {errors.stock && (
-                    <p className="text-xs text-destructive">
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
                       {errors.stock.message}
                     </p>
                   )}
@@ -569,23 +570,26 @@ export default function ProductForm({
                   type="number"
                   min={0}
                   placeholder="Warn when stock drops to…"
+                  className={cn(errors.lowStockAlert && "border-destructive")}
                   {...register("lowStockAlert", { valueAsNumber: true })}
                 />
                 {errors.lowStockAlert && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
                     {errors.lowStockAlert.message}
                   </p>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Visibility */}
-          <Card className="border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>Visibility</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <section>
+            <div className="mb-4">
+              <h3 className="text-base font-medium">Visibility</h3>
+              <p className="text-sm text-muted-foreground mt-1">Control product display</p>
+            </div>
+            <div className="space-y-5">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">Active</p>
@@ -610,8 +614,8 @@ export default function ProductForm({
                   onCheckedChange={(v) => setValue("isFeatured", v)}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {!isEdit && (
             <Button
