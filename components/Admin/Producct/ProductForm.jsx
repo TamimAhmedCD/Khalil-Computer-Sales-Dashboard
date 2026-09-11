@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
 import {
   Select,
   SelectContent,
@@ -34,28 +35,36 @@ const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const schema = z.object({
-  name: z.string().min(2, "Product name is required"),
+  name: z.string().min(2, "Product name must be at least 2 characters").max(100, "Product name is too long"),
   categoryId: z.string().min(1, "Please select a category"),
-  brand: z.string().optional(),
-  description: z.string().optional(),
+  brand: z.string().max(50, "Brand name is too long").optional(),
+  description: z.string().max(1000, "Description is too long").optional(),
   buyRate: z
-    .number({ invalid_type_error: "Enter a valid buy rate" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid numeric buy rate", required_error: "Buy rate is required" })
+    .min(0, "Buy rate cannot be negative")
+    .max(9999999, "Buy rate is too high"),
   saleRate: z
-    .number({ invalid_type_error: "Enter a valid sale rate" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid numeric sale rate", required_error: "Sale rate is required" })
+    .min(0, "Sale rate cannot be negative")
+    .max(9999999, "Sale rate is too high"),
   commission: z
-    .number({ invalid_type_error: "Enter a valid commission" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid commission percentage" })
+    .min(0, "Commission cannot be negative")
+    .max(100, "Commission cannot exceed 100%"),
   stock: z
-    .number({ invalid_type_error: "Enter a valid quantity" })
-    .min(0, "Cannot be negative"),
+    .number({ invalid_type_error: "Enter a valid stock quantity" })
+    .min(0, "Stock cannot be negative")
+    .int("Stock must be a whole number"),
   lowStockAlert: z
-    .number({ invalid_type_error: "Enter a valid quantity" })
-    .min(0, "Cannot be negative"),
-  unit: z.string().optional(),
+    .number({ invalid_type_error: "Enter a valid alert quantity" })
+    .min(0, "Alert quantity cannot be negative")
+    .int("Alert quantity must be a whole number"),
+  unit: z.string().min(1, "Unit is required"),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
+}).refine(data => data.saleRate >= data.buyRate, {
+  message: "Selling price should generally be higher than cost price",
+  path: ["saleRate"],
 });
 
 const emptyValues = {
@@ -299,28 +308,19 @@ export default function ProductForm({
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select
-                  disabled={loadingCategories}
+                <SearchableDropdown
                   value={watch("categoryId") || ""}
-                  onValueChange={(v) =>
+                  onChange={(v) =>
                     setValue("categoryId", v, { shouldValidate: true })
                   }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={
-                        loadingCategories ? "Loading…" : "Select category"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  items={categories}
+                  loading={loadingCategories}
+                  placeholder="Select category"
+                  searchPlaceholder="Search categories..."
+                  emptyMessage="No categories found"
+                  icon={Package}
+                  error={!!errors.categoryId}
+                />
                 {errors.categoryId && (
                   <p className="text-xs text-destructive">
                     {errors.categoryId.message}
