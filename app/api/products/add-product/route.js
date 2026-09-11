@@ -6,7 +6,7 @@ import { ObjectId } from "mongodb";
 const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-// Upload a single File (from formData) to Cloudinary and return { url, publicId }
+// Upload a single File (from formData) to Cloudinary and return { url }
 const uploadBuffer = async (file) => {
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -15,7 +15,7 @@ const uploadBuffer = async (file) => {
       { folder: "kc/p", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
-        resolve({ url: result.secure_url, publicId: result.public_id });
+        resolve({ url: result.secure_url });
       },
     );
     stream.end(buffer);

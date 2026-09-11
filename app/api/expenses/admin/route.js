@@ -118,20 +118,15 @@ const uploadBuffer = async (file) => {
       { folder: "kc/e", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
-        resolve({ url: result.secure_url, publicId: result.public_id });
+        resolve({ url: result.secure_url });
       },
     );
     stream.end(buffer);
   });
 };
 
-const destroyImage = async (publicId) => {
-  if (!publicId) return;
-  try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (err) {
-    console.error("Cloudinary destroy failed:", publicId, err?.message);
-  }
+const destroyImage = async (url) => {
+  // Cloudinary deletion removed - not needed
 };
 
 // =========================================================

@@ -155,8 +155,8 @@ export default function ProductForm({
     ]);
   };
 
-  const removeExisting = (publicId) =>
-    setExistingImages((prev) => prev.filter((i) => i.publicId !== publicId));
+  const removeExisting = (url) =>
+    setExistingImages((prev) => prev.filter((i) => i.url !== url));
 
   const removeNew = (index) =>
     setNewImages((prev) => {
@@ -198,7 +198,7 @@ export default function ProductForm({
     if (isEdit) {
       fd.append(
         "keepImages",
-        JSON.stringify(existingImages.map((i) => i.publicId)),
+        JSON.stringify(existingImages.map((i) => i.url)),
       );
     }
     newImages.forEach((n) => fd.append("images", n.file));
@@ -461,7 +461,7 @@ export default function ProductForm({
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                 {existingImages.map((img) => (
                   <div
-                    key={img.publicId}
+                    key={img.url}
                     className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -473,7 +473,7 @@ export default function ProductForm({
                     />
                     <button
                       type="button"
-                      onClick={() => removeExisting(img.publicId)}
+                      onClick={() => removeExisting(img.url)}
                       aria-label="Remove image"
                       className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow ring-1 ring-border transition-colors hover:bg-destructive hover:text-white"
                     >
