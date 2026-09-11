@@ -79,7 +79,7 @@ const Taka = () => <span className="font-hind-siliguri">৳</span>;
  * Shared create/edit product form.
  * - mode: "create" | "edit"
  * - initialValues: partial field values (edit)
- * - initialImages: [{ url, publicId }] already on the product (edit)
+ * - initialImages: [{ url }] already on the product (edit)
  * - onSubmit(formData, { reset, addAnother }): parent runs the mutation
  */
 export default function ProductForm({

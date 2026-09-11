@@ -172,15 +172,15 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // 🖼️ Reconcile images: keep the publicIds the client retained, drop the rest
-    let keepIds = [];
+    // 🖼️ Reconcile images: keep the urls the client retained, drop the rest
+    let keepUrls = [];
     const keepRaw = form.get("keepImages");
     if (keepRaw) {
       try {
         const parsed = JSON.parse(keepRaw.toString());
-        if (Array.isArray(parsed)) keepIds = parsed;
+        if (Array.isArray(parsed)) keepUrls = parsed;
       } catch {
-        keepIds = [];
+        keepUrls = [];
       }
     }
 
@@ -188,10 +188,10 @@ export async function PATCH(request, { params }) {
       ? existing.images
       : [];
     const keptImages = existingImages.filter((img) =>
-      keepIds.includes(img.publicId),
+      keepUrls.includes(img.url),
     );
     const removedImages = existingImages.filter(
-      (img) => !keepIds.includes(img.publicId),
+      (img) => !keepUrls.includes(img.url),
     );
 
     // New uploads
