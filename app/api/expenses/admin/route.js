@@ -115,7 +115,7 @@ const uploadBuffer = async (file) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "khalil-computer/expenses", resource_type: "image" },
+      { folder: "kc/e", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
         resolve({ url: result.secure_url, publicId: result.public_id });
