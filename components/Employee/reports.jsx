@@ -49,6 +49,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import {
   Table,
   TableBody,
@@ -529,22 +532,19 @@ export function Reports() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Select
+          <CustomSelect
             value={dateFilter}
-            onValueChange={(val) => handleFilterChange("date", val)}
-          >
-            <SelectTrigger className="w-full sm:w-44">
-              <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="yesterday">Yesterday</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={(val) => handleFilterChange("date", val)}
+            items={[
+              { value: "today", label: "Today" },
+              { value: "yesterday", label: "Yesterday" },
+              { value: "week", label: "This Week" },
+              { value: "month", label: "This Month" },
+              { value: "custom", label: "Custom Range" },
+            ]}
+            icon={CalendarDays}
+            placeholder="Select period"
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -817,24 +817,20 @@ export function Reports() {
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium">Category</label>
-            <Select
-              disabled={loadingCategories}
+            <SearchableDropdown
               value={categoryFilter}
-              onValueChange={(val) => handleFilterChange("category", val)}
-            >
-              <SelectTrigger className="w-full">
-                <Package className="mr-2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(val) => handleFilterChange("category", val)}
+              items={[
+                { id: "all", name: "All Categories" },
+                ...categories.map(cat => ({ id: cat._id, name: cat.name })),
+              ]}
+              loading={loadingCategories}
+              disabled={loading || loadingCategories}
+              icon={Package}
+              placeholder="All Categories"
+              searchPlaceholder="Search categories..."
+              displayLabel={(item) => item.name}
+            />
           </div>
         </CardContent>
       </Card>

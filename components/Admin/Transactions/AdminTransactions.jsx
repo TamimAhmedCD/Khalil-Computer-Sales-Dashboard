@@ -36,6 +36,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+
 import {
   Popover,
   PopoverContent,
@@ -768,33 +770,23 @@ export default function AdminTransactions() {
                   Employee
                 </label>
 
-                <Select
+                <SearchableDropdown
                   value={employeeFilter}
-                  onValueChange={(value) => {
+                  onChange={(value) => {
                     setEmployeeFilter(value);
-
                     setCurrentPage(1);
                   }}
-                >
-                  <SelectTrigger className="w-full">
-                    <UserRound className="mr-2 h-4 w-4 text-muted-foreground" />
-
-                    <SelectValue placeholder="All Employees" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Employees</SelectItem>
-
-                    {filterOptions.employees.map((employee) => (
-                      <SelectItem
-                        key={String(employee.id)}
-                        value={String(employee.id)}
-                      >
-                        {employee.name || "Unknown Employee"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  items={[
+                    { id: "all", name: "All Employees" },
+                    ...filterOptions.employees,
+                  ]}
+                  loading={loading}
+                  disabled={loading}
+                  icon={UserRound}
+                  placeholder="All Employees"
+                  searchPlaceholder="Search employees..."
+                  displayLabel={(item) => item.name || "Unknown Employee"}
+                />
               </div>
 
               {/* CATEGORY */}
@@ -804,33 +796,23 @@ export default function AdminTransactions() {
                   Category
                 </label>
 
-                <Select
+                <SearchableDropdown
                   value={categoryFilter}
-                  onValueChange={(value) => {
+                  onChange={(value) => {
                     setCategoryFilter(value);
-
                     setCurrentPage(1);
                   }}
-                >
-                  <SelectTrigger className="w-full">
-                    <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-
-                    {filterOptions.categories.map((category) => (
-                      <SelectItem
-                        key={String(category.id)}
-                        value={String(category.id)}
-                      >
-                        {category.name || "Unknown Category"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  items={[
+                    { id: "all", name: "All Categories" },
+                    ...filterOptions.categories,
+                  ]}
+                  loading={loading}
+                  disabled={loading}
+                  icon={Filter}
+                  placeholder="All Categories"
+                  searchPlaceholder="Search categories..."
+                  displayLabel={(item) => item.name || "Unknown Category"}
+                />
               </div>
 
               {/* PAYMENT */}

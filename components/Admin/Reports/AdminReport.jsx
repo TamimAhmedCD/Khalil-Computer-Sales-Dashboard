@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -38,19 +38,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import {
-  exportReportToExcel,
-  exportReportToPdf,
-  printReport,
-} from "@/lib/reports/exportReport";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 import {
   Popover,
@@ -394,11 +383,6 @@ export default function AdminReport() {
     ...reportData.revenueTrend.map((item) => Number(item.revenue) || 0),
   );
 
-  const maxSellerRevenue = Math.max(
-    0,
-    ...reportData.sellerPerformance.map((item) => Number(item.revenue) || 0),
-  );
-
   const maxCategoryRevenue = Math.max(
     0,
     ...reportData.categoryPerformance.map((item) => Number(item.revenue) || 0),
@@ -638,6 +622,7 @@ export default function AdminReport() {
                 variant="ghost"
                 size="sm"
                 onClick={resetFilters}
+                disabled={loading}
                 className="w-fit"
               >
                 Reset
@@ -652,26 +637,22 @@ export default function AdminReport() {
                   Reporting Period
                 </label>
 
-                <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className={"w-full"}>
-                    <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-
-                    <SelectItem value="yesterday">Yesterday</SelectItem>
-
-                    <SelectItem value="week">This Week</SelectItem>
-
-                    <SelectItem value="month">This Month</SelectItem>
-
-                    <SelectItem value="last-month">Last Month</SelectItem>
-
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectContent>
-                </Select>
+                <CustomSelect
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  items={[
+                    { value: "today", label: "Today" },
+                    { value: "yesterday", label: "Yesterday" },
+                    { value: "week", label: "This Week" },
+                    { value: "month", label: "This Month" },
+                    { value: "last-month", label: "Last Month" },
+                    { value: "custom", label: "Custom Range" },
+                  ]}
+                  loading={loading}
+                  disabled={loading}
+                  icon={CalendarDays}
+                  placeholder="Select period"
+                />
               </div>
 
               {/* SELLER */}
@@ -679,22 +660,20 @@ export default function AdminReport() {
               <div>
                 <label className="mb-2 block text-sm font-medium">Seller</label>
 
-                <Select value={sellerFilter} onValueChange={setSellerFilter}>
-                  <SelectTrigger className="w-full">
-                    <UserRound className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="All Sellers" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Sellers</SelectItem>
-
-                    {sellers.map((seller) => (
-                      <SelectItem key={seller.id} value={seller.id}>
-                        {seller.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableDropdown
+                  value={sellerFilter}
+                  onChange={setSellerFilter}
+                  items={[
+                    { id: "all", name: "All Sellers" },
+                    ...sellers,
+                  ]}
+                  loading={loading}
+                  disabled={loading}
+                  icon={UserRound}
+                  placeholder="All Sellers"
+                  searchPlaceholder="Search sellers..."
+                  displayLabel={(item) => item.name}
+                />
               </div>
 
               {/* CATEGORY */}
@@ -704,25 +683,20 @@ export default function AdminReport() {
                   Category
                 </label>
 
-                <Select
+                <SearchableDropdown
                   value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-                >
-                  <SelectTrigger className="w-full">
-                    <Package className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={setCategoryFilter}
+                  items={[
+                    { id: "all", name: "All Categories" },
+                    ...categories,
+                  ]}
+                  loading={loading}
+                  disabled={loading}
+                  icon={Package}
+                  placeholder="All Categories"
+                  searchPlaceholder="Search categories..."
+                  displayLabel={(item) => item.name}
+                />
               </div>
 
               {/* PAYMENT */}
@@ -732,22 +706,18 @@ export default function AdminReport() {
                   Payment Method
                 </label>
 
-                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger className="w-full">
-                    <Wallet className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="All Methods" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Methods</SelectItem>
-
-                    {paymentOptions.map((method) => (
-                      <SelectItem key={method} value={method}>
-                        {method}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomSelect
+                  value={paymentFilter}
+                  onChange={setPaymentFilter}
+                  items={[
+                    { value: "all", label: "All Methods" },
+                    ...paymentOptions.map((method) => ({ value: method, label: method })),
+                  ]}
+                  loading={loading}
+                  disabled={loading}
+                  icon={Wallet}
+                  placeholder="All Methods"
+                />
               </div>
             </div>
 
@@ -764,6 +734,7 @@ export default function AdminReport() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
+                        disabled={loading}
                         className="justify-start text-left font-normal"
                       >
                         <CalendarDays className="mr-2 h-4 w-4" />
@@ -792,6 +763,7 @@ export default function AdminReport() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
+                        disabled={loading}
                         className="justify-start text-left font-normal"
                       >
                         <CalendarDays className="mr-2 h-4 w-4" />

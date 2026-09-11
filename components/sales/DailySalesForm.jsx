@@ -167,6 +167,7 @@ function MemoRow({ label, value, tone = "default", strong = false }) {
 }
 
 // ─── Custom Searchable Dropdown Component ───────────────────────────────────
+// Uses fixed positioning to avoid z-index/overflow issues with parent containers
 
 function SearchableDropdown({
   value,
@@ -180,6 +181,7 @@ function SearchableDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState(null);
   const containerRef = useRef(null);
 
   const selected = items.find((i) => i._id === value);
@@ -194,11 +196,21 @@ function SearchableDropdown({
   // Open → trigger animation
   const handleOpen = () => {
     setOpen(true);
-    requestAnimationFrame(() => {
+    setTimeout(() => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
       requestAnimationFrame(() => {
-        setMounted(true);
+        requestAnimationFrame(() => {
+          setMounted(true);
+        });
       });
-    });
+    }, 0);
   };
 
   // Close → animate out first, then remove from DOM
@@ -207,6 +219,7 @@ function SearchableDropdown({
     setTimeout(() => {
       setOpen(false);
       setSearch("");
+      setPosition(null);
     }, 200);
   };
 
@@ -242,6 +255,23 @@ function SearchableDropdown({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Update position on scroll
+  useEffect(() => {
+    if (!open) return;
+    const handleScroll = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [open]);
+
   return (
     <div ref={containerRef} className="relative w-full">
       {/* Trigger button */}
@@ -273,17 +303,22 @@ function SearchableDropdown({
         />
       </button>
 
-      {/* Dropdown panel */}
-      {open && (
+      {/* Dropdown panel - Fixed positioning to avoid z-index/overflow issues */}
+      {open && position && (
         <div
           role="listbox"
           className={cn(
-            "absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
+            "fixed z-[9999] mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
             "transition-all duration-200 ease-out origin-top",
             mounted
               ? "opacity-100 scale-y-100 translate-y-0"
               : "opacity-0 scale-y-95 -translate-y-1"
           )}
+          style={{
+            top: position.top,
+            left: position.left,
+            width: position.width,
+          }}
         >
           {/* Search input */}
           <div className="sticky top-0 z-10 border-b bg-popover px-2 py-2">
