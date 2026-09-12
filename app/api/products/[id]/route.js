@@ -6,7 +6,7 @@ import { ObjectId } from "mongodb";
 const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-// Upload a single File (from formData) to Cloudinary → { url }
+// Upload a single File (from formData) to Cloudinary → { url, publicId }
 const uploadBuffer = async (file) => {
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -15,17 +15,45 @@ const uploadBuffer = async (file) => {
       { folder: "kc/p", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
-        resolve({ url: result.secure_url });
+        resolve({ url: result.secure_url, publicId: result.public_id });
       },
     );
     stream.end(buffer);
   });
 };
 
+// Extract public ID from Cloudinary URL
+const extractPublicIdFromUrl = (url) => {
+  if (!url || typeof url !== "string") return null;
+
+  // Example URL: https://res.cloudinary.com/tamim-0711/image/upload/v1789137066/kc/p/l0dahbkpp6hmtojpjwtf.jpg
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]{3,4})?$/);
+  if (match && match[1]) {
+    // Remove the file extension if present
+    return match[1].replace(/\.[a-z]{3,4}$/, "");
+  }
+  return null;
+};
+
 // Best-effort delete of a Cloudinary asset — never throws (a storage hiccup
 // must not block the DB write it accompanies).
 const destroyImage = async (url) => {
-  // Cloudinary deletion removed - not needed
+  try {
+    if (!url) return;
+
+    const publicId = extractPublicIdFromUrl(url);
+    if (!publicId) {
+      console.warn(`Could not extract publicId from URL: ${url}`);
+      return;
+    }
+
+    console.log(`Deleting Cloudinary image: ${publicId}`);
+    await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+    console.log(`Successfully deleted Cloudinary image: ${publicId}`);
+  } catch (error) {
+    // Swallow the error — the DB deletion must proceed regardless
+    console.warn(`Failed to delete Cloudinary image from ${url}:`, error.message);
+  }
 };
 
 const isAdmin = (session) =>
