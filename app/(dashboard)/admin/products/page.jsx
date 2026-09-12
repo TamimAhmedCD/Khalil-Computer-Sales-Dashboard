@@ -32,6 +32,7 @@ import SummaryCards from "@/components/Admin/Producct/SummaryCards";
 import FilterSection from "@/components/Admin/Producct/FilterSection";
 import TableView from "@/components/Admin/Producct/TableView";
 import InventoryGrid from "@/components/Admin/Producct/GridView";
+import Carousel from "@/components/ui/Carousel";
 
 import { useProducts } from "@/lib/hooks/products/useProducts";
 import { useDeleteProduct } from "@/lib/hooks/products/useDeleteProduct";
@@ -395,19 +396,10 @@ export default function ProductsPage() {
               </DialogHeader>
 
               <div className="space-y-5">
-                <div className="flex aspect-video items-center justify-center overflow-hidden rounded-lg border bg-muted">
-                  {selectedProduct.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedProduct.image}
-                      alt={selectedProduct.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Package className="h-10 w-10 text-muted-foreground/40" />
-                  )}
-                </div>
+                <Carousel
+                  images={selectedProduct.images || []}
+                  className="aspect-video"
+                />
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Status</span>

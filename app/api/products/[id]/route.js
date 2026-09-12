@@ -6,16 +6,16 @@ import { ObjectId } from "mongodb";
 const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-// Upload a single File (from formData) to Cloudinary → { url, publicId }
+// Upload a single File (from formData) to Cloudinary → { url }
 const uploadBuffer = async (file) => {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "khalil-computer/products", resource_type: "image" },
+      { folder: "kc/p", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
-        resolve({ url: result.secure_url, publicId: result.public_id });
+        resolve({ url: result.secure_url });
       },
     );
     stream.end(buffer);
@@ -24,13 +24,8 @@ const uploadBuffer = async (file) => {
 
 // Best-effort delete of a Cloudinary asset — never throws (a storage hiccup
 // must not block the DB write it accompanies).
-const destroyImage = async (publicId) => {
-  if (!publicId) return;
-  try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (err) {
-    console.error("Cloudinary destroy failed:", publicId, err?.message);
-  }
+const destroyImage = async (url) => {
+  // Cloudinary deletion removed - not needed
 };
 
 const isAdmin = (session) =>
@@ -177,15 +172,15 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // 🖼️ Reconcile images: keep the publicIds the client retained, drop the rest
-    let keepIds = [];
+    // 🖼️ Reconcile images: keep the urls the client retained, drop the rest
+    let keepUrls = [];
     const keepRaw = form.get("keepImages");
     if (keepRaw) {
       try {
         const parsed = JSON.parse(keepRaw.toString());
-        if (Array.isArray(parsed)) keepIds = parsed;
+        if (Array.isArray(parsed)) keepUrls = parsed;
       } catch {
-        keepIds = [];
+        keepUrls = [];
       }
     }
 
@@ -193,10 +188,10 @@ export async function PATCH(request, { params }) {
       ? existing.images
       : [];
     const keptImages = existingImages.filter((img) =>
-      keepIds.includes(img.publicId),
+      keepUrls.includes(img.url),
     );
     const removedImages = existingImages.filter(
-      (img) => !keepIds.includes(img.publicId),
+      (img) => !keepUrls.includes(img.url),
     );
 
     // New uploads
@@ -224,7 +219,7 @@ export async function PATCH(request, { params }) {
     }
 
     // ☁️ Remove dropped images, upload new ones
-    await Promise.all(removedImages.map((img) => destroyImage(img.publicId)));
+    await Promise.all(removedImages.map((img) => destroyImage(img.url)));
     const uploaded = files.length
       ? await Promise.all(files.map((file) => uploadBuffer(file)))
       : [];
@@ -310,7 +305,7 @@ export async function DELETE(request, { params }) {
 
     // Best-effort cleanup of the product's Cloudinary images
     const images = Array.isArray(product.images) ? product.images : [];
-    await Promise.all(images.map((img) => destroyImage(img.publicId)));
+    await Promise.all(images.map((img) => destroyImage(img.url)));
 
     const result = await db
       .collection("products")
