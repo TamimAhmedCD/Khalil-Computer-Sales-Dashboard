@@ -136,7 +136,7 @@ function MemoRow({ label, value, tone = "default", strong = false }) {
   );
 }
 
-export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales" } = {}) {
+export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
