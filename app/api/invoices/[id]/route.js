@@ -152,9 +152,10 @@ export async function PUT(request, { params }) {
           { status: 400 }
         );
       }
-      if (!Number.isFinite(item.unitPrice) || item.unitPrice < 0) {
+      // Support rowTotal (direct) - use that instead of unitPrice
+      if (!Number.isFinite(item.rowTotal) || item.rowTotal < 0) {
         return NextResponse.json(
-          { success: false, message: "Item unit price must be valid" },
+          { success: false, message: "Item row total must be valid" },
           { status: 400 }
         );
       }
@@ -166,20 +167,23 @@ export async function PUT(request, { params }) {
 
     const processedItems = items.map((item) => {
       const qty = Number(item.quantity) || 0;
-      const price = Number(item.unitPrice) || 0;
+      const rowTotal = Number(item.rowTotal) || 0;
       const discount = Number(item.discount) || 0;
-      const itemSubtotal = qty * price;
-      const itemTotal = itemSubtotal - discount;
+      const itemTotal = rowTotal - discount;
 
-      subtotal += itemSubtotal;
+      subtotal += rowTotal;
       totalDiscount += discount;
+
+      // Calculate unitPrice for display purposes
+      const unitPrice = qty > 0 ? rowTotal / qty : 0;
 
       return {
         name: item.name.trim(),
         description: item.description?.trim() || "",
         quantity: qty,
         unit: item.unit?.trim() || "pcs",
-        unitPrice: price,
+        unitPrice: unitPrice, // Calculated for display
+        rowTotal: rowTotal, // Store the original row total
         discount: discount,
         total: itemTotal,
       };

@@ -16,19 +16,19 @@ const Toaster = ({
       className="toaster group"
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          <CircleCheckIcon className="size-5 text-emerald-600 dark:text-emerald-400" />
         ),
         info: (
-          <InfoIcon className="size-4" />
+          <InfoIcon className="size-5 text-blue-600 dark:text-blue-400" />
         ),
         warning: (
-          <TriangleAlertIcon className="size-4" />
+          <TriangleAlertIcon className="size-5 text-amber-600 dark:text-amber-400" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <OctagonXIcon className="size-5 text-red-600 dark:text-red-400" />
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin" />
+          <Loader2Icon className="size-5 text-zinc-600 dark:text-zinc-400 animate-spin" />
         ),
       }}
       style={
@@ -45,11 +45,11 @@ const Toaster = ({
           description: "group-[.toast]:text-muted-foreground",
           actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-          success: "group-[.toaster]:bg-emerald-50 group-[.toaster]:text-emerald-950 group-[.toaster]:border-emerald-200 dark:group-[.toaster]:bg-emerald-950/80 dark:group-[.toaster]:text-emerald-100 dark:group-[.toaster]:border-emerald-800/60",
-          error: "group-[.toaster]:bg-red-50 group-[.toaster]:text-red-950 group-[.toaster]:border-red-200 dark:group-[.toaster]:bg-red-950/80 dark:group-[.toaster]:text-red-100 dark:group-[.toaster]:border-red-800/60",
-          warning: "group-[.toaster]:bg-amber-50 group-[.toaster]:text-amber-950 group-[.toaster]:border-amber-200 dark:group-[.toaster]:bg-amber-950/80 dark:group-[.toaster]:text-amber-100 dark:group-[.toaster]:border-amber-800/60",
-          info: "group-[.toaster]:bg-blue-50 group-[.toaster]:text-blue-950 group-[.toaster]:border-blue-200 dark:group-[.toaster]:bg-blue-950/80 dark:group-[.toaster]:text-blue-100 dark:group-[.toaster]:border-blue-800/60",
-          loading: "group-[.toaster]:bg-zinc-50 group-[.toaster]:text-zinc-950 group-[.toaster]:border-zinc-200 dark:group-[.toaster]:bg-zinc-950/80 dark:group-[.toaster]:text-zinc-100 dark:group-[.toaster]:border-zinc-800/60",
+          success: "!bg-emerald-50 !text-emerald-950 !border-emerald-300 dark:!bg-emerald-950 dark:!text-emerald-50 dark:!border-emerald-700",
+          error: "!bg-red-50 !text-red-950 !border-red-300 dark:!bg-red-950 dark:!text-red-50 dark:!border-red-700",
+          warning: "!bg-amber-50 !text-amber-950 !border-amber-300 dark:!bg-amber-950 dark:!text-amber-50 dark:!border-amber-700",
+          info: "!bg-blue-50 !text-blue-950 !border-blue-300 dark:!bg-blue-950 dark:!text-blue-50 dark:!border-blue-700",
+          loading: "!bg-zinc-50 !text-zinc-950 !border-zinc-300 dark:!bg-zinc-900 dark:!text-zinc-50 dark:!border-zinc-700",
         },
       }}
       {...props} />

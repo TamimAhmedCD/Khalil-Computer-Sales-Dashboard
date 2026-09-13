@@ -10,6 +10,7 @@ import {
   Trash2,
   Eye,
   Calendar,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useInvoices, useDeleteInvoice } from "@/lib/hooks/invoices/useInvoices";
+import InvoiceForm from "@/components/invoice/InvoiceForm";
 import { generateInvoicePDF } from "@/lib/invoice/pdfGenerator";
 import InvoiceTemplate from "@/components/invoice/InvoiceTemplate";
 import Link from "next/link";
@@ -296,6 +298,16 @@ export default function InvoiceList({ basePath = "/admin" }) {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                        <Link href={`${basePath}/invoices/edit/${inv._id}`} passHref legacyBehavior>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Edit Invoice"
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

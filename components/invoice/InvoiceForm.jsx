@@ -45,15 +45,19 @@ const invoiceSchema = z.object({
   notes: z.string().optional(),
 });
 
-export default function InvoiceForm({ initialData, mode = "create", isEmployee = false }) {
+export default function InvoiceForm({ initialData, mode = "create", isEmployee = false, invoiceId }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const saleId = searchParams.get("saleId");
+  const urlInvoiceId = searchParams.get("id"); // For direct URL access
 
   const { mutate: createInvoice, isPending } = useCreateInvoice();
   const [previewData, setPreviewData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isLoadingSale, setIsLoadingSale] = useState(false);
+  const [isLoadingInvoice, setIsLoadingInvoice] = useState(false);
+
+  const effectiveInvoiceId = invoiceId || urlInvoiceId;
 
   const {
     register,
@@ -84,6 +88,46 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
       notes: "",
     },
   });
+
+  // Load existing invoice for edit mode
+  useEffect(() => {
+    if (effectiveInvoiceId && mode === "edit") {
+      const loadInvoice = async () => {
+        setIsLoadingInvoice(true);
+        try {
+          const response = await axios.get(`/api/invoices/${effectiveInvoiceId}`);
+          const invoice = response.data?.data;
+
+          if (invoice) {
+            reset({
+              customerName: invoice.customerName || "",
+              customerPhone: invoice.customerPhone || "",
+              customerAddress: invoice.customerAddress || "",
+              items: invoice.items.map(item => ({
+                name: item.name || "",
+                description: item.description || "",
+                quantity: item.quantity || 1,
+                unit: item.unit || "pcs",
+                rowTotal: item.rowTotal || item.total || 0,
+                discount: item.discount || 0,
+              })),
+              paidAmount: invoice.paidAmount || 0,
+              paymentMethod: invoice.paymentMethod || "Cash",
+              notes: invoice.notes || "",
+            });
+            toast.success("Invoice loaded successfully");
+          }
+        } catch (error) {
+          console.error("Failed to load invoice:", error);
+          toast.error("Failed to load invoice");
+        } finally {
+          setIsLoadingInvoice(false);
+        }
+      };
+
+      loadInvoice();
+    }
+  }, [effectiveInvoiceId, mode, reset]);
 
   // Load existing sale data if saleId is present
   useEffect(() => {
@@ -171,14 +215,31 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
 
   // Form Submission
   const onSubmit = (data) => {
-    createInvoice(data, {
-      onSuccess: (res) => {
-        if (res?.success) {
-          const redirectPath = isEmployee ? "/employee/invoices" : "/admin/invoices";
-          router.push(redirectPath);
-        }
-      },
-    });
+    if (mode === "edit" && effectiveInvoiceId) {
+      // Update existing invoice
+      axios.put(`/api/invoices/${effectiveInvoiceId}`, data)
+        .then((res) => {
+          if (res.data?.success) {
+            toast.success("Invoice updated successfully");
+            const redirectPath = isEmployee ? "/employee/invoices" : "/admin/invoices";
+            router.push(redirectPath);
+          }
+        })
+        .catch((error) => {
+          console.error("Update error:", error);
+          toast.error(error?.response?.data?.message || "Failed to update invoice");
+        });
+    } else {
+      // Create new invoice
+      createInvoice(data, {
+        onSuccess: (res) => {
+          if (res?.success) {
+            const redirectPath = isEmployee ? "/employee/invoices" : "/admin/invoices";
+            router.push(redirectPath);
+          }
+        },
+      });
+    }
   };
 
   // Preview Action

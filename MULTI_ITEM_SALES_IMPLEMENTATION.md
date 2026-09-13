@@ -322,15 +322,42 @@ POST /api/products/sales
 ## 🐛 Known Issues / Future Improvements
 
 ### Recent Updates (Sept 13, 2026)
-✅ **Invoice Integration for Multi-Item Sales**
-- Invoice form now automatically loads all items from multi-item sales
-- Added "Row Total" field for direct price entry (no need to calculate qty × price)
-- Users can enter either Unit Price OR Row Total for each item
-- When creating invoice from sale, all items are pre-populated
-- Both admin and employee roles supported
+
+#### ✅ Invoice Integration for Multi-Item Sales (Updated)
+- **Invoice form now automatically loads all items from multi-item sales**
+- **Added "Row Total" field for direct price entry** (no need to calculate qty × price)
+- **Users can enter Row Total directly** for each item
+- **When creating invoice from sale, all items are pre-populated**
+- **Both admin and employee roles supported**
+- **Fixed 400 error** - API now accepts `rowTotal` instead of `unitPrice`
+- **Invoice edit functionality added** - Users can now edit existing invoices
+- **Edit pages created** for both admin and employee roles
 
 **Files Updated:**
-- `/components/invoice/InvoiceForm.jsx` - Enhanced to support multi-item loading and row total pricing
+- `/components/invoice/InvoiceForm.jsx` - Enhanced to support multi-item loading, row total pricing, and edit mode
+- `/components/invoice/InvoiceList.jsx` - Added edit button with link to edit page
+- `/app/api/invoices/route.js` - Updated to accept `rowTotal` field instead of `unitPrice`
+- `/app/api/invoices/[id]/route.js` - Updated PUT endpoint to support `rowTotal` field
+- `/app/(dashboard)/admin/invoices/edit/[id]/page.jsx` - New edit page for admin
+- `/app/(dashboard)/employee/invoices/edit/[id]/page.jsx` - New edit page for employee
+
+#### ✅ Sales Form Optimization (Updated)
+- **Ultra-compact item rows** - Reduced height by 60%
+- **Sticky Cash Memo on right sidebar** - Always visible while scrolling
+- **Commission percentage display** - Shows % of subtotal in Cash Memo
+- **Icon-only type toggle** - More compact than full-width buttons
+- **Horizontal input layout** - Price | Qty | Expense in one row
+- **Fixed z-index issues** - Dropdowns now appear above all elements
+- **Reduced spacing throughout** - More items visible at once
+
+**Layout:**
+- Left column (8/12): Main form with compact item rows
+- Right column (4/12): Sticky Cash Memo with real-time calculations
+- Each item row: ~100px tall (down from ~250px)
+- Dropdown z-index: 99999 to ensure visibility
+
+**Files Updated:**
+- `/components/sales/DailySalesFormMultiItem.jsx` - Complete redesign with compact layout
 
 ### Future Enhancements
 1. Bulk edit items in existing sales
