@@ -29,6 +29,8 @@ import {
   AlertCircle,
   Award,
   Receipt,
+  Package,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -407,7 +409,18 @@ export function SalesList() {
                             : "—"}
                         </TableCell>
                         <TableCell className="font-medium max-w-60 truncate">
-                          {sale.productName}
+                          <div className="flex items-center gap-1.5">
+                            {sale.items && sale.items.length > 1 ? (
+                              <>
+                                <Package className="h-3 w-3 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {sale.items.length} items
+                                </span>
+                              </>
+                            ) : (
+                              sale.productName || (sale.items?.[0]?.productName || "")
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-medium border border-border/40">
@@ -415,7 +428,10 @@ export function SalesList() {
                           </span>
                         </TableCell>
                         <TableCell className="font-mono text-muted-foreground">
-                          {sale.quantity}
+                          {sale.items && sale.items.length > 1
+                            ? sale.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+                            : sale.quantity || 0
+                          }
                         </TableCell>
                         <TableCell className="text-right font-semibold font-mono">
                           <span className="font-black text-md mr-0.5">৳</span>
@@ -685,26 +701,82 @@ export function SalesList() {
                   </div>
                 </div>
 
-                {/* Product Meta */}
+                {/* Product Meta - Multi-item support */}
                 <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
-                  <div className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg">
-                    <div>
-                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
-                        {selectedSale.productName}
-                      </p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
-                        {selectedSale.categoryName}
-                      </span>
+                  {selectedSale.items && selectedSale.items.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
+                          Items ({selectedSale.items.length})
+                        </p>
+                        <span className="inline-block px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
+                          {selectedSale.items[0].categoryName || selectedSale.categoryName || "Multiple"}
+                        </span>
+                      </div>
+                      {/* Items List */}
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                        {selectedSale.items.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-2.5 rounded-lg text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {item.saleType === "product" || item.itemType === "product" ? (
+                                <Package className="h-3 w-3 text-zinc-400" />
+                              ) : (
+                                <Wrench className="h-3 w-3 text-zinc-400" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                                  {item.productName}
+                                </p>
+                                <p className="text-[10px] text-zinc-500">
+                                  {item.saleType === "product" || item.itemType === "product"
+                                    ? `${Number(item.quantity)} pcs × ৳${item.unitPrice?.toLocaleString() || 0}`
+                                    : `৳${item.totalPrice?.toLocaleString() || 0}`
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right font-mono">
+                              <p className="text-[9px] text-zinc-500">
+                                Qty: {item.quantity}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Total for items */}
+                      <div className="border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-2 mt-2">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                          Total Quantity:{" "}
+                          <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                            {selectedSale.items.reduce((sum, item) => sum + (item.quantity || 0), 0)}
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right font-mono">
-                      <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                        Quantity
-                      </p>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-                        ×{selectedSale.quantity}
-                      </p>
+                  ) : (
+                    // Legacy format fallback
+                    <div className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg">
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
+                          {selectedSale.productName}
+                        </p>
+                        <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
+                          {selectedSale.categoryName}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono">
+                        <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                          Quantity
+                        </p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+                          ×{selectedSale.quantity}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Balances Sheet */}

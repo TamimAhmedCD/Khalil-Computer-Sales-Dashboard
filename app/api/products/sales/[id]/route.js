@@ -111,6 +111,42 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    // Handle stock restoration for product items
+    const now = new Date();
+
+    // Check if the sale uses the new multi-item format or legacy format
+    if (sale.items && Array.isArray(sale.items) && sale.items.length > 0) {
+      // Multi-item format - restore stock for all product items
+      for (const item of sale.items) {
+        if (
+          item.itemType === "product" ||
+          (item.saleType === "product" && item.productId)
+        ) {
+          const productId = item.productId || item.product?._id;
+          const quantityToRestore = item.quantity || 0;
+
+          if (productId && quantityToRestore > 0) {
+            await db.collection("products").updateOne(
+              { _id: new ObjectId(productId) },
+              {
+                $inc: { stock: quantityToRestore },
+                $set: { updatedAt: now },
+              }
+            );
+          }
+        }
+      }
+    } else if (sale.saleType === "product" && sale.productId) {
+      // Legacy format - restore stock for single product item
+      await db.collection("products").updateOne(
+        { _id: new ObjectId(sale.productId) },
+        {
+          $inc: { stock: sale.quantity || 0 },
+          $set: { updatedAt: now },
+        }
+      );
+    }
+
     // Delete the sale
     const result = await db
       .collection("sales")

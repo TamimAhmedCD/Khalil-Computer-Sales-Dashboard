@@ -3,6 +3,173 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb"; // 🔥 মঙ্গোডিবি ObjectId ইম্পোর্ট করলাম আইডি ভ্যালিডেশনের জন্য
 import { NextResponse } from "next/server";
 
+// Helper function to validate and process a single item
+async function processItem(db, item, now) {
+  const itemType = item.saleType === "product" ? "product" : "service";
+
+  // Validate quantity and price
+  const quantity = Number(item.quantity);
+  const totalPrice = Number(item.totalPrice);
+
+  if (!Number.isFinite(quantity) || !Number.isFinite(totalPrice)) {
+    return { success: false, message: "Invalid numeric values for item" };
+  }
+
+  if (quantity <= 0 || totalPrice < 0) {
+    return {
+      success: false,
+      message: "Quantity must be greater than zero and price cannot be negative."
+    };
+  }
+
+  const unitPrice = quantity > 0 ? totalPrice / quantity : 0;
+
+  const result = {
+    itemType,
+    quantity,
+    unitPrice,
+    totalPrice,
+    rawExpense: 0,
+    commission: 0,
+    commissionRate: 0,
+    productName: item.productName?.trim() || "",
+    categoryId: null,
+    categoryName: "",
+    productId: null,
+    stockAffected: 0,
+    unit: itemType === "product" ? "pcs" : "service",
+  };
+
+  if (itemType === "product") {
+    // Validate & load product
+    if (!item.productId || !ObjectId.isValid(item.productId)) {
+      return {
+        success: false,
+        message: "A valid product is required for product-type items"
+      };
+    }
+
+    const productDoc = await db
+      .collection("products")
+      .findOne({ _id: new ObjectId(item.productId) });
+
+    if (!productDoc) {
+      return {
+        success: false,
+        message: `Product not found: ${item.productName}`
+      };
+    }
+
+    // 📦 Block overselling
+    const availableStock = Number(productDoc.stock || 0);
+    if (availableStock < quantity) {
+      return {
+        success: false,
+        message: `Insufficient stock for ${productDoc.name} (only ${availableStock} left)`
+      };
+    }
+
+    result.productId = new ObjectId(item.productId);
+    result.categoryId = productDoc.categoryId
+      ? new ObjectId(productDoc.categoryId)
+      : null;
+    result.categoryName = productDoc.categoryName || "";
+
+    // COGS = buyRate × quantity
+    result.rawExpense = Number(productDoc.buyRate || 0) * quantity;
+
+    // Commission = productDoc.commission % of sale price
+    const productCommRate = Number(productDoc.commission || 0);
+    result.commission = Math.round((totalPrice * productCommRate) / 100);
+    result.commissionRate = productCommRate;
+    result.stockAffected = quantity;
+    result.unit = productDoc.unit || "pcs";
+  } else {
+    // Service type
+    if (!item.categoryId || !ObjectId.isValid(item.categoryId)) {
+      return {
+        success: false,
+        message: `Invalid Category ID for service: ${item.productName}`
+      };
+    }
+
+    const categoryData = await db.collection("categories").findOne({
+      _id: new ObjectId(item.categoryId),
+    });
+
+    if (!categoryData) {
+      return {
+        success: false,
+        message: `Category not found: ${item.categoryId}`
+      };
+    }
+
+    // Validate expense
+    const rawExpense = Number(item.rawExpense || 0);
+    if (!Number.isFinite(rawExpense) || rawExpense < 0) {
+      return {
+        success: false,
+        message: "Invalid expense value for service item"
+      };
+    }
+
+    if (rawExpense > totalPrice) {
+      return {
+        success: false,
+        message: `Expense cannot exceed Total Price for ${item.productName}`
+      };
+    }
+
+    result.categoryId = new ObjectId(item.categoryId);
+    result.categoryName = categoryData.name;
+
+    // Validate product/service name
+    if (!item.productName || item.productName.trim().length < 2) {
+      return {
+        success: false,
+        message: "Product/service name must be at least 2 characters"
+      };
+    }
+
+    // Commission = category.commission % of sale price
+    const commissionRate = Number(categoryData.commission || 0);
+    result.commission = Math.round((totalPrice * commissionRate) / 100);
+    result.commissionRate = commissionRate;
+    result.rawExpense = rawExpense;
+
+    // Check for mandatory category customer details
+    const mandatoryCategories = [
+      "DCR",
+      "Khajna Payment",
+      "Namjari",
+      "Khajna Nibondon",
+      "Miss Case",
+      "Khatian Application",
+    ];
+
+    if (mandatoryCategories.includes(categoryData.name)) {
+      const customerName = item.customerName?.trim();
+      const customerPhone = item.customerPhone?.trim();
+
+      if (!customerName || customerName.length < 2) {
+        return {
+          success: false,
+          message: `Customer name is required for ${categoryData.name} category`
+        };
+      }
+
+      if (!customerPhone || customerPhone.length < 11) {
+        return {
+          success: false,
+          message: `Valid 11-digit phone number is required for ${categoryData.name} category`
+        };
+      }
+    }
+  }
+
+  return { success: true, item: result };
+}
+
 export async function POST(req) {
   try {
     // 🔐 1. Authentication & Session Check
@@ -21,60 +188,110 @@ export async function POST(req) {
     // 📦 2. Request Body
     const body = await req.json();
 
-    let {
-      saleType,
-      productId,
-      customerName,
-      customerPhone,
-      productName,
-      categoryId,
-      quantity,
-      totalPrice,
-      rawExpense,
-      paymentMethod,
-      paidAmount,
-      note,
-    } = body;
+    // 🔄 Support both multi-item and single-item (backward compatibility)
+    let items = body.items;
 
-    // 🔀 সেল টাইপ নরমালাইজ: শুধু "product" অথবা ডিফল্ট "service"
-    saleType = saleType === "product" ? "product" : "service";
-
-    // 🧹 3. Clean & Convert Values
-    customerName = customerName?.trim() || "";
-    customerPhone = customerPhone?.trim() || "";
-    productName = productName?.trim() || "";
-    categoryId = categoryId?.trim() || "";
-    productId = productId?.trim() || "";
-
-    quantity = Number(quantity);
-    totalPrice = Number(totalPrice);
-    rawExpense = Number(rawExpense || 0);
-    paidAmount = Number(paidAmount || 0);
-
-    // ❌ 4. Shared numeric protection (quantity/price/paid for both modes)
-    if (
-      !Number.isFinite(quantity) ||
-      !Number.isFinite(totalPrice) ||
-      !Number.isFinite(paidAmount)
-    ) {
-      return Response.json(
-        { success: false, message: "Invalid numeric values" },
-        { status: 400 },
-      );
+    // If no items array provided, create from single-item fields (backward compatibility)
+    if (!items) {
+      items = [{
+        saleType: body.saleType || "service",
+        productId: body.productId,
+        productName: body.productName,
+        categoryId: body.categoryId,
+        quantity: body.quantity,
+        totalPrice: body.totalPrice,
+        rawExpense: body.rawExpense,
+        customerName: body.customerName,
+        customerPhone: body.customerPhone,
+      }];
     }
 
-    if (quantity <= 0 || totalPrice <= 0 || paidAmount < 0) {
+    // Validate at least one item
+    if (!Array.isArray(items) || items.length === 0) {
       return Response.json(
         {
           success: false,
-          message:
-            "Quantity and total price must be greater than zero. Paid amount cannot be negative.",
+          message: "At least one item is required for a sale"
         },
         { status: 400 },
       );
     }
 
-    if (paidAmount > totalPrice) {
+    // Extract sale-level fields
+    let {
+      customerName,
+      customerPhone,
+      paymentMethod,
+      paidAmount,
+      note,
+    } = body;
+
+    // Validate sale-level fields
+    paidAmount = Number(paidAmount || 0);
+
+    if (!Number.isFinite(paidAmount) || paidAmount < 0) {
+      return Response.json(
+        { success: false, message: "Invalid paid amount" },
+        { status: 400 },
+      );
+    }
+
+    // 🛑 3. Database Connection
+    const client = await clientPromise;
+    const db = client.db("products");
+
+    const now = new Date();
+
+    // =========================================================
+    // 🧮 4. Process each item in the items array
+    // =========================================================
+
+    const processedItems = [];
+    let total = 0;
+    let totalExpense = 0;
+    let totalCommission = 0;
+    let hasProductItems = false;
+    let firstCategoryId = null;
+    let firstCategoryName = "";
+    let firstProductName = "";
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const result = await processItem(db, item, now);
+
+      if (!result.success) {
+        return Response.json(
+          {
+            success: false,
+            message: `Item ${i + 1}: ${result.message}`
+          },
+          { status: 400 },
+        );
+      }
+
+      processedItems.push(result.item);
+
+      total += result.item.totalPrice;
+      totalExpense += result.item.rawExpense + result.item.commission;
+      totalCommission += result.item.commission;
+
+      if (result.item.itemType === "product") {
+        hasProductItems = true;
+      }
+
+      // Use first category for legacy compatibility
+      if (i === 0 && result.item.categoryId) {
+        firstCategoryId = result.item.categoryId;
+        firstCategoryName = result.item.categoryName;
+      }
+
+      if (i === 0 && result.item.productName) {
+        firstProductName = result.item.productName;
+      }
+    }
+
+    // Validate paid amount against total
+    if (paidAmount > total) {
       return Response.json(
         {
           success: false,
@@ -84,162 +301,11 @@ export async function POST(req) {
       );
     }
 
-    // 🛑 5. Database Connection
-    const client = await clientPromise;
-    const db = client.db("products");
-
-    const now = new Date();
-
     // =========================================================
-    // 🧮 5b. Resolve item-specific fields per sale type
-    //   - product: inventory item → cost from buyRate, no commission, stock guard
-    //   - service: category → commission-based (unchanged behavior)
-    // =========================================================
-
-    let resolvedProductName = productName;
-    let resolvedCategoryId = null;
-    let resolvedCategoryName = "";
-    let finalRawExpense = 0;
-    let commission = 0;
-    let productDoc = null;
-
-    if (saleType === "product") {
-      // 🔍 Validate & load product
-      if (!productId || !ObjectId.isValid(productId)) {
-        return Response.json(
-          { success: false, message: "A valid product is required" },
-          { status: 400 },
-        );
-      }
-
-      productDoc = await db
-        .collection("products")
-        .findOne({ _id: new ObjectId(productId) });
-
-      if (!productDoc) {
-        return Response.json(
-          { success: false, message: "Product not found" },
-          { status: 404 },
-        );
-      }
-
-      // 📦 Block overselling
-      const availableStock = Number(productDoc.stock || 0);
-      if (availableStock < quantity) {
-        return Response.json(
-          {
-            success: false,
-            message: `Insufficient stock (only ${availableStock} left)`,
-          },
-          { status: 400 },
-        );
-      }
-
-      resolvedProductName = productDoc.name;
-      resolvedCategoryId = productDoc.categoryId
-        ? new ObjectId(productDoc.categoryId)
-        : null;
-      resolvedCategoryName = productDoc.categoryName || "";
-      // COGS = buyRate × quantity (server-computed; below-cost sales allowed)
-      finalRawExpense = Number(productDoc.buyRate || 0) * quantity;
-      // Commission = productDoc.commission % of sale price (same model as services)
-      const productCommRate = Number(productDoc.commission || 0);
-      commission = Math.round((totalPrice * productCommRate) / 100);
-    } else {
-      // ❌ Service required fields
-      if (!productName || !categoryId) {
-        return Response.json(
-          {
-            success: false,
-            message: "Missing required fields (product or category)",
-          },
-          { status: 400 },
-        );
-      }
-
-      // Expense must be a valid, non-negative number for services
-      if (!Number.isFinite(rawExpense) || rawExpense < 0) {
-        return Response.json(
-          { success: false, message: "Invalid expense value" },
-          { status: 400 },
-        );
-      }
-
-      if (rawExpense > totalPrice) {
-        return Response.json(
-          {
-            success: false,
-            message: "Expense cost cannot exceed the Total Price",
-          },
-          { status: 400 },
-        );
-      }
-
-      // 🔍 Validate Category ID
-      if (!ObjectId.isValid(categoryId)) {
-        return Response.json(
-          { success: false, message: "Invalid Category ID format" },
-          { status: 400 },
-        );
-      }
-
-      const categoryData = await db.collection("categories").findOne({
-        _id: new ObjectId(categoryId),
-      });
-
-      if (!categoryData) {
-        return Response.json(
-          { success: false, message: "Category not found in database" },
-          { status: 404 },
-        );
-      }
-
-      // 👤 Conditional Customer Validation (service categories only)
-      const mandatoryCategories = [
-        "DCR",
-        "Khajna Payment",
-        "Namjari",
-        "Khajna Nibondon",
-        "Miss Case",
-        "Khatian Application",
-      ];
-
-      if (mandatoryCategories.includes(categoryData.name)) {
-        if (!customerName || customerName.length < 2) {
-          return Response.json(
-            {
-              success: false,
-              message: `Customer name is required for ${categoryData.name} category`,
-            },
-            { status: 400 },
-          );
-        }
-
-        if (!customerPhone || customerPhone.length < 11) {
-          return Response.json(
-            {
-              success: false,
-              message: `Valid phone number is required for ${categoryData.name} category`,
-            },
-            { status: 400 },
-          );
-        }
-      }
-
-      resolvedProductName = productName;
-      resolvedCategoryId = new ObjectId(categoryId);
-      resolvedCategoryName = categoryData.name;
-      const commissionRate = Number(categoryData.commission || 0);
-      commission = Math.round((totalPrice * commissionRate) / 100);
-      finalRawExpense = rawExpense;
-    }
-
-    // =========================================================
-    // 🧾 6. DAILY INVOICE COUNTER
+    // 🧾 5. DAILY INVOICE COUNTER
     // Format: INV-YYYYMMDD-00001
     // Example: INV-20260819-00001
     // =========================================================
-
 
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -274,7 +340,7 @@ export async function POST(req) {
     const invoiceNumber = `INV-${dateKey}-${String(sequence).padStart(5, "0")}`;
 
     // =========================================================
-    // 🔐 7. Make Sure Invoice Number Is Unique
+    // 🔐 6. Make Sure Invoice Number Is Unique
     // =========================================================
 
     await db
@@ -282,23 +348,20 @@ export async function POST(req) {
       .createIndex({ invoiceNumber: 1 }, { unique: true });
 
     // =========================================================
-    // 📊 8. Calculations (item-specific values resolved above)
+    // 📊 7. Calculations
     // =========================================================
 
-    const total = totalPrice;
-
-    const totalExpense = finalRawExpense + commission;
-
     const netProfit = Math.round(total - totalExpense);
-
     const due = Math.max(total - paidAmount, 0);
 
     // =========================================================
-    // 💾 9. Insert Sale
+    // 💾 8. Insert Sale
     // =========================================================
 
     const saleDoc = {
-      saleType,
+      // New multi-item format
+      saleType: processedItems.length > 1 || (processedItems[0]?.itemType === "mixed") ? "mixed" : processedItems[0]?.itemType || "service",
+      items: processedItems,
 
       sellerName: session.user.name || "",
       sellerId: session.user.id,
@@ -306,20 +369,20 @@ export async function POST(req) {
       // 🧾 Backend generated invoice
       invoiceNumber,
 
-      customerName,
-      customerPhone,
+      // Legacy fields for backward compatibility
+      customerName: customerName?.trim() || "",
+      customerPhone: customerPhone?.trim() || "",
+      productName: firstProductName,
 
-      productName: resolvedProductName,
+      categoryId: firstCategoryId,
+      categoryName: firstCategoryName,
 
-      categoryId: resolvedCategoryId,
-      categoryName: resolvedCategoryName,
+      // Legacy numeric fields (summed for backward compatibility)
+      quantity: processedItems.reduce((sum, item) => sum + item.quantity, 0),
+      totalPrice: total,
+      rawExpense: processedItems.reduce((sum, item) => sum + item.rawExpense, 0),
 
-      quantity,
-      totalPrice,
-
-      rawExpense: finalRawExpense,
-
-      paymentMethod,
+      paymentMethod: paymentMethod || "Cash",
 
       paidAmount,
 
@@ -329,48 +392,70 @@ export async function POST(req) {
       total,
       totalExpense,
       netProfit,
-      commission,
+      commission: totalCommission,
       due,
 
       createdAt: now,
     };
 
-    // 🔗 Link the inventory product for product-type sales (enables stock restore on delete)
-    if (saleType === "product") {
-      saleDoc.productId = new ObjectId(productId);
+    // 🔗 Link the first inventory product for product-type sales (enables stock restore on delete)
+    const firstProductItem = processedItems.find(item => item.itemType === "product");
+    if (firstProductItem) {
+      saleDoc.productId = firstProductItem.productId;
     }
 
     const sale = await db.collection("sales").insertOne(saleDoc);
 
     // =========================================================
-    // 📦 10b. Decrement inventory stock (product sales only, guarded)
+    // 📦 9. Decrement inventory stock (product sales only, guarded)
     // =========================================================
 
-    if (saleType === "product") {
-      await db.collection("products").updateOne(
-        { _id: new ObjectId(productId), stock: { $gte: quantity } },
-        {
-          $inc: { stock: -quantity },
-          $set: { updatedAt: now },
-        },
-      );
+    for (const item of processedItems) {
+      if (item.itemType === "product" && item.stockAffected > 0) {
+        await db.collection("products").updateOne(
+          { _id: item.productId, stock: { $gte: item.stockAffected } },
+          {
+            $inc: { stock: -item.stockAffected },
+            $set: { updatedAt: now },
+          },
+        );
+      }
     }
 
     // =========================================================
-    // 📈 11. Update Category Statistics
+    // 📈 10. Update Category Statistics
     // =========================================================
 
-    if (resolvedCategoryId) {
+    // Update statistics for each unique category
+    const categoryStats = new Map();
+    for (const item of processedItems) {
+      if (item.categoryId) {
+        if (!categoryStats.has(item.categoryId.toString())) {
+          categoryStats.set(item.categoryId.toString(), {
+            categoryId: item.categoryId,
+            totalSales: 0,
+            totalProfit: 0,
+            totalCommission: 0,
+            saleCount: 0,
+          });
+        }
+        const stats = categoryStats.get(item.categoryId.toString());
+        stats.totalSales += item.totalPrice;
+        stats.totalProfit += Math.round(item.totalPrice - item.rawExpense - item.commission);
+        stats.totalCommission += item.commission;
+        stats.saleCount += 1;
+      }
+    }
+
+    for (const stats of categoryStats.values()) {
       await db.collection("categories").updateOne(
-        {
-          _id: resolvedCategoryId,
-        },
+        { _id: stats.categoryId },
         {
           $inc: {
-            totalSales: total,
-            totalProfit: netProfit,
-            totalCommission: commission,
-            saleCount: 1,
+            totalSales: stats.totalSales,
+            totalProfit: stats.totalProfit,
+            totalCommission: stats.totalCommission,
+            saleCount: stats.saleCount,
           },
           $set: {
             updatedAt: now,
@@ -380,24 +465,22 @@ export async function POST(req) {
     }
 
     // =========================================================
-    // ✅ 12. Success Response
+    // ✅ 11. Success Response
     // =========================================================
 
     return Response.json(
       {
         success: true,
         message: "Sale recorded successfully",
-
         saleId: sale.insertedId,
-
         data: {
           invoiceNumber,
-
           total,
           totalExpense,
           netProfit,
-          commission,
+          commission: totalCommission,
           due,
+          itemsCount: processedItems.length,
         },
       },
       { status: 201 },
@@ -469,7 +552,7 @@ export async function GET(request) {
     // ৪. সার্চ ফিল্টার (প্রোডাক্ট নেম বা ইনভয়েস নাম্বার)
     if (searchTerm) {
       query.$or = [
-        { productName: { $regex: searchTerm, $options: "i" } },
+        { "items.productName": { $regex: searchTerm, $options: "i" } },
         { invoiceNumber: { $regex: searchTerm, $options: "i" } },
       ];
     }
@@ -520,6 +603,43 @@ export async function GET(request) {
 
     const totalSalesCount = await salesCollection.countDocuments(query);
 
+    // Normalize sales data (handle both multi-item and legacy format)
+    const normalizedSales = sales.map(sale => {
+      // If items array exists, use it (multi-item format)
+      if (sale.items && Array.isArray(sale.items) && sale.items.length > 0) {
+        return {
+          ...sale,
+          items: sale.items.map(item => ({
+            ...item,
+            saleType: item.saleType || item.itemType || "service",
+            productName: item.productName || "",
+            quantity: Number(item.quantity) || 0,
+            unitPrice: Number(item.unitPrice) || 0,
+            totalPrice: Number(item.totalPrice) || 0,
+            rawExpense: Number(item.rawExpense) || 0,
+            commission: Number(item.commission) || 0,
+          })),
+        };
+      }
+      // Legacy format: convert to multi-item structure
+      return {
+        ...sale,
+        items: [{
+          saleType: sale.saleType || "service",
+          productName: sale.productName || "",
+          quantity: Number(sale.quantity) || 0,
+          unitPrice: Number(sale.quantity) > 0 ? (Number(sale.totalPrice) || 0) / Number(sale.quantity) : 0,
+          totalPrice: Number(sale.totalPrice) || 0,
+          rawExpense: Number(sale.rawExpense) || 0,
+          commission: Number(sale.commission) || 0,
+          productId: sale.productId,
+          categoryId: sale.categoryId,
+          categoryName: sale.categoryName || "",
+          unit: "pcs",
+        }],
+      };
+    });
+
     // ७. শুধু ঐ ইউজারের ডেটার ওপর ভিত্তি করে এগ্রিগেশন (Summary) বের করা
     const summaryData = await salesCollection
       .aggregate([
@@ -545,7 +665,7 @@ export async function GET(request) {
     return NextResponse.json(
       {
         success: true,
-        data: sales,
+        data: normalizedSales,
         pagination: {
           totalResults: totalSalesCount,
           totalPages: Math.ceil(totalSalesCount / limit),

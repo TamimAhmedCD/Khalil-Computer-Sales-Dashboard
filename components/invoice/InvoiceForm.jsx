@@ -36,7 +36,7 @@ const invoiceSchema = z.object({
       description: z.string().optional(),
       quantity: z.number().min(1, "Quantity must be at least 1"),
       unit: z.string().default("pcs"),
-      unitPrice: z.number().min(0, "Price must be non-negative"),
+      rowTotal: z.number().min(0, "Row total must be non-negative"),
       discount: z.number().min(0).default(0),
     })
   ).min(1, "At least one item is required"),
@@ -75,7 +75,7 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
           description: "",
           quantity: 1,
           unit: "pcs",
-          unitPrice: 0,
+          rowTotal: 0,
           discount: 0,
         },
       ],
@@ -97,26 +97,45 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
           const sale = response.data?.data;
 
           if (sale) {
-            // Automatically fill the form with the sale data
-            reset({
-              customerName: sale.customerName || "",
-              customerPhone: sale.customerPhone || "",
-              customerAddress: "",
-              items: [
+            let invoiceItems = [];
+
+            // Check if sale has multiple items (new format)
+            if (sale.items && Array.isArray(sale.items) && sale.items.length > 0) {
+              // Multi-item sale - load all items
+              invoiceItems = sale.items.map(item => ({
+                name: item.productName || "",
+                description: item.categoryName || "",
+                quantity: item.quantity || 1,
+                unit: (item.saleType === "service" || item.itemType === "service") ? "service" : "pcs",
+                rowTotal: item.totalPrice || 0, // Set rowTotal from sale's totalPrice
+                discount: 0,
+              }));
+              toast.success(`Loaded ${sale.items.length} items from sale into invoice`);
+            } else {
+              // Legacy single-item sale
+              invoiceItems = [
                 {
                   name: sale.productName || sale.categoryName || "",
                   description: sale.categoryName || "",
                   quantity: sale.quantity || 1,
                   unit: sale.saleType === "service" ? "service" : "pcs",
-                  unitPrice: (sale.totalPrice / (sale.quantity || 1)) || 0,
+                  rowTotal: sale.totalPrice || 0, // Set rowTotal from sale's totalPrice
                   discount: 0,
                 },
-              ],
+              ];
+              toast.success("Loaded sale data into invoice");
+            }
+
+            // Automatically fill the form with the sale data
+            reset({
+              customerName: sale.customerName || "",
+              customerPhone: sale.customerPhone || "",
+              customerAddress: "",
+              items: invoiceItems,
               paidAmount: sale.paidAmount || 0,
               paymentMethod: sale.paymentMethod || "Cash",
               notes: sale.note || "",
             });
-            toast.success("Loaded sale data into invoice");
           }
         } catch (error) {
           console.error("Failed to load sale data:", error);
@@ -138,9 +157,9 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
   const watchedItems = watch("items") || [];
   const watchedPaid = watch("paidAmount") || 0;
 
-  // Calculate totals
+  // Calculate totals - use rowTotal directly
   const subtotal = watchedItems.reduce((sum, item) => {
-    return sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+    return sum + (Number(item.rowTotal) || 0);
   }, 0);
 
   const totalDiscount = watchedItems.reduce((sum, item) => {
@@ -168,11 +187,10 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
     const processedItems = (formData.items || []).map((item) => ({
       ...item,
       quantity: Number(item.quantity) || 0,
-      unitPrice: Number(item.unitPrice) || 0,
+      unitPrice: Number(item.rowTotal) / (Number(item.quantity) || 1), // Calculate unitPrice for display
+      rowTotal: Number(item.rowTotal) || 0,
       discount: Number(item.discount) || 0,
-      total:
-        (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) -
-        (Number(item.discount) || 0),
+      total: (Number(item.rowTotal) || 0) - (Number(item.discount) || 0),
     }));
 
     setPreviewData({
@@ -182,9 +200,9 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
       customerPhone: formData.customerPhone,
       customerAddress: formData.customerAddress,
       items: processedItems,
-      subtotal,
-      totalDiscount,
-      grandTotal,
+      subtotal: processedItems.reduce((sum, item) => sum + item.total + item.discount, 0),
+      totalDiscount: processedItems.reduce((sum, item) => sum + item.discount, 0),
+      grandTotal: processedItems.reduce((sum, item) => sum + item.total, 0),
       paidAmount: watchedPaid,
       dueAmount,
       paymentMethod: formData.paymentMethod,
@@ -274,7 +292,7 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
                     description: "",
                     quantity: 1,
                     unit: "pcs",
-                    unitPrice: 0,
+                    rowTotal: 0,
                     discount: 0,
                   })
                 }
@@ -287,7 +305,7 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-gray-50/50"
+                  className="grid grid-cols-1 md:grid-cols-14 gap-3 items-end p-3 border rounded-lg bg-gray-50/50"
                 >
                   <div className="md:col-span-3 space-y-1">
                     <Label className="text-xs">Item/Service Name *</Label>
@@ -305,7 +323,7 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
                     />
                   </div>
 
-                  <div className="md:col-span-1 space-y-1">
+                  <div className="md:col-span-2 space-y-1">
                     <Label className="text-xs">Qty</Label>
                     <Input
                       type="number"
@@ -316,7 +334,7 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
                     />
                   </div>
 
-                  <div className="md:col-span-1 space-y-1">
+                  <div className="md:col-span-2 space-y-1">
                     <Label className="text-xs">Unit</Label>
                     <Input
                       placeholder="pcs"
@@ -324,22 +342,25 @@ export default function InvoiceForm({ initialData, mode = "create", isEmployee =
                     />
                   </div>
 
-                  <div className="md:col-span-2 space-y-1">
-                    <Label className="text-xs">Price (৳)</Label>
+                  <div className="md:col-span-3 space-y-1">
+                    <Label className="text-xs">Row Total (৳)</Label>
                     <Input
                       type="number"
                       min="0"
-                      {...register(`items.${index}.unitPrice`, {
+                      step="0.01"
+                      {...register(`items.${index}.rowTotal`, {
                         valueAsNumber: true,
                       })}
+                      placeholder="Total amount for this row"
                     />
                   </div>
 
-                  <div className="md:col-span-1 space-y-1">
+                  <div className="md:col-span-2 space-y-1">
                     <Label className="text-xs">Disc (৳)</Label>
                     <Input
                       type="number"
                       min="0"
+                      step="0.01"
                       {...register(`items.${index}.discount`, {
                         valueAsNumber: true,
                       })}

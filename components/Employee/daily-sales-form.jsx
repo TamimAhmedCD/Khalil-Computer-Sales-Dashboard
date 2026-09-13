@@ -1,7 +1,7 @@
 "use client";
 
-import SharedDailySalesForm from "@/components/sales/DailySalesForm";
+import DailySalesFormMultiItem from "@/components/sales/DailySalesFormMultiItem";
 
 export default function DailySalesForm(props) {
-  return <SharedDailySalesForm redirectTo="/employee/sales" {...props} />;
+  return <DailySalesFormMultiItem redirectTo="/employee/sales" {...props} />;
 }
