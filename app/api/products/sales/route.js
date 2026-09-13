@@ -18,7 +18,7 @@ export async function POST(req) {
       );
     }
 
-    // 📦 2. Request Body
+    // 📦 2. Request Body - Support both legacy single-item and new multi-item format
     const body = await req.json();
 
     let {
@@ -34,7 +34,11 @@ export async function POST(req) {
       paymentMethod,
       paidAmount,
       note,
+      items = [],
     } = body;
+
+    // Determine if multi-item or single-item format
+    const isMultiItem = Array.isArray(items) && items.length > 0;
 
     // 🔀 সেল টাইপ নরমালাইজ: শুধু "product" অথবা ডিফল্ট "service"
     saleType = saleType === "product" ? "product" : "service";
@@ -46,12 +50,66 @@ export async function POST(req) {
     categoryId = categoryId?.trim() || "";
     productId = productId?.trim() || "";
 
-    quantity = Number(quantity);
-    totalPrice = Number(totalPrice);
-    rawExpense = Number(rawExpense || 0);
     paidAmount = Number(paidAmount || 0);
 
-    // ❌ 4. Shared numeric protection (quantity/price/paid for both modes)
+    if (isMultiItem) {
+      // Multi-item validation
+      if (!Array.isArray(items) || items.length === 0) {
+        return Response.json(
+          { success: false, message: "Items array must contain at least one item" },
+          { status: 400 },
+        );
+      }
+
+      // Validate each item
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item || typeof item !== "object") {
+          return Response.json(
+            { success: false, message: `Item ${i + 1} is invalid` },
+            { status: 400 },
+          );
+        }
+
+        // Clean item values
+        item.productName = item.productName?.trim() || "";
+        item.categoryId = item.categoryId?.trim() || "";
+        item.productId = item.productId?.trim() || "";
+        item.quantity = Number(item.quantity || 1);
+        item.price = Number(item.price || 0);
+        item.rawExpense = Number(item.rawExpense || 0);
+
+        if (!Number.isFinite(item.quantity) || !Number.isFinite(item.price)) {
+          return Response.json(
+            { success: false, message: `Invalid numeric values in item ${i + 1}` },
+            { status: 400 },
+          );
+        }
+
+        if (item.quantity <= 0 || item.price < 0) {
+          return Response.json(
+            { success: false, message: `Item ${i + 1}: Quantity must be > 0 and price cannot be negative` },
+            { status: 400 },
+          );
+        }
+      }
+
+      // Calculate totals from items
+      quantity = items.reduce((sum, item) => sum + item.quantity, 0);
+      totalPrice = items.reduce((sum, item) => sum + item.price, 0);
+      rawExpense = items.reduce((sum, item) => sum + item.rawExpense, 0);
+    } else {
+      // Legacy single-item validation
+      productName = productName?.trim() || "";
+      categoryId = categoryId?.trim() || "";
+      productId = productId?.trim() || "";
+
+      quantity = Number(quantity);
+      totalPrice = Number(totalPrice);
+      rawExpense = Number(rawExpense || 0);
+    }
+
+    // ❌ 4. Shared numeric protection
     if (
       !Number.isFinite(quantity) ||
       !Number.isFinite(totalPrice) ||
@@ -91,9 +149,9 @@ export async function POST(req) {
     const now = new Date();
 
     // =========================================================
-    // 🧮 5b. Resolve item-specific fields per sale type
-    //   - product: inventory item → cost from buyRate, no commission, stock guard
-    //   - service: category → commission-based (unchanged behavior)
+    // 🧮 5b. Resolve item-specific fields per sale type / multi-item
+    //   - product: inventory item → cost from buyRate, commission, stock guard
+    //   - service: category → commission-based
     // =========================================================
 
     let resolvedProductName = productName;
@@ -101,10 +159,188 @@ export async function POST(req) {
     let resolvedCategoryName = "";
     let finalRawExpense = 0;
     let commission = 0;
-    let productDoc = null;
+    let resolvedItems = [];
+    const stockUpdates = [];
+    const categoryStatsUpdates = [];
 
-    if (saleType === "product") {
-      // 🔍 Validate & load product
+    if (isMultiItem) {
+      // Process multi-item array
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const itemSaleType = item.saleType === "product" || saleType === "product" ? "product" : "service";
+
+        if (itemSaleType === "product") {
+          if (!item.productId || !ObjectId.isValid(item.productId)) {
+            return Response.json(
+              { success: false, message: `Item ${i + 1}: Valid product is required` },
+              { status: 400 },
+            );
+          }
+
+          const productDoc = await db
+            .collection("products")
+            .findOne({ _id: new ObjectId(item.productId) });
+
+          if (!productDoc) {
+            return Response.json(
+              { success: false, message: `Item ${i + 1}: Product not found` },
+              { status: 404 },
+            );
+          }
+
+          const availableStock = Number(productDoc.stock || 0);
+          if (availableStock < item.quantity) {
+            return Response.json(
+              {
+                success: false,
+                message: `Item ${i + 1} (${productDoc.name}): Insufficient stock (only ${availableStock} left)`,
+              },
+              { status: 400 },
+            );
+          }
+
+          const itemRawExpense = Number(productDoc.buyRate || 0) * item.quantity;
+          const productCommRate = Number(productDoc.commission || 0);
+          const itemCommission = Math.round((item.price * productCommRate) / 100);
+          const itemProfit = Math.round(item.price - itemRawExpense - itemCommission);
+
+          finalRawExpense += itemRawExpense;
+          commission += itemCommission;
+
+          resolvedItems.push({
+            saleType: "product",
+            productId: new ObjectId(item.productId),
+            productName: productDoc.name,
+            categoryId: productDoc.categoryId ? new ObjectId(productDoc.categoryId) : null,
+            categoryName: productDoc.categoryName || "",
+            quantity: item.quantity,
+            unit: productDoc.unit || item.unit || "pcs",
+            unitPrice: item.quantity > 0 ? item.price / item.quantity : item.price,
+            price: item.price,
+            rawExpense: itemRawExpense,
+            commission: itemCommission,
+            commissionRate: productCommRate,
+            netProfit: itemProfit,
+          });
+
+          stockUpdates.push({
+            productId: new ObjectId(item.productId),
+            quantity: item.quantity,
+          });
+
+          if (productDoc.categoryId) {
+            categoryStatsUpdates.push({
+              categoryId: new ObjectId(productDoc.categoryId),
+              sales: item.price,
+              profit: itemProfit,
+              commission: itemCommission,
+            });
+          }
+        } else {
+          // Service item
+          if (!item.productName || !item.categoryId) {
+            return Response.json(
+              {
+                success: false,
+                message: `Item ${i + 1}: Missing product name or category`,
+              },
+              { status: 400 },
+            );
+          }
+
+          if (!ObjectId.isValid(item.categoryId)) {
+            return Response.json(
+              { success: false, message: `Item ${i + 1}: Invalid Category ID format` },
+              { status: 400 },
+            );
+          }
+
+          const categoryData = await db.collection("categories").findOne({
+            _id: new ObjectId(item.categoryId),
+          });
+
+          if (!categoryData) {
+            return Response.json(
+              { success: false, message: `Item ${i + 1}: Category not found in database` },
+              { status: 404 },
+            );
+          }
+
+          const mandatoryCategories = [
+            "DCR",
+            "Khajna Payment",
+            "Namjari",
+            "Khajna Nibondon",
+            "Miss Case",
+            "Khatian Application",
+          ];
+
+          if (mandatoryCategories.includes(categoryData.name)) {
+            if (!customerName || customerName.length < 2) {
+              return Response.json(
+                {
+                  success: false,
+                  message: `Customer name is required for ${categoryData.name} category`,
+                },
+                { status: 400 },
+              );
+            }
+
+            if (!customerPhone || customerPhone.length < 11) {
+              return Response.json(
+                {
+                  success: false,
+                  message: `Valid phone number is required for ${categoryData.name} category`,
+                },
+                { status: 400 },
+              );
+            }
+          }
+
+          const itemRawExpense = Number(item.rawExpense || 0);
+          const commissionRate = Number(categoryData.commission || 0);
+          const itemCommission = Math.round((item.price * commissionRate) / 100);
+          const itemProfit = Math.round(item.price - itemRawExpense - itemCommission);
+
+          finalRawExpense += itemRawExpense;
+          commission += itemCommission;
+
+          resolvedItems.push({
+            saleType: "service",
+            productName: item.productName,
+            categoryId: new ObjectId(item.categoryId),
+            categoryName: categoryData.name,
+            quantity: item.quantity,
+            unit: item.unit || "service",
+            unitPrice: item.quantity > 0 ? item.price / item.quantity : item.price,
+            price: item.price,
+            rawExpense: itemRawExpense,
+            commission: itemCommission,
+            commissionRate: commissionRate,
+            netProfit: itemProfit,
+          });
+
+          categoryStatsUpdates.push({
+            categoryId: new ObjectId(item.categoryId),
+            sales: item.price,
+            profit: itemProfit,
+            commission: itemCommission,
+          });
+        }
+      }
+
+      // Summary naming for multi-item
+      if (resolvedItems.length === 1) {
+        resolvedProductName = resolvedItems[0].productName;
+        resolvedCategoryId = resolvedItems[0].categoryId;
+        resolvedCategoryName = resolvedItems[0].categoryName;
+      } else {
+        resolvedProductName = `${resolvedItems[0].productName} +${resolvedItems.length - 1} more`;
+        resolvedCategoryId = resolvedItems[0].categoryId;
+        resolvedCategoryName = resolvedItems.map((i) => i.categoryName).filter(Boolean).join(", ");
+      }
+    } else if (saleType === "product") {
+      // 🔍 Legacy single product validation & load
       if (!productId || !ObjectId.isValid(productId)) {
         return Response.json(
           { success: false, message: "A valid product is required" },
@@ -112,7 +348,7 @@ export async function POST(req) {
         );
       }
 
-      productDoc = await db
+      const productDoc = await db
         .collection("products")
         .findOne({ _id: new ObjectId(productId) });
 
@@ -140,13 +376,41 @@ export async function POST(req) {
         ? new ObjectId(productDoc.categoryId)
         : null;
       resolvedCategoryName = productDoc.categoryName || "";
-      // COGS = buyRate × quantity (server-computed; below-cost sales allowed)
       finalRawExpense = Number(productDoc.buyRate || 0) * quantity;
-      // Commission = productDoc.commission % of sale price (same model as services)
       const productCommRate = Number(productDoc.commission || 0);
       commission = Math.round((totalPrice * productCommRate) / 100);
+
+      resolvedItems.push({
+        saleType: "product",
+        productId: new ObjectId(productId),
+        productName: productDoc.name,
+        categoryId: resolvedCategoryId,
+        categoryName: resolvedCategoryName,
+        quantity,
+        unit: productDoc.unit || "pcs",
+        unitPrice: quantity > 0 ? totalPrice / quantity : totalPrice,
+        price: totalPrice,
+        rawExpense: finalRawExpense,
+        commission,
+        commissionRate: productCommRate,
+        netProfit: Math.round(totalPrice - finalRawExpense - commission),
+      });
+
+      stockUpdates.push({
+        productId: new ObjectId(productId),
+        quantity,
+      });
+
+      if (resolvedCategoryId) {
+        categoryStatsUpdates.push({
+          categoryId: resolvedCategoryId,
+          sales: totalPrice,
+          profit: Math.round(totalPrice - finalRawExpense - commission),
+          commission,
+        });
+      }
     } else {
-      // ❌ Service required fields
+      // ❌ Legacy single service required fields
       if (!productName || !categoryId) {
         return Response.json(
           {
@@ -157,7 +421,6 @@ export async function POST(req) {
         );
       }
 
-      // Expense must be a valid, non-negative number for services
       if (!Number.isFinite(rawExpense) || rawExpense < 0) {
         return Response.json(
           { success: false, message: "Invalid expense value" },
@@ -175,7 +438,6 @@ export async function POST(req) {
         );
       }
 
-      // 🔍 Validate Category ID
       if (!ObjectId.isValid(categoryId)) {
         return Response.json(
           { success: false, message: "Invalid Category ID format" },
@@ -194,7 +456,6 @@ export async function POST(req) {
         );
       }
 
-      // 👤 Conditional Customer Validation (service categories only)
       const mandatoryCategories = [
         "DCR",
         "Khajna Payment",
@@ -232,6 +493,28 @@ export async function POST(req) {
       const commissionRate = Number(categoryData.commission || 0);
       commission = Math.round((totalPrice * commissionRate) / 100);
       finalRawExpense = rawExpense;
+
+      resolvedItems.push({
+        saleType: "service",
+        productName,
+        categoryId: resolvedCategoryId,
+        categoryName: resolvedCategoryName,
+        quantity,
+        unit: "service",
+        unitPrice: quantity > 0 ? totalPrice / quantity : totalPrice,
+        price: totalPrice,
+        rawExpense: finalRawExpense,
+        commission,
+        commissionRate,
+        netProfit: Math.round(totalPrice - finalRawExpense - commission),
+      });
+
+      categoryStatsUpdates.push({
+        categoryId: resolvedCategoryId,
+        sales: totalPrice,
+        profit: Math.round(totalPrice - finalRawExpense - commission),
+        commission,
+      });
     }
 
     // =========================================================
@@ -298,7 +581,7 @@ export async function POST(req) {
     // =========================================================
 
     const saleDoc = {
-      saleType,
+      saleType: isMultiItem ? (items.every(i => (i.saleType === "product" || saleType === "product")) ? "product" : "service") : saleType,
 
       sellerName: session.user.name || "",
       sellerId: session.user.id,
@@ -332,49 +615,60 @@ export async function POST(req) {
       commission,
       due,
 
+      items: resolvedItems,
+
       createdAt: now,
     };
 
-    // 🔗 Link the inventory product for product-type sales (enables stock restore on delete)
-    if (saleType === "product") {
+    // 🔗 Link the inventory product for product-type sales (legacy property for backwards compatibility)
+    if (!isMultiItem && saleType === "product") {
       saleDoc.productId = new ObjectId(productId);
+    } else if (isMultiItem && resolvedItems.length === 1 && resolvedItems[0].saleType === "product") {
+      saleDoc.productId = resolvedItems[0].productId;
     }
 
     const sale = await db.collection("sales").insertOne(saleDoc);
 
     // =========================================================
-    // 📦 10b. Decrement inventory stock (product sales only, guarded)
+    // 📦 10b. Decrement inventory stock & Category Statistics
     // =========================================================
 
-    if (saleType === "product") {
+    // Update stocks
+    for (const stockUpdate of stockUpdates) {
       await db.collection("products").updateOne(
-        { _id: new ObjectId(productId), stock: { $gte: quantity } },
+        { _id: stockUpdate.productId, stock: { $gte: stockUpdate.quantity } },
         {
-          $inc: { stock: -quantity },
+          $inc: { stock: -stockUpdate.quantity },
           $set: { updatedAt: now },
         },
       );
     }
 
-    // =========================================================
-    // 📈 11. Update Category Statistics
-    // =========================================================
+    // Update categories
+    // Aggregate by category to minimize DB calls
+    const categoryStatsMap = {};
+    for (const stat of categoryStatsUpdates) {
+      const catIdStr = stat.categoryId.toString();
+      if (!categoryStatsMap[catIdStr]) {
+        categoryStatsMap[catIdStr] = { sales: 0, profit: 0, commission: 0, count: 0 };
+      }
+      categoryStatsMap[catIdStr].sales += stat.sales;
+      categoryStatsMap[catIdStr].profit += stat.profit;
+      categoryStatsMap[catIdStr].commission += stat.commission;
+      categoryStatsMap[catIdStr].count += 1;
+    }
 
-    if (resolvedCategoryId) {
+    for (const [catId, stats] of Object.entries(categoryStatsMap)) {
       await db.collection("categories").updateOne(
-        {
-          _id: resolvedCategoryId,
-        },
+        { _id: new ObjectId(catId) },
         {
           $inc: {
-            totalSales: total,
-            totalProfit: netProfit,
-            totalCommission: commission,
-            saleCount: 1,
+            totalSales: stats.sales,
+            totalProfit: stats.profit,
+            totalCommission: stats.commission,
+            saleCount: stats.count,
           },
-          $set: {
-            updatedAt: now,
-          },
+          $set: { updatedAt: now },
         },
       );
     }

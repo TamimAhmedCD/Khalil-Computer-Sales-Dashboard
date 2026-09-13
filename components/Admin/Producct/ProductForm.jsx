@@ -15,6 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AlertCircle, ChevronLeft, Package, Save, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,30 +29,41 @@ const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const schema = z.object({
-  name: z.string().min(2, "Product name must be at least 2 characters").max(100, "Product name is too long"),
+  name: z.string().min(2, "Product name is required").max(100, "Product name is too long"),
   categoryId: z.string().min(1, "Please select a category"),
   brand: z.string().max(50, "Brand name is too long").optional(),
   description: z.string().max(1000, "Description is too long").optional(),
-  buyRate: z
-    .number({ invalid_type_error: "Enter a valid numeric buy rate", required_error: "Buy rate is required" })
-    .min(0, "Buy rate cannot be negative")
-    .max(9999999, "Buy rate is too high"),
-  saleRate: z
-    .number({ invalid_type_error: "Enter a valid numeric sale rate", required_error: "Sale rate is required" })
-    .min(0, "Sale rate cannot be negative")
-    .max(9999999, "Sale rate is too high"),
-  commission: z
-    .number({ invalid_type_error: "Enter a valid commission percentage" })
-    .min(0, "Commission cannot be negative")
-    .max(100, "Commission cannot exceed 100%"),
-  stock: z
-    .number({ invalid_type_error: "Enter a valid stock quantity" })
-    .min(0, "Stock cannot be negative")
-    .int("Stock must be a whole number"),
-  lowStockAlert: z
-    .number({ invalid_type_error: "Enter a valid alert quantity" })
-    .min(0, "Alert quantity cannot be negative")
-    .int("Alert quantity must be a whole number"),
+  buyRate: z.preprocess(
+    (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+    z.number({ required_error: "Buy rate is required", invalid_type_error: "Buy rate is required" })
+      .min(0, "Buy rate cannot be negative")
+      .max(9999999, "Buy rate is too high")
+  ),
+  saleRate: z.preprocess(
+    (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+    z.number({ required_error: "Sale rate is required", invalid_type_error: "Sale rate is required" })
+      .min(0, "Sale rate cannot be negative")
+      .max(9999999, "Sale rate is too high")
+  ),
+  commission: z.preprocess(
+    (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+    z.number({ required_error: "Commission is required", invalid_type_error: "Commission is required" })
+      .min(0, "Commission cannot be negative")
+      .max(100, "Commission cannot exceed 100%")
+  ),
+  stock: z.preprocess(
+    (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+    z.number({ required_error: "Stock is required", invalid_type_error: "Stock is required" })
+      .min(0, "Stock cannot be negative")
+      .int("Stock must be a whole number")
+  ),
+  lowStockAlert: z.preprocess(
+    (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Alert quantity is required" })
+      .min(0, "Alert quantity cannot be negative")
+      .int("Alert quantity must be a whole number")
+      .optional()
+  ),
   unit: z.string().min(1, "Unit is required"),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
@@ -59,11 +77,11 @@ const emptyValues = {
   categoryId: "",
   brand: "",
   description: "",
-  buyRate: 0,
-  saleRate: 0,
-  commission: 0,
-  stock: 0,
-  lowStockAlert: 0,
+  buyRate: "",
+  saleRate: "",
+  commission: "",
+  stock: "",
+  lowStockAlert: "",
   unit: "pcs",
   isActive: true,
   isFeatured: false,
@@ -178,6 +196,12 @@ export default function ProductForm({
   );
 
   const onValid = (values) => {
+    // Validate images - at least 1 required for create mode
+    if (!isEdit && totalImages === 0) {
+      toast.error("At least 1 image is required to create a product.");
+      return;
+    }
+
     const fd = new FormData();
     fd.append("name", values.name);
     fd.append("categoryId", values.categoryId);
@@ -337,10 +361,9 @@ export default function ProductForm({
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  className={cn(errors.description && "border-destructive")}
+                  className={cn("min-h-[110px] resize-none", errors.description && "border-destructive")}
                   {...register("description")}
                   placeholder="Short description of the product"
-                  className="min-h-[110px] resize-none"
                 />
                 {errors.description && (
                   <p className="text-xs text-destructive flex items-center gap-1">

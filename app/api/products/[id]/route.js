@@ -12,7 +12,7 @@ const uploadBuffer = async (file) => {
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "khalil-computer/products", resource_type: "image" },
+      { folder: "kc/p", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
         resolve({ url: result.secure_url, publicId: result.public_id });
@@ -22,14 +22,37 @@ const uploadBuffer = async (file) => {
   });
 };
 
+// Extract public ID from Cloudinary URL
+const extractPublicIdFromUrl = (url) => {
+  if (!url || typeof url !== "string") return null;
+
+  // Example URL: https://res.cloudinary.com/tamim-0711/image/upload/v1789137066/kc/p/l0dahbkpp6hmtojpjwtf.jpg
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]{3,4})?$/);
+  if (match && match[1]) {
+    // Remove the file extension if present
+    return match[1].replace(/\.[a-z]{3,4}$/, "");
+  }
+  return null;
+};
+
 // Best-effort delete of a Cloudinary asset — never throws (a storage hiccup
 // must not block the DB write it accompanies).
-const destroyImage = async (publicId) => {
-  if (!publicId) return;
+const destroyImage = async (url) => {
   try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (err) {
-    console.error("Cloudinary destroy failed:", publicId, err?.message);
+    if (!url) return;
+
+    const publicId = extractPublicIdFromUrl(url);
+    if (!publicId) {
+      console.warn(`Could not extract publicId from URL: ${url}`);
+      return;
+    }
+
+    console.log(`Deleting Cloudinary image: ${publicId}`);
+    await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+    console.log(`Successfully deleted Cloudinary image: ${publicId}`);
+  } catch (error) {
+    // Swallow the error — the DB deletion must proceed regardless
+    console.warn(`Failed to delete Cloudinary image from ${url}:`, error.message);
   }
 };
 
@@ -177,15 +200,15 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // 🖼️ Reconcile images: keep the publicIds the client retained, drop the rest
-    let keepIds = [];
+    // 🖼️ Reconcile images: keep the urls the client retained, drop the rest
+    let keepUrls = [];
     const keepRaw = form.get("keepImages");
     if (keepRaw) {
       try {
         const parsed = JSON.parse(keepRaw.toString());
-        if (Array.isArray(parsed)) keepIds = parsed;
+        if (Array.isArray(parsed)) keepUrls = parsed;
       } catch {
-        keepIds = [];
+        keepUrls = [];
       }
     }
 
@@ -193,10 +216,10 @@ export async function PATCH(request, { params }) {
       ? existing.images
       : [];
     const keptImages = existingImages.filter((img) =>
-      keepIds.includes(img.publicId),
+      keepUrls.includes(img.url),
     );
     const removedImages = existingImages.filter(
-      (img) => !keepIds.includes(img.publicId),
+      (img) => !keepUrls.includes(img.url),
     );
 
     // New uploads
@@ -224,7 +247,7 @@ export async function PATCH(request, { params }) {
     }
 
     // ☁️ Remove dropped images, upload new ones
-    await Promise.all(removedImages.map((img) => destroyImage(img.publicId)));
+    await Promise.all(removedImages.map((img) => destroyImage(img.url)));
     const uploaded = files.length
       ? await Promise.all(files.map((file) => uploadBuffer(file)))
       : [];
@@ -310,7 +333,7 @@ export async function DELETE(request, { params }) {
 
     // Best-effort cleanup of the product's Cloudinary images
     const images = Array.isArray(product.images) ? product.images : [];
-    await Promise.all(images.map((img) => destroyImage(img.publicId)));
+    await Promise.all(images.map((img) => destroyImage(img.url)));
 
     const result = await db
       .collection("products")

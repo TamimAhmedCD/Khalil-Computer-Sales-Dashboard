@@ -30,14 +30,21 @@ export default function InventoryGrid({
           className="gap-0 overflow-hidden border-border/70 py-0 shadow-sm transition-shadow hover:shadow-md"
         >
           <div className="relative aspect-video overflow-hidden bg-muted">
-            {p.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={p.image}
-                alt={p.name}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
+            {p.images && p.images.length > 0 ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.images[0]?.url}
+                  alt={p.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                {p.images.length > 1 && (
+                  <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
+                    +{p.images.length - 1}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex h-full items-center justify-center">
                 <Package className="h-10 w-10 text-muted-foreground/40" />

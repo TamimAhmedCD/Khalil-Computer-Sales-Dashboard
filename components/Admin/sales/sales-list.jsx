@@ -636,26 +636,59 @@ export function SalesList() {
                   </div>
                 </div>
 
-                {/* Product Meta */}
+                {/* Product/Items Meta */}
                 <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-4">
-                  <div className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg">
-                    <div>
-                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
-                        {selectedSale.productName}
-                      </p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
-                        {selectedSale.categoryName}
-                      </span>
-                    </div>
-                    <div className="text-right font-mono">
+                  {selectedSale.items && selectedSale.items.length > 0 ? (
+                    <div className="space-y-2">
                       <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                        Quantity
+                        Line Items ({selectedSale.items.length})
                       </p>
-                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-                        ×{selectedSale.quantity}
-                      </p>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {selectedSale.items.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-2.5 rounded-lg text-xs"
+                          >
+                            <div>
+                              <p className="font-semibold text-zinc-900 dark:text-zinc-200">
+                                {item.productName}
+                              </p>
+                              <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[8px] font-medium border border-zinc-200 dark:border-zinc-700/50">
+                                {item.categoryName || item.saleType}
+                              </span>
+                            </div>
+                            <div className="text-right font-mono">
+                              <p className="text-zinc-800 dark:text-zinc-200 font-bold">
+                                ৳{(item.price || 0).toLocaleString()}
+                              </p>
+                              <p className="text-[10px] text-zinc-400">
+                                {item.quantity} {item.unit || "pcs"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800/40 p-3 rounded-lg">
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
+                          {selectedSale.productName}
+                        </p>
+                        <span className="inline-block mt-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-medium border border-zinc-200 dark:border-zinc-700/50">
+                          {selectedSale.categoryName}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono">
+                        <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                          Quantity
+                        </p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+                          ×{selectedSale.quantity}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Balances Sheet */}

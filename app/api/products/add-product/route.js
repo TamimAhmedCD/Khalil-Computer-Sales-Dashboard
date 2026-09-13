@@ -12,7 +12,7 @@ const uploadBuffer = async (file) => {
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "khalil-computer/products", resource_type: "image" },
+      { folder: "kc/p", resource_type: "image" },
       (error, result) => {
         if (error) return reject(error);
         resolve({ url: result.secure_url, publicId: result.public_id });
