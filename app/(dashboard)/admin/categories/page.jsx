@@ -42,6 +42,7 @@ const categorySchema = z.object({
   commission: z.coerce.number().min(0, "Min 0%").max(100, "Max 100%"),
   description: z.string().optional(),
   status: z.boolean().default(true),
+  requiresCustomerInfo: z.boolean().default(false),
 });
 
 export default function CategoriesPage() {
@@ -90,10 +91,12 @@ export default function CategoriesPage() {
       commission: "",
       description: "",
       status: true,
+      requiresCustomerInfo: false,
     },
   });
 
   const statusValue = watch("status");
+  const requiresCustomerInfoValue = watch("requiresCustomerInfo");
 
   // Handle Create / Update Form Submission
   const onSubmit = async (data) => {
@@ -148,6 +151,7 @@ export default function CategoriesPage() {
       commission: "",
       description: "",
       status: true,
+      requiresCustomerInfo: false,
     });
     setIsFormOpen(true);
   };
@@ -159,6 +163,7 @@ export default function CategoriesPage() {
     setValue("commission", category.commission);
     setValue("description", category.description || "");
     setValue("status", category.status);
+    setValue("requiresCustomerInfo", category.requiresCustomerInfo || false);
     setIsFormOpen(true);
   };
 
@@ -183,6 +188,7 @@ export default function CategoriesPage() {
       commission: "",
       description: "",
       status: true,
+      requiresCustomerInfo: false,
     });
   };
 
@@ -264,19 +270,19 @@ export default function CategoriesPage() {
         open={isFormOpen}
         onOpenChange={(open) => !open && closeFormDialog()}
       >
-        <DialogContent className="sm:max-w-120 rounded-2xl border-border p-0 overflow-hidden shadow-2xl">
-          <DialogHeader className="p-6 bg-muted/20 border-b border-border">
-            <DialogTitle className="text-xl font-bold">
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] flex flex-col rounded-2xl border-border p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="flex-shrink-0 p-4 sm:p-6 bg-muted/20 border-b border-border">
+            <DialogTitle className="text-lg sm:text-xl font-bold">
               {editingCategory ? "Edit Category" : "New Category"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {editingCategory
                 ? "Modify the configuration and commission updates down below."
                 : "Create a new product group and set commission rates."}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground ml-1">
                 Category Name
@@ -355,19 +361,43 @@ export default function CategoriesPage() {
               </button>
             </div>
 
-            <DialogFooter className="gap-2 pt-2">
+            <div className="flex items-center justify-between p-4 bg-blue-500/5 rounded-2xl border border-blue-500/20">
+              <div className="space-y-0.5">
+                <label className="text-sm font-bold text-foreground">
+                  Require Customer Info
+                </label>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-tight">
+                  Name and phone mandatory for sales
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValue("requiresCustomerInfo", !requiresCustomerInfoValue)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                  requiresCustomerInfoValue ? "bg-blue-600" : "bg-zinc-400"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                    requiresCustomerInfoValue ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <DialogFooter className="flex-shrink-0 gap-2 pt-4 pb-4 sm:pt-6 sm:pb-6 bg-muted/20 border-t border-border mt-auto">
               <Button
                 type="button"
                 variant="outline"
                 onClick={closeFormDialog}
-                className="rounded-xl flex-1 h-11"
+                className="rounded-xl flex-1 h-10 sm:h-11 text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-xl flex-1 bg-primary shadow-lg shadow-primary/20 h-11"
+                className="rounded-xl flex-1 bg-primary shadow-lg shadow-primary/20 h-10 sm:h-11 text-sm sm:text-base"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

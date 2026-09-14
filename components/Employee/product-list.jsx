@@ -299,102 +299,138 @@ export function EmployeeProductList({ isCollapsed }) {
           )}
         </div>
 
-        {/* Product Details Modal - Respects sidebar width */}
+        {/* Product Details Modal - Wider, scrollable, always fits on screen */}
         {selectedProduct && (
           <div
             className={cn(
-              "fixed inset-0 flex items-center justify-center p-4 z-50 backdrop-blur-xs animate-in fade-in duration-200 bg-black/40 dark:bg-black/60 transition-all duration-500",
-              isCollapsed ? "md:left-20" : "md:left-64",
-              "left-0" // Mobile full width
+              "fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm transition-all duration-200 animate-in fade-in dark:bg-black/60",
+              isCollapsed ? "md:left-20" : "md:left-64"
             )}
+            onClick={() => setSelectedProduct(null)}
           >
-            <Card className="bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 w-full max-w-2xl rounded-xl max-h-[90vh] overflow-y-auto shadow-2xl transform scale-100 animate-in zoom-in-95 duration-150 text-zinc-800 dark:text-zinc-100">
-              <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800/80 sticky top-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-10">
-                <div>
-                  <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                    Product Details
-                  </h2>
-                  <p className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    SKU: {selectedProduct._id.slice(-8).toUpperCase()}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedProduct(null)}
-                  className="h-7 w-7 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                >
-                  ✕
-                </Button>
-              </div>
-
-              <div className="p-5 space-y-5">
-                {/* Product Images Gallery */}
-                {selectedProduct.images && selectedProduct.images.length > 0 && (
-                  <div className="grid grid-cols-3 gap-3">
-                    {selectedProduct.images.map((img, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800">
-                        <Image
-                          src={img.url}
-                          alt={`${selectedProduct.name} - Image ${idx + 1}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 33vw, 200px"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 mb-1">
-                    {selectedProduct.name}
-                  </h3>
-                  {selectedProduct.brand && (
-                    <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      by {selectedProduct.brand}
-                    </p>
-                  )}
-                </div>
-
-                {selectedProduct.description && (
-                  <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 rounded-xl">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">Description</p>
-                    <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                      {selectedProduct.description}
+            {/* Wider modal, max 90% viewport height, sticky header and scrollable body */}
+            <Card
+              className="relative flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white text-zinc-800 shadow-2xl animate-in zoom-in-95 duration-150 dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Sticky header */}
+              <div className="sticky top-0 z-10 flex-none border-b border-zinc-200 bg-white/95 px-6 py-4 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                      Product Details
+                    </h2>
+                    <p className="mt-0.5 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                      SKU: {selectedProduct._id.slice(-8).toUpperCase()}
                     </p>
                   </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 rounded-xl">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1">Sale Price</p>
-                    <p className="text-lg font-black text-zinc-900 dark:text-zinc-100 font-mono">৳{selectedProduct.saleRate.toLocaleString()}</p>
-                  </div>
-                  <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 rounded-xl">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1">Stock Level</p>
-                    <p className={`text-lg font-black font-mono ${selectedProduct.stock <= (selectedProduct.lowStockAlert || 5) ? "text-red-600 dark:text-red-500" : "text-zinc-900 dark:text-zinc-100"}`}>
-                      {selectedProduct.stock} {selectedProduct.unit || "pcs"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 rounded-xl flex items-center gap-3">
-                  <Tag className="h-5 w-5 text-zinc-400" />
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Category</p>
-                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{selectedProduct.categoryName || "Uncategorized"}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
                   <Button
-                    className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 h-9 text-xs font-semibold rounded-lg transition-all"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setSelectedProduct(null)}
+                    className="h-8 w-8 shrink-0 rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                   >
-                    Close Details
+                    ✕
                   </Button>
                 </div>
+              </div>
+
+              {/* Scrollable content */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                <div className="space-y-5">
+                  {/* Product Images Gallery */}
+                  {selectedProduct.images && selectedProduct.images.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {selectedProduct.images.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/40"
+                        >
+                          <Image
+                            src={img.url}
+                            alt={`${selectedProduct.name} - Image ${idx + 1}`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 33vw, 200px"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Product name and brand */}
+                  <div>
+                    <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
+                      {selectedProduct.name}
+                    </h3>
+                    {selectedProduct.brand && (
+                      <p className="mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                        by {selectedProduct.brand}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Description - moved up and more prominent */}
+                  {selectedProduct.description && (
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Description
+                      </p>
+                      <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        {selectedProduct.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Pricing grid - 2 columns on mobile, 2 on desktop */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Sale Price
+                      </p>
+                      <p className="font-mono text-lg font-black text-zinc-900 dark:text-zinc-100">
+                        ৳{selectedProduct.saleRate.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Stock Level
+                      </p>
+                      <p
+                        className={`font-mono text-lg font-black ${
+                          selectedProduct.stock <= (selectedProduct.lowStockAlert || 5)
+                            ? "text-red-600 dark:text-red-500"
+                            : "text-zinc-900 dark:text-zinc-100"
+                        }`}
+                      >
+                        {selectedProduct.stock} {selectedProduct.unit || "pcs"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Category tag */}
+                  <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                    <Tag className="h-5 w-5 text-zinc-400" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Category
+                      </p>
+                      <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        {selectedProduct.categoryName || "Uncategorized"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky footer */}
+              <div className="sticky bottom-0 flex-none border-t border-zinc-200 bg-zinc-50/95 px-6 py-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95">
+                <Button
+                  className="h-10 w-full rounded-lg bg-zinc-900 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                  onClick={() => setSelectedProduct(null)}
+                >
+                  Close Details
+                </Button>
               </div>
             </Card>
           </div>

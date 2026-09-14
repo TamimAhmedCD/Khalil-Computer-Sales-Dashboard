@@ -137,17 +137,8 @@ async function processItem(db, item, now) {
     result.commissionRate = commissionRate;
     result.rawExpense = rawExpense;
 
-    // Check for mandatory category customer details
-    const mandatoryCategories = [
-      "DCR",
-      "Khajna Payment",
-      "Namjari",
-      "Khajna Nibondon",
-      "Miss Case",
-      "Khatian Application",
-    ];
-
-    if (mandatoryCategories.includes(categoryData.name)) {
+    // Check if category requires customer details (dynamic field from database)
+    if (categoryData.requiresCustomerInfo === true) {
       const customerName = item.customerName?.trim();
       const customerPhone = item.customerPhone?.trim();
 

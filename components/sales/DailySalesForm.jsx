@@ -47,6 +47,8 @@ import { getProducts } from "@/lib/services/products.api";
 
 // 🔄 স্কিমা: এখন সেল দুই ধরনের হতে পারে — "service" (ক্যাটাগরি ভিত্তিক) অথবা "product" (ইনভেন্টরি ভিত্তিক)।
 // categoryId শুধু service-এ, productId শুধু product-এ রিকোয়ার্ড — superRefine দিয়ে কন্ডিশনাল ভ্যালিডেশন।
+// 🔄 স্কিমা: এখন সেল দুই ধরনের হতে পারে — "service" (ক্যাটাগরি ভিত্তিক) অথবা "product" (ইনভেন্টরি ভিত্তিক)।
+// categoryId শুধু service-এ, productId শুধু product-এ রিকোয়ার্ড — superRefine দিয়ে কন্ডিশনাল ভ্যালিডেশন।
 const formSchema = z
   .object({
     saleType: z.enum(["service", "product"]).default("service"),
@@ -94,14 +96,6 @@ const formSchema = z
   });
 
 const PAYMENT_METHODS = ["Cash", "bKash", "Nagad", "Bank", "Due"];
-const mandatoryCategories = [
-  "DCR",
-  "Khajna Payment",
-  "Namjari",
-  "Khajna Nibondon",
-  "Miss Case",
-  "Khatian Application",
-];
 
 const DEFAULTS = {
   saleType: "service",
@@ -111,10 +105,10 @@ const DEFAULTS = {
   categoryId: "",
   productId: "",
   quantity: 1,
-  totalPrice: 0,
-  rawExpense: 0,
+  totalPrice: "",
+  rawExpense: "",
   paymentMethod: "",
-  paidAmount: 0,
+  paidAmount: "",
   note: "",
 };
 
@@ -390,7 +384,7 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
 
   const isClientDetailsRequired =
     !isProduct && selectedCategoryObj
-      ? mandatoryCategories.includes(selectedCategoryObj.name)
+      ? selectedCategoryObj.requiresCustomerInfo === true
       : false;
 
   // 🧾 আইটেম সিলেক্ট হলেই কমিশনের হার জানা যায় — তখনই মেমোতে কমিশন রো দেখানো হয়
@@ -437,22 +431,19 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
   useEffect(() => {
     // ক) কাস্টমার ডাটা ভ্যালিডেশন (শুধু সার্ভিসের ম্যান্ডেটরি ক্যাটাগরিতে)
     if (isClientDetailsRequired) {
-      if (
-        !watchedFields.customerName ||
-        watchedFields.customerName.trim().length < 2
-      ) {
+      const nameValue = watchedFields.customerName?.trim() || "";
+      const phoneValue = watchedFields.customerPhone?.trim() || "";
+
+      if (nameValue.length < 2) {
         setError("customerName", {
           type: "custom",
-          message: `Name is required for ${selectedCategoryObj?.name}`,
+          message: `Customer name is required for ${selectedCategoryObj?.name}`,
         });
       } else {
         clearErrors("customerName");
       }
 
-      if (
-        !watchedFields.customerPhone ||
-        watchedFields.customerPhone.trim().length < 11
-      ) {
+      if (phoneValue.length < 11) {
         setError("customerPhone", {
           type: "custom",
           message: "Valid 11-digit phone number is required",
@@ -652,13 +643,13 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
               saleType: "product",
               productId: data.productId,
               productName: data.productName,
-              quantity: data.quantity,
-              totalPrice: data.totalPrice,
+              quantity: Number(data.quantity) || 1,
+              totalPrice: Number(data.totalPrice) || 0,
               rawExpense:
                 Number(selectedProductObj?.buyRate || 0) *
                 (Number(data.quantity) || 0),
               paymentMethod: data.paymentMethod,
-              paidAmount: data.paidAmount,
+              paidAmount: Number(data.paidAmount) || 0,
               customerName: data.customerName,
               customerPhone: data.customerPhone,
               note: data.note,
@@ -667,11 +658,11 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
               saleType: "service",
               categoryId: data.categoryId,
               productName: data.productName,
-              quantity: data.quantity,
-              totalPrice: data.totalPrice,
-              rawExpense: data.rawExpense,
+              quantity: Number(data.quantity) || 1,
+              totalPrice: Number(data.totalPrice) || 0,
+              rawExpense: Number(data.rawExpense) || 0,
               paymentMethod: data.paymentMethod,
-              paidAmount: data.paidAmount,
+              paidAmount: Number(data.paidAmount) || 0,
               customerName: data.customerName,
               customerPhone: data.customerPhone,
               note: data.note,
@@ -814,12 +805,19 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
               <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 shadow-xs overflow-visible relative z-20">
                 <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-1.5">
-                    <label className={CAPTION}>
+                    <label className={cn(CAPTION, isClientDetailsRequired && "text-red-600 dark:text-red-400")}>
                       Customer Name{" "}
-                      {isClientDetailsRequired ? "*" : "(Optional)"}
+                      {isClientDetailsRequired ? (
+                        <span className="text-red-500">*</span>
+                      ) : (
+                        "(Optional)"
+                      )}
                     </label>
                     <Input
-                      className="h-11 md:h-10"
+                      className={cn(
+                        "h-11 md:h-10",
+                        errors.customerName && "border-red-500 focus-visible:ring-red-500"
+                      )}
                       {...register("customerName")}
                       placeholder={
                         isClientDetailsRequired
@@ -828,28 +826,36 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                       }
                     />
                     {errors.customerName && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {errors.customerName.message}
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠</span> {errors.customerName.message}
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className={CAPTION}>
-                      Phone {isClientDetailsRequired ? "*" : "(Optional)"}
+                    <label className={cn(CAPTION, isClientDetailsRequired && "text-red-600 dark:text-red-400")}>
+                      Phone{" "}
+                      {isClientDetailsRequired ? (
+                        <span className="text-red-500">*</span>
+                      ) : (
+                        "(Optional)"
+                      )}
                     </label>
                     <Input
-                      className="h-11 md:h-10"
+                      className={cn(
+                        "h-11 md:h-10",
+                        errors.customerPhone && "border-red-500 focus-visible:ring-red-500"
+                      )}
                       {...register("customerPhone")}
                       placeholder={
                         isClientDetailsRequired
-                          ? "Required for this category"
+                          ? "Required (11 digits)"
                           : "01xxxxxxxxx"
                       }
                     />
                     {errors.customerPhone && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {errors.customerPhone.message}
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠</span> {errors.customerPhone.message}
                       </p>
                     )}
                   </div>

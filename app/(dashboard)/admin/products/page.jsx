@@ -384,76 +384,93 @@ export default function ProductsPage() {
         open={!!selectedProduct}
         onOpenChange={(open) => !open && setSelectedProduct(null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        {/* Wider modal, scrollable body, never clips top/bottom */}
+        <DialogContent className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
           {selectedProduct && (
             <>
-              <DialogHeader>
-                <DialogTitle>{selectedProduct.name}</DialogTitle>
-                <DialogDescription>
-                  {selectedProduct.category}
-                  {selectedProduct.brand ? ` · ${selectedProduct.brand}` : ""}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-5">
-                <Carousel
-                  images={selectedProduct.images || []}
-                  className="aspect-video"
-                />
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <Badge
-                    variant="outline"
-                    className={STATUS_STYLES[selectedProduct.status]}
-                  >
-                    {selectedProduct.status}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border bg-muted/30 p-4">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Cost price
-                    </p>
-                    <p className="mt-1 text-lg font-bold">
-                      {formatCurrency(selectedProduct.costPrice)}
-                    </p>
+              {/* Sticky header */}
+              <div className="flex-none border-b px-6 py-4">
+                <DialogHeader>
+                  <div className="flex items-start justify-between gap-4 pr-6">
+                    <div className="min-w-0">
+                      <DialogTitle className="truncate text-lg">
+                        {selectedProduct.name}
+                      </DialogTitle>
+                      <DialogDescription className="mt-0.5">
+                        {selectedProduct.category}
+                        {selectedProduct.brand ? ` · ${selectedProduct.brand}` : ""}
+                      </DialogDescription>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`shrink-0 ${STATUS_STYLES[selectedProduct.status]}`}
+                    >
+                      {selectedProduct.status}
+                    </Badge>
                   </div>
-                  <div className="rounded-lg border bg-muted/30 p-4">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Selling price
-                    </p>
-                    <p className="mt-1 text-lg font-bold">
-                      {formatCurrency(selectedProduct.sellingPrice)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Profit / unit
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                      {formatCurrency(selectedProduct.profit)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border bg-muted/30 p-4">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      In stock
-                    </p>
-                    <p className="mt-1 text-lg font-bold">
-                      {selectedProduct.stock} {selectedProduct.unit}
-                    </p>
-                  </div>
-                </div>
-
-                {selectedProduct.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {selectedProduct.description}
-                  </p>
-                )}
+                </DialogHeader>
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-2">
+              {/* Scrollable body */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                <div className="space-y-5">
+                  <Carousel
+                    images={selectedProduct.images || []}
+                    className="aspect-video"
+                  />
+
+                  {/* Description */}
+                  {selectedProduct.description && (
+                    <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Description
+                      </p>
+                      <p className="text-sm leading-relaxed text-foreground">
+                        {selectedProduct.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Pricing grid */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Cost price
+                      </p>
+                      <p className="mt-1 text-base font-bold">
+                        {formatCurrency(selectedProduct.costPrice)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Selling price
+                      </p>
+                      <p className="mt-1 text-base font-bold">
+                        {formatCurrency(selectedProduct.sellingPrice)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Profit / unit
+                      </p>
+                      <p className="mt-1 text-base font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(selectedProduct.profit)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        In stock
+                      </p>
+                      <p className="mt-1 text-base font-bold">
+                        {selectedProduct.stock} {selectedProduct.unit}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky footer */}
+              <DialogFooter className="-mb-0 flex-none gap-2 rounded-b-xl sm:gap-2">
                 <Button
                   variant="outline"
                   className="gap-2"

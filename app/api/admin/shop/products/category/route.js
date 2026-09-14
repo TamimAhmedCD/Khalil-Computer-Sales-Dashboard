@@ -16,7 +16,7 @@ export async function POST(req) {
     }
     const body = await req.json();
 
-    const { name, commission, description, status } = body;
+    const { name, commission, description, status, requiresCustomerInfo } = body;
 
     if (!name || commission === undefined) {
       return Response.json(
@@ -45,6 +45,7 @@ export async function POST(req) {
       commission: Number(commission),
       description: description || "",
       status: status ?? true,
+      requiresCustomerInfo: requiresCustomerInfo ?? false,
 
       // 🔥 IMPORTANT: match sales API
       totalSales: 0,
@@ -105,7 +106,7 @@ export async function PATCH(req) {
     }
 
     const body = await req.json();
-    const { name, commission, description, status } = body;
+    const { name, commission, description, status, requiresCustomerInfo } = body;
 
     const client = await clientPromise;
     const db = client.db("products");
@@ -116,6 +117,7 @@ export async function PATCH(req) {
     if (commission !== undefined) updateData.commission = Number(commission);
     if (description !== undefined) updateData.description = description || "";
     if (status !== undefined) updateData.status = status;
+    if (requiresCustomerInfo !== undefined) updateData.requiresCustomerInfo = requiresCustomerInfo;
 
     updateData.updatedAt = new Date();
 
