@@ -33,6 +33,7 @@ import FilterSection from "@/components/Admin/Producct/FilterSection";
 import TableView from "@/components/Admin/Producct/TableView";
 import InventoryGrid from "@/components/Admin/Producct/GridView";
 import Carousel from "@/components/ui/Carousel";
+import { FormattedText } from "@/components/ui/FormattedText";
 
 import { useProducts } from "@/lib/hooks/products/useProducts";
 import { useDeleteProduct } from "@/lib/hooks/products/useDeleteProduct";
@@ -61,6 +62,7 @@ const normalize = (p) => {
   const stock = Number(p.stock) || 0;
   const lowStockAlert = Number(p.lowStockAlert) || 0;
   const costPrice = Number(p.buyRate) || 0;
+  const expense = Number(p.expense) || 0;
   const sellingPrice = Number(p.saleRate) || 0;
   return {
     id: p._id,
@@ -69,8 +71,9 @@ const normalize = (p) => {
     image: p.images?.[0]?.url || null,
     images: Array.isArray(p.images) ? p.images : [],
     costPrice,
+    expense,
     sellingPrice,
-    profit: Number.isFinite(p.profit) ? p.profit : sellingPrice - costPrice,
+    profit: Number.isFinite(p.profit) ? p.profit : sellingPrice - costPrice - expense,
     stock,
     unit: p.unit || "pcs",
     brand: p.brand || "",
@@ -425,9 +428,9 @@ export default function ProductsPage() {
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Description
                       </p>
-                      <p className="text-sm leading-relaxed text-foreground">
-                        {selectedProduct.description}
-                      </p>
+                      <div className="text-sm leading-relaxed text-foreground">
+                        <FormattedText text={selectedProduct.description} />
+                      </div>
                     </div>
                   )}
 
@@ -439,6 +442,14 @@ export default function ProductsPage() {
                       </p>
                       <p className="mt-1 text-base font-bold">
                         {formatCurrency(selectedProduct.costPrice)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Expense / unit
+                      </p>
+                      <p className="mt-1 text-base font-bold">
+                        {formatCurrency(selectedProduct.expense)}
                       </p>
                     </div>
                     <div className="rounded-lg border bg-muted/30 p-4">

@@ -69,6 +69,7 @@ export default function EditProductPage() {
     brand: product.brand || "",
     description: product.description || "",
     buyRate: Number(product.buyRate) || 0,
+    expense: Number(product.expense) || 0,
     saleRate: Number(product.saleRate) || 0,
     commission: Number(product.commission) || 0,
     stock: Number(product.stock) || 0,
