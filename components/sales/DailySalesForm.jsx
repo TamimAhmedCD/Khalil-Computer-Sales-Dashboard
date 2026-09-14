@@ -435,24 +435,38 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
       const phoneValue = watchedFields.customerPhone?.trim() || "";
 
       if (nameValue.length < 2) {
-        setError("customerName", {
-          type: "custom",
-          message: `Customer name is required for ${selectedCategoryObj?.name}`,
-        });
+        if (!errors.customerName || errors.customerName.type !== "custom") {
+          setError("customerName", {
+            type: "custom",
+            message: `Customer name is required for ${selectedCategoryObj?.name}`,
+          });
+        }
       } else {
-        clearErrors("customerName");
+        if (errors.customerName?.type === "custom") {
+          clearErrors("customerName");
+        }
       }
 
       if (phoneValue.length < 11) {
-        setError("customerPhone", {
-          type: "custom",
-          message: "Valid 11-digit phone number is required",
-        });
+        if (!errors.customerPhone || errors.customerPhone.type !== "custom") {
+          setError("customerPhone", {
+            type: "custom",
+            message: "Valid 11-digit phone number is required",
+          });
+        }
       } else {
-        clearErrors("customerPhone");
+        if (errors.customerPhone?.type === "custom") {
+          clearErrors("customerPhone");
+        }
       }
     } else {
-      clearErrors(["customerName", "customerPhone"]);
+      // Only clear custom errors we created
+      if (errors.customerName?.type === "custom") {
+        clearErrors("customerName");
+      }
+      if (errors.customerPhone?.type === "custom") {
+        clearErrors("customerPhone");
+      }
     }
 
     // খ) পেইড বনাম প্রাইস (উভয় মোডেই প্রযোজ্য)
@@ -668,6 +682,12 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
               note: data.note,
             };
 
+      console.log("=== SUBMITTING SALE ===");
+      console.log("Form data:", data);
+      console.log("Payload:", payload);
+      console.log("Customer Name:", payload.customerName);
+      console.log("Customer Phone:", payload.customerPhone);
+
       const response = await axios.post("/api/products/sales", payload);
       toast.success(response.data.message || "Sale recorded.");
       localStorage.removeItem("sales_draft");
@@ -813,10 +833,11 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                         "(Optional)"
                       )}
                     </label>
-                    <Input
+                    <input
+                      type="text"
                       className={cn(
-                        "h-11 md:h-10",
-                        errors.customerName && "border-red-500 focus-visible:ring-red-500"
+                        "w-full px-3 py-2 h-11 md:h-10 bg-white dark:bg-zinc-900 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50",
+                        errors.customerName && "border-red-500 focus-visible:ring-red-500 focus:border-red-500"
                       )}
                       {...register("customerName")}
                       placeholder={
@@ -841,10 +862,11 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                         "(Optional)"
                       )}
                     </label>
-                    <Input
+                    <input
+                      type="text"
                       className={cn(
-                        "h-11 md:h-10",
-                        errors.customerPhone && "border-red-500 focus-visible:ring-red-500"
+                        "w-full px-3 py-2 h-11 md:h-10 bg-white dark:bg-zinc-900 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50",
+                        errors.customerPhone && "border-red-500 focus-visible:ring-red-500 focus:border-red-500"
                       )}
                       {...register("customerPhone")}
                       placeholder={

@@ -477,22 +477,31 @@ export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales"
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      // Debug logging
+      console.log("=== SUBMITTING MULTI-ITEM SALE ===");
+      console.log("Form data:", data);
+      console.log("Items:", data.items);
+
       const payload = {
         items: data.items.map((item) => ({
           saleType: item.saleType,
           productId: item.productId,
           categoryId: item.categoryId,
           productName: item.productName,
-          quantity: item.quantity,
-          totalPrice: item.totalPrice,
-          rawExpense: item.rawExpense,
+          quantity: Number(item.quantity) || 1,
+          totalPrice: Number(item.totalPrice) || 0,
+          rawExpense: Number(item.rawExpense) || 0,
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
         })),
         customerName: data.customerName,
         customerPhone: data.customerPhone,
         paymentMethod: data.paymentMethod,
-        paidAmount: data.paidAmount,
+        paidAmount: Number(data.paidAmount) || 0,
         note: data.note,
       };
+
+      console.log("Payload:", payload);
 
       const response = await axios.post("/api/products/sales", payload);
       toast.success(response.data.message || "Sale recorded.");
