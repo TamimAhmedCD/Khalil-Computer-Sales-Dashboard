@@ -45,6 +45,7 @@ export async function POST(request) {
     const description = form.get("description")?.toString().trim() || "";
 
     const buyRate = Number(form.get("buyRate"));
+    const expense = Number(form.get("expense") || 0);
     const saleRate = Number(form.get("saleRate"));
     const commission = Number(form.get("commission") || 0);
     const stock = Number(form.get("stock") || 0);
@@ -120,6 +121,13 @@ export async function POST(request) {
       );
     }
 
+    if (!Number.isFinite(expense) || expense < 0) {
+      return Response.json(
+        { success: false, message: "Expense must be zero or a positive number" },
+        { status: 400 },
+      );
+    }
+
     // 🛑 5. DB connection
     const client = await clientPromise;
     const db = client.db("products");
@@ -142,7 +150,7 @@ export async function POST(request) {
       : [];
 
     // 📊 8. Derived value
-    const profit = saleRate - buyRate;
+    const profit = saleRate - buyRate - expense;
     const now = new Date();
 
     // 💾 9. Insert product
@@ -153,6 +161,7 @@ export async function POST(request) {
       brand,
       description,
       buyRate,
+      expense,
       saleRate,
       commission,
       profit,

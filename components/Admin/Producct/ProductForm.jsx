@@ -39,6 +39,13 @@ const schema = z.object({
       .min(0, "Buy rate cannot be negative")
       .max(9999999, "Buy rate is too high")
   ),
+  expense: z.preprocess(
+    (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
+    z.number({ invalid_type_error: "Expense must be a valid number" })
+      .min(0, "Expense cannot be negative")
+      .max(9999999, "Expense is too high")
+      .optional()
+  ),
   saleRate: z.preprocess(
     (val) => (val === "" || Number.isNaN(val) ? undefined : Number(val)),
     z.number({ required_error: "Sale rate is required", invalid_type_error: "Sale rate is required" })
@@ -67,8 +74,11 @@ const schema = z.object({
   unit: z.string().min(1, "Unit is required"),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
-}).refine(data => data.saleRate >= data.buyRate, {
-  message: "Selling price should generally be higher than cost price",
+}).refine(data => {
+  const totalCost = data.buyRate + (data.expense || 0);
+  return data.saleRate >= totalCost;
+}, {
+  message: "Selling price should generally be higher than total cost (buy rate + expense)",
   path: ["saleRate"],
 });
 
@@ -78,6 +88,7 @@ const emptyValues = {
   brand: "",
   description: "",
   buyRate: "",
+  expense: "",
   saleRate: "",
   commission: "",
   stock: "",
@@ -180,17 +191,20 @@ export default function ProductForm({
       return next;
     });
 
-  // Derived profit (no state, no effect)
+  // Derived values (no state, no effect)
   const buyRate = watch("buyRate");
+  const expense = watch("expense");
   const saleRate = watch("saleRate");
   const commission = watch("commission");
+  // Profit = saleRate - buyRate - expense
   const profit =
     (Number.isFinite(saleRate) ? saleRate : 0) -
-    (Number.isFinite(buyRate) ? buyRate : 0);
+    (Number.isFinite(buyRate) ? buyRate : 0) -
+    (Number.isFinite(expense) ? expense : 0);
 
-  // Commission is a % of the sale price, deducted on every sale (same as service categories)
+  // Commission is a % of the profit (not sale price)
   const commissionAmount = Math.round(
-    ((Number.isFinite(saleRate) ? saleRate : 0) *
+    ((Number.isFinite(profit) ? profit : 0) *
       (Number.isFinite(commission) ? commission : 0)) /
       100,
   );
@@ -208,6 +222,7 @@ export default function ProductForm({
     fd.append("brand", values.brand || "");
     fd.append("description", values.description || "");
     fd.append("buyRate", String(values.buyRate));
+    fd.append("expense", String(values.expense ?? 0));
     fd.append("saleRate", String(values.saleRate));
     fd.append("commission", String(values.commission ?? 0));
     fd.append("stock", String(values.stock ?? 0));
@@ -381,7 +396,7 @@ export default function ProductForm({
               <h3 className="text-base font-medium">Pricing</h3>
               <p className="text-sm text-muted-foreground mt-1">Set pricing and commission</p>
             </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="buyRate">Buy rate</Label>
                 <div className="relative">
@@ -401,6 +416,28 @@ export default function ProductForm({
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.buyRate.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expense">Expense per unit</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Taka />
+                  </span>
+                  <Input
+                    id="expense"
+                    type="number"
+                    step="any"
+                    min={0}
+                    className={cn("pl-7", errors.expense && "border-destructive")}
+                    {...register("expense", { valueAsNumber: true })}
+                  />
+                </div>
+                {errors.expense && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.expense.message}
                   </p>
                 )}
               </div>
@@ -449,8 +486,7 @@ export default function ProductForm({
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     ≈ <Taka />
-                    {commissionAmount.toLocaleString("en-BD")} per unit sold at
-                    the current sale rate
+                    {commissionAmount.toLocaleString("en-BD")} per unit (commission on profit)
                   </p>
                 )}
               </div>

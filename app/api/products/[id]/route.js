@@ -138,6 +138,7 @@ export async function PATCH(request, { params }) {
     const description = form.get("description")?.toString().trim() || "";
 
     const buyRate = Number(form.get("buyRate"));
+    const expense = Number(form.get("expense") || 0);
     const saleRate = Number(form.get("saleRate"));
     const commission = Number(form.get("commission") || 0);
     const stock = Number(form.get("stock") || 0);
@@ -184,6 +185,13 @@ export async function PATCH(request, { params }) {
           success: false,
           message: "Commission must be zero or a positive percentage",
         },
+        { status: 400 },
+      );
+    }
+
+    if (!Number.isFinite(expense) || expense < 0) {
+      return Response.json(
+        { success: false, message: "Expense must be zero or a positive number" },
         { status: 400 },
       );
     }
@@ -254,7 +262,7 @@ export async function PATCH(request, { params }) {
     const images = [...keptImages, ...uploaded];
 
     // 💾 Update
-    const profit = saleRate - buyRate;
+    const profit = saleRate - buyRate - expense;
 
     await db.collection("products").updateOne(
       { _id: new ObjectId(id) },
@@ -266,6 +274,7 @@ export async function PATCH(request, { params }) {
           brand,
           description,
           buyRate,
+          expense,
           saleRate,
           commission,
           profit,
