@@ -23,15 +23,27 @@ import {
   ChevronDown,
   LayoutGrid,
   ImageIcon,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEmployeeProducts } from "@/lib/hooks/products/useEmployeeProducts";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { FormattedText } from "@/components/ui/FormattedText";
 
 export function EmployeeProductList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -105,6 +117,11 @@ export function EmployeeProductList() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [stockFilter, sortBy]);
+
   const { data, isLoading, isError, error } = useEmployeeProducts({
     search: debouncedSearch,
     category,
@@ -116,10 +133,58 @@ export function EmployeeProductList() {
   const summary = data?.data?.summary || { totalStock: 0, activeProducts: 0, totalValue: 0 };
   const pagination = data?.data?.pagination || { totalPages: 1, currentPage: 1, totalResults: 0 };
 
+  // Client-side filtering and sorting
+  const filteredAndSortedProducts = React.useMemo(() => {
+    let filtered = [...products];
+
+    // Apply stock filter
+    if (stockFilter !== "all") {
+      filtered = filtered.filter((product) => {
+        const stock = product.stock || 0;
+        const lowStockAlert = product.lowStockAlert || 5;
+
+        if (stockFilter === "in") return stock > lowStockAlert;
+        if (stockFilter === "low") return stock > 0 && stock <= lowStockAlert;
+        if (stockFilter === "out") return stock <= 0;
+        return true;
+      });
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "price":
+          return (b.saleRate || 0) - (a.saleRate || 0);
+        case "stock":
+          return (b.stock || 0) - (a.stock || 0);
+        case "profit":
+          const profitA = (a.saleRate || 0) - (a.buyRate || 0) - (a.expense || 0);
+          const profitB = (b.saleRate || 0) - (b.buyRate || 0) - (b.expense || 0);
+          return profitB - profitA;
+        case "name":
+        default:
+          return (a.name || "").localeCompare(b.name || "");
+      }
+    });
+
+    return filtered;
+  }, [products, stockFilter, sortBy]);
+
   // Filter categories based on search
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(categorySearch.toLowerCase())
   );
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm.trim() !== "" || category !== "" || stockFilter !== "all" || sortBy !== "name";
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setCategory("");
+    setStockFilter("all");
+    setSortBy("name");
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen text-zinc-800 dark:text-zinc-100 py-8 transition-colors duration-200 relative">
@@ -199,6 +264,27 @@ export function EmployeeProductList() {
 
         {/* Filters */}
         <div className="space-y-4 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/40 p-4 rounded-xl shadow-xs">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+              <div>
+                <h2 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Filters</h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Search and refine products</p>
+              </div>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-8 text-xs"
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear filters
+              </Button>
+            )}
+          </div>
+
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
@@ -208,6 +294,34 @@ export function EmployeeProductList() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 pl-9 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700 focus-visible:border-zinc-400 dark:focus-visible:border-zinc-700 h-9 text-xs rounded-lg transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
               />
+            </div>
+            {/* Stock Filter Dropdown */}
+            <div className="relative">
+              <Select value={stockFilter} onValueChange={setStockFilter}>
+                <SelectTrigger className="w-full md:w-40 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg">
+                  <SelectValue placeholder="All stock" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stock</SelectItem>
+                  <SelectItem value="in">In Stock</SelectItem>
+                  <SelectItem value="low">Low Stock</SelectItem>
+                  <SelectItem value="out">Out of Stock</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Sort By Dropdown */}
+            <div className="relative">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full md:w-40 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name (A-Z)</SelectItem>
+                  <SelectItem value="price">Price (High to Low)</SelectItem>
+                  <SelectItem value="stock">Stock (High to Low)</SelectItem>
+                  <SelectItem value="profit">Profit (High to Low)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {/* Custom Category Dropdown with Search */}
             <div className="relative category-dropdown">
@@ -307,17 +421,24 @@ export function EmployeeProductList() {
                 <div key={i} className="h-80 bg-muted animate-pulse rounded-2xl" />
               ))}
             </div>
-          ) : products.length === 0 ? (
+          ) : filteredAndSortedProducts.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">
               <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="font-medium text-sm text-foreground mb-0.5">No Products Found</p>
               <p className="text-xs text-muted-foreground">
-                There are currently no products matching your criteria.
+                {hasActiveFilters
+                  ? "No products match your current filters."
+                  : "There are currently no products available."}
               </p>
+              {hasActiveFilters && (
+                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-3">
+                  Clear filters
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map((product) => (
+              {filteredAndSortedProducts.map((product) => (
                 <ProductCard
                   key={product._id}
                   product={product}
@@ -328,10 +449,11 @@ export function EmployeeProductList() {
           )}
 
           {/* Pagination */}
-          {!isLoading && products.length > 0 && (
+          {!isLoading && filteredAndSortedProducts.length > 0 && (
             <div className="px-2 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-xs text-muted-foreground">
-                Showing <span className="text-foreground font-medium font-mono">{(currentPage - 1) * 12 + 1}</span> to <span className="text-foreground font-medium font-mono">{Math.min(currentPage * 12, pagination.totalResults)}</span> of <span className="text-foreground font-medium font-mono">{pagination.totalResults}</span> products
+                Showing <span className="text-foreground font-medium font-mono">{filteredAndSortedProducts.length}</span> of <span className="text-foreground font-medium font-mono">{pagination.totalResults}</span> products
+                {hasActiveFilters && <span className="ml-1">(filtered)</span>}
               </div>
               <div className="flex items-center gap-1.5 self-end sm:self-auto">
                 <Button
@@ -516,14 +638,30 @@ export function EmployeeProductList() {
                       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Description
                       </p>
-                      <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                        {selectedProduct.description}
-                      </p>
+                      <div className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        <FormattedText text={selectedProduct.description} />
+                      </div>
                     </div>
                   )}
 
                   {/* Pricing grid - responsive */}
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Buy Price
+                      </p>
+                      <p className="font-mono text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
+                        ৳{selectedProduct.buyRate?.toLocaleString() || 0}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                        Expense / Unit
+                      </p>
+                      <p className="font-mono text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
+                        ৳{selectedProduct.expense?.toLocaleString() || 0}
+                      </p>
+                    </div>
                     <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
                       <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Sale Price
