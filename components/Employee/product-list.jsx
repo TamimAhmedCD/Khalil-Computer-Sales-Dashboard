@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +13,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Search,
   Package,
   Box,
   Tag,
   TrendingUp,
   AlertCircle,
-  Eye,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
@@ -28,12 +34,59 @@ import { useEmployeeProducts } from "@/lib/hooks/products/useEmployeeProducts";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-export function EmployeeProductList({ isCollapsed }) {
+export function EmployeeProductList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAutoSwapping, setIsAutoSwapping] = useState(true);
+
+  // Reset image index when product changes
+  useEffect(() => {
+    if (selectedProduct) {
+      setCurrentImageIndex(0);
+      setIsAutoSwapping(true);
+    }
+  }, [selectedProduct]);
+
+  // Auto-swap images in dialog every 3 seconds
+  useEffect(() => {
+    if (!selectedProduct?.images || selectedProduct.images.length <= 1 || !isAutoSwapping) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) =>
+        prev === selectedProduct.images.length - 1 ? 0 : prev + 1
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [selectedProduct, isAutoSwapping]);
+
+  // Auto-swap product card images logic is handled within ProductCard component
+
+  // Navigate to next image
+  const nextImage = () => {
+    if (selectedProduct?.images) {
+      setIsAutoSwapping(false);
+      setCurrentImageIndex((prev) =>
+        prev === selectedProduct.images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  // Navigate to previous image
+  const prevImage = () => {
+    if (selectedProduct?.images) {
+      setIsAutoSwapping(false);
+      setCurrentImageIndex((prev) =>
+        prev === 0 ? selectedProduct.images.length - 1 : prev - 1
+      );
+    }
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -190,82 +243,13 @@ export function EmployeeProductList({ isCollapsed }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map((product) => {
-                const productImage = product.images?.[0]?.url;
-                return (
-                  <Card
-                    key={product._id}
-                    className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl border-zinc-200/80 dark:border-zinc-800/50 rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 shadow-sm hover:shadow-md group"
-                  >
-                    {/* Product Image */}
-                    <div className="relative w-full h-48 bg-zinc-100 dark:bg-zinc-800/40 rounded-t-2xl overflow-hidden">
-                      {productImage ? (
-                        <Image
-                          src={productImage}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <ImageIcon className="h-16 w-16 text-zinc-300 dark:text-zinc-600" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-5">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="space-y-1 flex-1 pr-4">
-                          <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
-                            {product.name}
-                          </h3>
-                          <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                            {product.brand || "No Brand"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">
-                            Price
-                          </p>
-                          <p className="text-base font-black text-zinc-900 dark:text-zinc-100 font-mono">
-                            ৳{product.saleRate.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800 p-3 rounded-xl mb-4">
-                        <div className="flex items-center gap-2">
-                          <Tag className="h-3.5 w-3.5 text-zinc-400" />
-                          <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                            {product.categoryName || "Uncategorized"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Box className="h-3.5 w-3.5 text-zinc-400" />
-                          <span className={`text-[11px] font-bold font-mono ${product.stock <= (product.lowStockAlert || 5) ? "text-red-600 dark:text-red-500" : "text-zinc-900 dark:text-zinc-100"}`}>
-                            {product.stock} {product.unit || "pcs"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
-                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono line-clamp-1">
-                          ID: {product._id.slice(-6).toUpperCase()}
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 gap-1.5"
-                          onClick={() => setSelectedProduct(product)}
-                        >
-                          <Eye className="h-3.5 w-3.5" /> Details
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
+              {products.map((product) => (
+                <ProductCard
+                  key={product._id}
+                  product={product}
+                  onClick={() => setSelectedProduct(product)}
+                />
+              ))}
             </div>
           )}
 
@@ -299,68 +283,150 @@ export function EmployeeProductList({ isCollapsed }) {
           )}
         </div>
 
-        {/* Product Details Modal - Wider, scrollable, always fits on screen */}
-        {selectedProduct && (
-          <div
-            className={cn(
-              "fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm transition-all duration-200 animate-in fade-in dark:bg-black/60",
-              isCollapsed ? "md:left-20" : "md:left-64"
-            )}
-            onClick={() => setSelectedProduct(null)}
+        {/* Product Details Modal - Mobile Responsive with Image Carousel */}
+        <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
+          <DialogContent
+            className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-2xl lg:max-w-4xl p-0 gap-0 overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col"
+            showCloseButton={false}
           >
-            {/* Wider modal, max 90% viewport height, sticky header and scrollable body */}
-            <Card
-              className="relative flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white text-zinc-800 shadow-2xl animate-in zoom-in-95 duration-150 dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-100"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Sticky header */}
-              <div className="sticky top-0 z-10 flex-none border-b border-zinc-200 bg-white/95 px-6 py-4 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                      Product Details
-                    </h2>
-                    <p className="mt-0.5 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+            <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                    Product Details
+                  </DialogTitle>
+                  {selectedProduct && (
+                    <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 truncate">
                       SKU: {selectedProduct._id.slice(-8).toUpperCase()}
                     </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedProduct(null)}
-                    className="h-8 w-8 shrink-0 rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                  >
-                    ✕
-                  </Button>
+                  )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedProduct(null)}
+                  className="h-8 w-8 rounded-full flex-shrink-0 ml-2"
+                >
+                  ✕
+                </Button>
               </div>
+            </DialogHeader>
 
-              {/* Scrollable content */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-                <div className="space-y-5">
-                  {/* Product Images Gallery */}
+            {selectedProduct && (
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
+                <div className="space-y-4 sm:space-y-5">
+                  {/* Product Images Carousel with Framer Motion - Right to Left Slide */}
                   {selectedProduct.images && selectedProduct.images.length > 0 && (
-                    <div className="grid grid-cols-3 gap-3">
-                      {selectedProduct.images.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/40"
-                        >
-                          <Image
-                            src={img.url}
-                            alt={`${selectedProduct.name} - Image ${idx + 1}`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 33vw, 200px"
-                          />
+                    <div className="relative">
+                      {/* Main Image Display - Full Width with Slide Animation - Responsive Height */}
+                      <div className="relative w-full h-48 sm:h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/40">
+                        <AnimatePresence mode="wait">
+                          {selectedProduct.images.map((img, idx) => (
+                            currentImageIndex === idx && (
+                              <motion.div
+                                key={`${selectedProduct._id}-${idx}`}
+                                initial={{ x: 400, opacity: 0 }}
+                                animate={{
+                                  x: 0,
+                                  opacity: 1,
+                                  transition: {
+                                    x: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                                    opacity: { duration: 0.5, ease: "easeOut" }
+                                  }
+                                }}
+                                exit={{
+                                  x: -400,
+                                  opacity: 0,
+                                  transition: {
+                                    x: { duration: 0.5, ease: [0.64, 0, 0.78, 0] },
+                                    opacity: { duration: 0.4, ease: "easeIn" }
+                                  }
+                                }}
+                                className="absolute inset-0"
+                              >
+                                <Image
+                                  src={img.url}
+                                  alt={`${selectedProduct.name} - Image ${idx + 1}`}
+                                  fill
+                                  className="object-cover"
+                                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 900px"
+                                  priority={idx === 0}
+                                />
+                              </motion.div>
+                            )
+                          ))}
+                        </AnimatePresence>
+
+                        {/* Navigation arrows - only show if multiple images */}
+                        {selectedProduct.images.length > 1 && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={prevImage}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-white/95 dark:bg-zinc-900/95 hover:bg-white dark:hover:bg-zinc-900 shadow-lg border border-zinc-200 dark:border-zinc-800 z-10"
+                            >
+                              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={nextImage}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-white/95 dark:bg-zinc-900/95 hover:bg-white dark:hover:bg-zinc-900 shadow-lg border border-zinc-200 dark:border-zinc-800 z-10"
+                            >
+                              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                            </Button>
+
+                            {/* Image counter and auto-swap indicator */}
+                            <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                              <button
+                                onClick={() => setIsAutoSwapping(!isAutoSwapping)}
+                                className="rounded-full bg-black/70 dark:bg-white/25 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/80 dark:hover:bg-white/30 transition-colors"
+                              >
+                                {isAutoSwapping ? "⏸ Pause" : "▶ Auto"}
+                              </button>
+                              <div className="rounded-full bg-black/70 dark:bg-white/25 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+                                {currentImageIndex + 1} / {selectedProduct.images.length}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Thumbnail Navigation - only show if multiple images */}
+                      {selectedProduct.images.length > 1 && (
+                        <div className="mt-3 flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                          {selectedProduct.images.map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setCurrentImageIndex(idx);
+                                setIsAutoSwapping(false);
+                              }}
+                              className={cn(
+                                "relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-300",
+                                currentImageIndex === idx
+                                  ? "border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900/20 dark:ring-zinc-100/20 scale-105"
+                                  : "border-zinc-200 dark:border-zinc-800 opacity-60 hover:opacity-100 hover:scale-105"
+                              )}
+                            >
+                              <Image
+                                src={img.url}
+                                alt={`Thumbnail ${idx + 1}`}
+                                fill
+                                className="object-cover"
+                                sizes="80px"
+                              />
+                            </button>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
 
                   {/* Product name and brand */}
                   <div>
-                    <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100">
+                    <h3 className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100">
                       {selectedProduct.name}
                     </h3>
                     {selectedProduct.brand && (
@@ -370,9 +436,9 @@ export function EmployeeProductList({ isCollapsed }) {
                     )}
                   </div>
 
-                  {/* Description - moved up and more prominent */}
+                  {/* Description */}
                   {selectedProduct.description && (
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
                       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Description
                       </p>
@@ -382,22 +448,22 @@ export function EmployeeProductList({ isCollapsed }) {
                     </div>
                   )}
 
-                  {/* Pricing grid - 2 columns on mobile, 2 on desktop */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                  {/* Pricing grid - responsive */}
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
                       <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Sale Price
                       </p>
-                      <p className="font-mono text-lg font-black text-zinc-900 dark:text-zinc-100">
+                      <p className="font-mono text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
                         ৳{selectedProduct.saleRate.toLocaleString()}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
                       <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Stock Level
                       </p>
                       <p
-                        className={`font-mono text-lg font-black ${
+                        className={`font-mono text-base sm:text-lg font-black ${
                           selectedProduct.stock <= (selectedProduct.lowStockAlert || 5)
                             ? "text-red-600 dark:text-red-500"
                             : "text-zinc-900 dark:text-zinc-100"
@@ -409,8 +475,8 @@ export function EmployeeProductList({ isCollapsed }) {
                   </div>
 
                   {/* Category tag */}
-                  <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                    <Tag className="h-5 w-5 text-zinc-400" />
+                  <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
+                    <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-zinc-400" />
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                         Category
@@ -422,20 +488,172 @@ export function EmployeeProductList({ isCollapsed }) {
                   </div>
                 </div>
               </div>
-
-              {/* Sticky footer */}
-              <div className="sticky bottom-0 flex-none border-t border-zinc-200 bg-zinc-50/95 px-6 py-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95">
-                <Button
-                  className="h-10 w-full rounded-lg bg-zinc-900 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
-                  onClick={() => setSelectedProduct(null)}
-                >
-                  Close Details
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
+  );
+}
+
+// Product Card Component with Auto-Swapping Images and Framer Motion Animations
+function ProductCard({ product, onClick }) {
+  const [imageIndex, setImageIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const images = product.images || [];
+
+  // Auto-swap product card images every 3 seconds
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setImageIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02, y: -4 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+    >
+      <Card
+        onClick={onClick}
+        className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl border-zinc-200/80 dark:border-zinc-800/50 rounded-2xl relative overflow-hidden shadow-sm cursor-pointer"
+      >
+        {/* Product Image Carousel with Framer Motion */}
+        <div className="relative w-full h-48 bg-zinc-100 dark:bg-zinc-800/40 rounded-t-2xl overflow-hidden">
+          {images.length > 0 ? (
+            <div className="relative w-full h-full">
+              <AnimatePresence mode="wait">
+                {images.map((img, idx) => (
+                  imageIndex === idx && (
+                    <motion.div
+                      key={`${product._id}-${idx}`}
+                      initial={{ x: 300, opacity: 0 }}
+                      animate={{
+                        x: 0,
+                        opacity: 1,
+                        scale: isHovered ? 1.1 : 1,
+                        transition: {
+                          x: { duration: 0.5, ease: "easeOut" },
+                          opacity: { duration: 0.5, ease: "easeOut" },
+                          scale: { duration: 0.6, ease: "easeInOut" }
+                        }
+                      }}
+                      exit={{
+                        x: -300,
+                        opacity: 0,
+                        transition: { duration: 0.4, ease: "easeIn" }
+                      }}
+                      className="absolute inset-0"
+                    >
+                      <Image
+                        src={img.url}
+                        alt={`${product.name} - Image ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </motion.div>
+                  )
+                ))}
+              </AnimatePresence>
+
+              {/* Image counter */}
+              {images.length > 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute bottom-2 right-2 rounded-full bg-black/70 dark:bg-white/30 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
+                >
+                  {imageIndex + 1} / {images.length}
+                </motion.div>
+              )}
+
+              {/* Next image indicator */}
+              {images.length > 1 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute top-2 right-2"
+                >
+                  <div className="flex space-x-1">
+                    {images.map((_, idx) => (
+                      <motion.div
+                        key={idx}
+                        animate={{
+                          scale: imageIndex === idx ? 1.2 : 1,
+                          backgroundColor: imageIndex === idx
+                            ? "rgba(0, 0, 0, 0.8)"
+                            : "rgba(0, 0, 0, 0.3)"
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="w-1.5 h-1.5 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ImageIcon className="h-16 w-16 text-zinc-300 dark:text-zinc-600" />
+            </div>
+          )}
+        </div>
+
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div className="space-y-1 flex-1 pr-4">
+            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
+              {product.name}
+            </h3>
+            <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              {product.brand || "No Brand"}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">
+              Price
+            </p>
+            <p className="text-base font-black text-zinc-900 dark:text-zinc-100 font-mono">
+              ৳{product.saleRate.toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800 p-3 rounded-xl mb-4">
+          <div className="flex items-center gap-2">
+            <Tag className="h-3.5 w-3.5 text-zinc-400" />
+            <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+              {product.categoryName || "Uncategorized"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Box className="h-3.5 w-3.5 text-zinc-400" />
+            <span className={`text-[11px] font-bold font-mono ${product.stock <= (product.lowStockAlert || 5) ? "text-red-600 dark:text-red-500" : "text-zinc-900 dark:text-zinc-100"}`}>
+              {product.stock} {product.unit || "pcs"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono line-clamp-1">
+            ID: {product._id.slice(-6).toUpperCase()}
+          </p>
+          <motion.div
+            whileHover={{ x: 4 }}
+            className="h-7 w-7 flex items-center justify-center text-zinc-400"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </motion.div>
+        </div>
+      </div>
+    </Card>
+    </motion.div>
   );
 }
