@@ -501,9 +501,6 @@ export function AdminDashboard({ session }) {
               <table className="w-full min-w-[900px] text-sm">
                 <thead className="border-b bg-muted/40">
                   <tr>
-                    <th className="px-5 py-4 text-left font-medium text-muted-foreground">
-                      Invoice
-                    </th>
 
                     <th className="px-5 py-4 text-left font-medium text-muted-foreground">
                       Employee
@@ -547,10 +544,6 @@ export function AdminDashboard({ session }) {
                         key={sale._id}
                         className="transition-colors hover:bg-muted/30"
                       >
-                        <td className="px-5 py-4 font-medium">
-                          {sale.invoiceNumber || "-"}
-                        </td>
-
                         <td className="px-5 py-4">
                           {sale.sellerName || "Unknown"}
                         </td>
