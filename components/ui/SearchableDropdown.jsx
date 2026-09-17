@@ -21,8 +21,9 @@ export function SearchableDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
-  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
 
   const selected = items.find((i) => String(i.id || i._id) === String(value));
 
@@ -36,6 +37,16 @@ export function SearchableDropdown({
   // Open → trigger animation
   const handleOpen = () => {
     if (disabled || loading) return;
+    // Compute position relative to viewport for fixed positioning
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
     setOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -90,6 +101,7 @@ export function SearchableDropdown({
     <div ref={containerRef} className="relative w-full text-left">
       {/* Trigger button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleToggle}
         aria-haspopup="listbox"
@@ -122,22 +134,18 @@ export function SearchableDropdown({
         />
       </button>
 
-      {/* Dropdown panel - Using React Portal to body */}
+      {/* Dropdown panel - fixed positioning to escape stacking contexts */}
       {open && (
         <div
           role="listbox"
+          style={dropdownStyle}
           className={cn(
-            "fixed z-[9999] mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
+            "z-[999999] overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
             "transition-all duration-200 ease-out origin-top",
             mounted
               ? "opacity-100 scale-y-100 translate-y-0"
               : "opacity-0 scale-y-95 -translate-y-1"
           )}
-          style={{
-            top: containerRef.current?.getBoundingClientRect().bottom + 4,
-            left: containerRef.current?.getBoundingClientRect().left,
-            width: containerRef.current?.getBoundingClientRect().width,
-          }}
         >
           {/* Search input */}
           <div className="sticky top-0 z-10 border-b bg-popover px-2 py-2">

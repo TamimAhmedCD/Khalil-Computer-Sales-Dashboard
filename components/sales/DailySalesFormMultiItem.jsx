@@ -188,7 +188,9 @@ function SearchableDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
+  const buttonRef = useRef(null);
 
   const selected = items.find((i) => i._id === value);
 
@@ -199,6 +201,16 @@ function SearchableDropdown({
     : items;
 
   const handleOpen = () => {
+    // Compute position relative to viewport for fixed positioning
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
     setOpen(true);
     setTimeout(() => {
       setMounted(true);
@@ -244,8 +256,9 @@ function SearchableDropdown({
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative w-full z-50">
+    <div ref={containerRef} className="relative w-full">
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleToggle}
         aria-haspopup="listbox"
@@ -276,8 +289,9 @@ function SearchableDropdown({
       {open && (
         <div
           role="listbox"
+          style={dropdownStyle}
           className={cn(
-            "absolute left-0 right-0 top-full z-[99999] mt-1 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl",
+            "z-[999999] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl",
             "transition-all duration-150 ease-out",
             mounted
               ? "opacity-100 translate-y-0"
@@ -940,7 +954,7 @@ function ItemRow({
     "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400";
 
   return (
-    <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-lg border border-zinc-200/80 dark:border-zinc-800/50 shadow-xs overflow-visible relative z-40">
+    <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-lg border border-zinc-200/80 dark:border-zinc-800/50 shadow-xs">
       <CardContent className="p-3 space-y-2">
         {/* Compact Header Row */}
         <div className="flex items-center gap-2">

@@ -175,7 +175,9 @@ function SearchableDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
+  const buttonRef = useRef(null);
 
   const selected = items.find((i) => i._id === value);
 
@@ -188,6 +190,16 @@ function SearchableDropdown({
 
   // Open → trigger animation
   const handleOpen = () => {
+    // Compute position relative to viewport for fixed positioning
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
     setOpen(true);
     setTimeout(() => {
       setMounted(true);
@@ -236,9 +248,10 @@ function SearchableDropdown({
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative w-full z-30">
+    <div ref={containerRef} className="relative w-full">
       {/* Trigger button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleToggle}
         aria-haspopup="listbox"
@@ -266,12 +279,13 @@ function SearchableDropdown({
         />
       </button>
 
-      {/* Dropdown panel - Simple absolute positioning */}
+      {/* Dropdown panel - fixed positioning */}
       {open && (
         <div
           role="listbox"
+          style={dropdownStyle}
           className={cn(
-            "absolute left-0 right-0 top-full z-[9999] mt-1 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl",
+            "z-[999999] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl",
             "transition-all duration-150 ease-out",
             mounted
               ? "opacity-100 translate-y-0"
