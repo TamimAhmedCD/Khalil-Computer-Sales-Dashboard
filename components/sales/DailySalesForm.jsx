@@ -23,6 +23,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import { CategorySelect } from "@/components/ui/CategorySelect";
 import {
   Select,
   SelectContent,
@@ -156,185 +158,6 @@ function MemoRow({ label, value, tone = "default", strong = false }) {
       >
         {value}
       </span>
-    </div>
-  );
-}
-
-// ─── Custom Searchable Dropdown Component ───────────────────────────────────
-// Uses fixed positioning to avoid z-index/overflow issues with parent containers
-
-function SearchableDropdown({
-  value,
-  onChange,
-  items,
-  loading = false,
-  displayValue,
-  displayLabel,
-  error,
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [mounted, setMounted] = useState(false);
-  const [dropdownStyle, setDropdownStyle] = useState({});
-  const containerRef = useRef(null);
-  const buttonRef = useRef(null);
-
-  const selected = items.find((i) => i._id === value);
-
-  // Filter items by search term
-  const filtered = search.trim()
-    ? items.filter((item) =>
-        item.name.toLowerCase().includes(search.toLowerCase())
-      )
-    : items;
-
-  // Open → trigger animation
-  const handleOpen = () => {
-    // Compute position relative to viewport for fixed positioning
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownStyle({
-        position: "fixed",
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-    setOpen(true);
-    setTimeout(() => {
-      setMounted(true);
-    }, 0);
-  };
-
-  // Close → animate out first, then remove from DOM
-  const handleClose = () => {
-    setMounted(false);
-    setTimeout(() => {
-      setOpen(false);
-      setSearch("");
-    }, 150);
-  };
-
-  const handleToggle = () => {
-    if (open) handleClose();
-    else handleOpen();
-  };
-
-  const handleSelect = (item) => {
-    onChange(item._id);
-    handleClose();
-  };
-
-  // Click outside to close
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        handleClose();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
-
-  // Escape key to close
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") handleClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  return (
-    <div ref={containerRef} className="relative w-full">
-      {/* Trigger button */}
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={handleToggle}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={cn(
-          "flex w-full items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50",
-          error ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30" : "",
-          open && "ring-2 ring-blue-500/30 border-blue-500/50",
-          loading && "opacity-60 cursor-not-allowed"
-        )}
-        disabled={loading}
-      >
-        {selected ? (
-          <span className="truncate">{displayLabel ? displayLabel(selected) : selected.name}</span>
-        ) : loading ? (
-          <span className="text-muted-foreground">Loading...</span>
-        ) : (
-          <span className="text-muted-foreground">Select...</span>
-        )}
-        <ChevronDown
-          className={cn(
-            "ml-2 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </button>
-
-      {/* Dropdown panel - fixed positioning */}
-      {open && (
-        <div
-          role="listbox"
-          style={dropdownStyle}
-          className={cn(
-            "z-[999999] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl",
-            "transition-all duration-150 ease-out",
-            mounted
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 -translate-y-2"
-          )}
-        >
-          {/* Search input */}
-          <div className="sticky top-0 z-10 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur px-3 py-2.5">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 py-2 pl-9 pr-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all"
-              />
-            </div>
-          </div>
-
-          {/* List */}
-          <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
-            {filtered.length === 0 ? (
-              <div className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                No items found
-              </div>
-            ) : (
-              filtered.map((item) => (
-                <button
-                  key={item._id}
-                  type="button"
-                  role="option"
-                  aria-selected={item._id === value}
-                  onClick={() => handleSelect(item)}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-4 py-3 text-sm text-left transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800/50",
-                    item._id === value && "bg-zinc-50 dark:bg-zinc-800/30 font-medium"
-                  )}
-                >
-                  {displayValue ? displayValue(item) : <span className="flex-1 truncate text-zinc-700 dark:text-zinc-300">{item.name}</span>}
-                  {item._id === value && (
-                    <Check className="ml-auto h-4 w-4 text-blue-500 dark:text-blue-400 shrink-0" />
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -920,11 +743,14 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                         displayLabel={(product) => product.name}
                       />
                     ) : (
-                      <SearchableDropdown
+                      <CategorySelect
                         value={watchedFields.categoryId}
                         onChange={handleCategorySelect}
-                        items={categories}
+                        categories={categories}
                         loading={loadingCategories}
+                        placeholder="Select category"
+                        searchPlaceholder="Search categories..."
+                        emptyMessage="No categories found"
                         error={!!errors.categoryId}
                       />
                     )}
