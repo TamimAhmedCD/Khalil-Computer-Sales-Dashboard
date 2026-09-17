@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CategorySelect } from "@/components/ui/CategorySelect";
 import {
   Select,
   SelectContent,
@@ -473,30 +474,19 @@ export default function UpdateSalesForm({ onSuccess }) {
                     <label className="text-[10px] md:text-[11px] font-bold uppercase text-zinc-400 tracking-wider">
                       Category *
                     </label>
-                    <Select
-                      disabled={loadingCategories}
-                      onValueChange={(v) =>
+                    <CategorySelect
+                      value={watchedFields.categoryId || ""}
+                      onChange={(v) =>
                         setValue("categoryId", v, { shouldValidate: true })
                       }
-                      value={watchedFields.categoryId || ""}
-                    >
-                      <SelectTrigger size="4" className="w-full h-11 md:h-10">
-                        <SelectValue
-                          placeholder={
-                            loadingCategories
-                              ? "Loading categories..."
-                              : "Select Category"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat._id} value={cat._id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      categories={categories}
+                      loading={loadingCategories}
+                      placeholder="Select category"
+                      searchPlaceholder="Search categories..."
+                      emptyMessage="No categories found"
+                      error={!!errors.categoryId}
+                      className="h-11 md:h-10"
+                    />
                     {errors.categoryId && (
                       <p className="text-xs text-red-500 mt-1">
                         {errors.categoryId.message}

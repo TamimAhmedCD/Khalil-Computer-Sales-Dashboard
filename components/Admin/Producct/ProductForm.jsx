@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import { CategorySelect } from "@/components/ui/CategorySelect";
 import {
   Select,
   SelectContent,
@@ -337,17 +337,16 @@ export default function ProductForm({
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <SearchableDropdown
+                <CategorySelect
                   value={watch("categoryId") || ""}
                   onChange={(v) =>
                     setValue("categoryId", v, { shouldValidate: true })
                   }
-                  items={categories}
+                  categories={categories}
                   loading={loadingCategories}
                   placeholder="Select category"
                   searchPlaceholder="Search categories..."
                   emptyMessage="No categories found"
-                  icon={Package}
                   error={!!errors.categoryId}
                 />
                 {errors.categoryId && (

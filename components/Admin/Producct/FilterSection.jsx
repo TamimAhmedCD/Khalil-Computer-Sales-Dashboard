@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CategorySelect } from "@/components/ui/CategorySelect";
 import {
   Select,
   SelectContent,
@@ -70,19 +71,14 @@ export default function FilterSection({
           <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Category</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                categories={categories}
+                includeAllCategories={true}
+                allCategoriesLabel="All categories"
+                placeholder="All categories"
+              />
             </div>
 
             <div className="space-y-2">
