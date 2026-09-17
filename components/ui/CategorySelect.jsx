@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Search, ChevronDown, Check, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ export function CategorySelect({
   placeholder = "Select category...",
   searchPlaceholder = "Search categories...",
   emptyMessage = "No categories found",
-  includeAllCategories = true,
+  includeAllCategories = false,
   allCategoriesLabel = "All Categories",
   className,
 }) {
@@ -25,6 +26,12 @@ export function CategorySelect({
   const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure portal only renders on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const selected = categories.find((c) => {
     const id = typeof c === 'object' ? c._id || c.id : c;
@@ -44,9 +51,8 @@ export function CategorySelect({
       )
     : categories;
 
-  // Open → compute fixed positioning to escape stacking contexts
-  const handleOpen = () => {
-    if (disabled || loading) return;
+  // Update dropdown position
+  const updatePosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownStyle({
@@ -56,6 +62,12 @@ export function CategorySelect({
         width: rect.width,
       });
     }
+  };
+
+  // Open → compute fixed positioning to escape stacking contexts
+  const handleOpen = () => {
+    if (disabled || loading) return;
+    updatePosition();
     setOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -107,6 +119,18 @@ export function CategorySelect({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Reposition on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open]);
+
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
       {/* Trigger button */}
@@ -151,8 +175,8 @@ export function CategorySelect({
         />
       </button>
 
-      {/* Dropdown panel - fixed positioning to escape stacking contexts */}
-      {open && (
+      {/* Dropdown panel - portaled to document.body to escape all stacking contexts */}
+      {open && isClient && createPortal(
         <div
           role="listbox"
           style={dropdownStyle}
@@ -243,7 +267,8 @@ export function CategorySelect({
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

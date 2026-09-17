@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Search, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,12 @@ export function SearchableDropdown({
   const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure portal only renders on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const selected = items.find((i) => String(i.id || i._id) === String(value));
 
@@ -34,10 +41,8 @@ export function SearchableDropdown({
       )
     : items;
 
-  // Open → trigger animation
-  const handleOpen = () => {
-    if (disabled || loading) return;
-    // Compute position relative to viewport for fixed positioning
+  // Update dropdown position
+  const updatePosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownStyle({
@@ -47,6 +52,13 @@ export function SearchableDropdown({
         width: rect.width,
       });
     }
+  };
+
+  // Open → trigger animation
+  const handleOpen = () => {
+    if (disabled || loading) return;
+    // Compute position relative to viewport for fixed positioning
+    updatePosition();
     setOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -97,6 +109,18 @@ export function SearchableDropdown({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Reposition on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open]);
+
   return (
     <div ref={containerRef} className="relative w-full text-left">
       {/* Trigger button */}
@@ -134,8 +158,8 @@ export function SearchableDropdown({
         />
       </button>
 
-      {/* Dropdown panel - fixed positioning to escape stacking contexts */}
-      {open && (
+      {/* Dropdown panel - portaled to document.body to escape all stacking contexts */}
+      {open && isClient && createPortal(
         <div
           role="listbox"
           style={dropdownStyle}
@@ -196,7 +220,8 @@ export function SearchableDropdown({
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Search, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,12 @@ export function UnifiedSelect({
   const [dropdownStyle, setDropdownStyle] = useState({});
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure portal only renders on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Find selected item
   const selected = items.find((item) => {
@@ -72,9 +79,8 @@ export function UnifiedSelect({
       })
     : items;
 
-  // Open dropdown with fixed positioning
-  const handleOpen = () => {
-    if (disabled || loading) return;
+  // Update dropdown position
+  const updatePosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownStyle({
@@ -84,6 +90,12 @@ export function UnifiedSelect({
         width: rect.width,
       });
     }
+  };
+
+  // Open dropdown with fixed positioning
+  const handleOpen = () => {
+    if (disabled || loading) return;
+    updatePosition();
     setOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -133,6 +145,18 @@ export function UnifiedSelect({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Reposition on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
   }, [open]);
 
   // Default render for trigger label
@@ -217,8 +241,8 @@ export function UnifiedSelect({
         />
       </button>
 
-      {/* Dropdown panel - fixed positioning to escape stacking contexts */}
-      {open && (
+      {/* Dropdown panel - portaled to document.body to escape all stacking contexts */}
+      {open && isClient && createPortal(
         <div
           role="listbox"
           style={dropdownStyle}
@@ -296,7 +320,8 @@ export function UnifiedSelect({
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
