@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CategorySelect } from "@/components/ui/CategorySelect";
 import { useEmployeeProducts } from "@/lib/hooks/products/useEmployeeProducts";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -48,9 +49,6 @@ export function EmployeeProductList() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoSwapping, setIsAutoSwapping] = useState(true);
-  const [categorySearch, setCategorySearch] = useState("");
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
-
   // Reset image index when product changes
   useEffect(() => {
     if (selectedProduct) {
@@ -75,19 +73,6 @@ export function EmployeeProductList() {
   }, [selectedProduct, isAutoSwapping]);
 
   // Auto-swap product card images logic is handled within ProductCard component
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isSelectOpen && !event.target.closest('.category-dropdown')) {
-        setIsSelectOpen(false);
-        setCategorySearch("");
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isSelectOpen]);
 
   // Navigate to next image
   const nextImage = () => {
@@ -169,11 +154,6 @@ export function EmployeeProductList() {
 
     return filtered;
   }, [products, stockFilter, sortBy]);
-
-  // Filter categories based on search
-  const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(categorySearch.toLowerCase())
-  );
 
   // Check if any filters are active
   const hasActiveFilters = searchTerm.trim() !== "" || category !== "" || stockFilter !== "all" || sortBy !== "name";
@@ -323,84 +303,19 @@ export function EmployeeProductList() {
                 </SelectContent>
               </Select>
             </div>
-            {/* Custom Category Dropdown with Search */}
-            <div className="relative category-dropdown">
-              {/* Dropdown Trigger */}
-              <Button
-                variant="outline"
-                className="w-full md:w-48 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg justify-between"
-                onClick={() => setIsSelectOpen(!isSelectOpen)}
-              >
-                <span className="truncate">
-                  {category
-                    ? categories.find((c) => c._id === category)?.name || "Select Category"
-                    : "All Categories"}
-                </span>
-                <ChevronDown className="h-3 w-3 ml-2 flex-shrink-0" />
-              </Button>
-
-              {/* Custom Dropdown Menu */}
-              {isSelectOpen && (
-                <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
-                  {/* Search Input */}
-                  <div className="p-2 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-10">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-                      <Input
-                        placeholder="Search categories..."
-                        value={categorySearch}
-                        onChange={(e) => setCategorySearch(e.target.value)}
-                        className="h-7 text-xs pl-8 bg-transparent border-zinc-200 dark:border-zinc-800 focus-visible:ring-1 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-
-                  {/* Category List */}
-                  <div className="overflow-y-auto flex-1">
-                    <button
-                      onClick={() => {
-                        setCategory("");
-                        setCurrentPage(1);
-                        setIsSelectOpen(false);
-                        setCategorySearch("");
-                      }}
-                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
-                        !category
-                          ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      }`}
-                    >
-                      All Categories
-                    </button>
-
-                    {filteredCategories.length > 0 ? (
-                      filteredCategories.map((cat) => (
-                        <button
-                          key={cat._id}
-                          onClick={() => {
-                            setCategory(cat._id);
-                            setCurrentPage(1);
-                            setIsSelectOpen(false);
-                            setCategorySearch("");
-                          }}
-                          className={`w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
-                            category === cat._id
-                              ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
-                              : "text-zinc-700 dark:text-zinc-300"
-                          }`}
-                        >
-                          {cat.name}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-3 py-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                        No categories found
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+            {/* Reusable Category Dropdown with Search */}
+            <div className="w-full md:w-48">
+              <CategorySelect
+                value={category}
+                onChange={(val) => {
+                  setCategory(val);
+                  setCurrentPage(1);
+                }}
+                categories={categories}
+                includeAllCategories={true}
+                allCategoriesLabel="All Categories"
+                placeholder="All Categories"
+              />
             </div>
           </div>
         </div>
