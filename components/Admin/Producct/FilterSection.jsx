@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { CategorySelect } from "@/components/ui/CategorySelect";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 
 export default function FilterSection({
   searchTerm,
@@ -83,32 +77,34 @@ export default function FilterSection({
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Stock</label>
-              <Select value={stockFilter} onValueChange={setStockFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All stock" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All stock</SelectItem>
-                  <SelectItem value="in">In stock</SelectItem>
-                  <SelectItem value="low">Low stock</SelectItem>
-                  <SelectItem value="out">Out of stock</SelectItem>
-                </SelectContent>
-              </Select>
+              <UnifiedSelect
+                value={stockFilter}
+                onChange={setStockFilter}
+                searchable={false}
+                items={[
+                  { id: "all", name: "All stock" },
+                  { id: "in", name: "In stock" },
+                  { id: "low", name: "Low stock" },
+                  { id: "out", name: "Out of stock" },
+                ]}
+                placeholder="All stock"
+              />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Sort by</label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Name" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name (A–Z)</SelectItem>
-                  <SelectItem value="price">Price (high → low)</SelectItem>
-                  <SelectItem value="stock">Stock (high → low)</SelectItem>
-                  <SelectItem value="profit">Profit (high → low)</SelectItem>
-                </SelectContent>
-              </Select>
+              <UnifiedSelect
+                value={sortBy}
+                onChange={setSortBy}
+                searchable={false}
+                items={[
+                  { id: "name", name: "Name (A–Z)" },
+                  { id: "price", name: "Price (high → low)" },
+                  { id: "stock", name: "Stock (high → low)" },
+                  { id: "profit", name: "Profit (high → low)" },
+                ]}
+                placeholder="Name"
+              />
             </div>
           </div>
 

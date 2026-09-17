@@ -42,16 +42,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
-import { CustomSelect } from "@/components/ui/CustomSelect";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import {
   Table,
   TableBody,
@@ -532,18 +524,24 @@ export function Reports() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <CustomSelect
+          <UnifiedSelect
             value={dateFilter}
             onChange={(val) => handleFilterChange("date", val)}
+            searchable={false}
             items={[
-              { value: "today", label: "Today" },
-              { value: "yesterday", label: "Yesterday" },
-              { value: "week", label: "This Week" },
-              { value: "month", label: "This Month" },
-              { value: "custom", label: "Custom Range" },
+              { id: "today", name: "Today" },
+              { id: "yesterday", name: "Yesterday" },
+              { id: "week", name: "This Week" },
+              { id: "month", name: "This Month" },
+              { id: "custom", name: "Custom Range" },
             ]}
-            icon={CalendarDays}
             placeholder="Select period"
+            displayLabel={(item) => (
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                <span>{item.name}</span>
+              </div>
+            )}
           />
 
           <DropdownMenu>

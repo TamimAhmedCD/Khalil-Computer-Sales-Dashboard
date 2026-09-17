@@ -26,14 +26,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CategorySelect } from "@/components/ui/CategorySelect";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import { useEmployeeProducts } from "@/lib/hooks/products/useEmployeeProducts";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -276,32 +270,34 @@ export function EmployeeProductList() {
               />
             </div>
             {/* Stock Filter Dropdown */}
-            <div className="relative">
-              <Select value={stockFilter} onValueChange={setStockFilter}>
-                <SelectTrigger className="w-full md:w-40 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg">
-                  <SelectValue placeholder="All stock" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stock</SelectItem>
-                  <SelectItem value="in">In Stock</SelectItem>
-                  <SelectItem value="low">Low Stock</SelectItem>
-                  <SelectItem value="out">Out of Stock</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="w-full md:w-40">
+              <UnifiedSelect
+                value={stockFilter}
+                onChange={setStockFilter}
+                searchable={false}
+                items={[
+                  { id: "all", name: "All Stock" },
+                  { id: "in", name: "In Stock" },
+                  { id: "low", name: "Low Stock" },
+                  { id: "out", name: "Out of Stock" },
+                ]}
+                placeholder="All Stock"
+              />
             </div>
             {/* Sort By Dropdown */}
-            <div className="relative">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full md:w-40 bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 h-9 text-xs rounded-lg">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name (A-Z)</SelectItem>
-                  <SelectItem value="price">Price (High to Low)</SelectItem>
-                  <SelectItem value="stock">Stock (High to Low)</SelectItem>
-                  <SelectItem value="profit">Profit (High to Low)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="w-full md:w-40">
+              <UnifiedSelect
+                value={sortBy}
+                onChange={setSortBy}
+                searchable={false}
+                items={[
+                  { id: "name", name: "Name (A-Z)" },
+                  { id: "price", name: "Price (High to Low)" },
+                  { id: "stock", name: "Stock (High to Low)" },
+                  { id: "profit", name: "Profit (High to Low)" },
+                ]}
+                placeholder="Sort by"
+              />
             </div>
             {/* Reusable Category Dropdown with Search */}
             <div className="w-full md:w-48">

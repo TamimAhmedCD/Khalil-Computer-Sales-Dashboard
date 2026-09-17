@@ -25,13 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
 import { CategorySelect } from "@/components/ui/CategorySelect";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -850,23 +844,15 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
                       <label className={CAPTION}>
                         Method *
                       </label>
-                      <Select
-                        onValueChange={(v) =>
+                      <UnifiedSelect
+                        value={watchedFields.paymentMethod || ""}
+                        onChange={(v) =>
                           setValue("paymentMethod", v, { shouldValidate: true })
                         }
-                        value={watchedFields.paymentMethod || ""}
-                      >
-                        <SelectTrigger size="4" className="w-full">
-                          <SelectValue placeholder="Select Method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PAYMENT_METHODS.map((m) => (
-                            <SelectItem key={m} value={m}>
-                              {m}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        searchable={false}
+                        items={PAYMENT_METHODS.map((m) => ({ id: m, name: m }))}
+                        placeholder="Select Method"
+                      />
                       {errors.paymentMethod && (
                         <p className="text-xs text-red-500 mt-1">
                           {errors.paymentMethod.message}

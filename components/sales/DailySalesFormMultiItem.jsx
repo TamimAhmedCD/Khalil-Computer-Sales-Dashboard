@@ -28,13 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
 import { CategorySelect } from "@/components/ui/CategorySelect";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -527,23 +521,15 @@ export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales"
 
                   <div className="space-y-1">
                     <label className={CAPTION}>Payment Method *</label>
-                    <Select
-                      onValueChange={(v) =>
+                    <UnifiedSelect
+                      value={watchedFields.paymentMethod || ""}
+                      onChange={(v) =>
                         setValue("paymentMethod", v, { shouldValidate: true })
                       }
-                      value={watchedFields.paymentMethod || ""}
-                    >
-                      <SelectTrigger size="3" className="w-full h-9">
-                        <SelectValue placeholder="Select Method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_METHODS.map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {m}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      searchable={false}
+                      items={PAYMENT_METHODS.map((m) => ({ id: m, name: m }))}
+                      placeholder="Select Method"
+                    />
                     {errors.paymentMethod && (
                       <p className="text-[10px] text-red-500 mt-0.5">
                         {errors.paymentMethod.message}

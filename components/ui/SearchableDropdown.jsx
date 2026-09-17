@@ -91,7 +91,10 @@ export function SearchableDropdown({
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      // Check if click is outside both the trigger container AND the portal dropdown
+      const clickInTrigger = containerRef.current?.contains(e.target);
+      const clickInDropdown = e.target.closest('[role="listbox"][data-portal="true"]');
+      if (!clickInTrigger && !clickInDropdown) {
         handleClose();
       }
     };
@@ -162,6 +165,7 @@ export function SearchableDropdown({
       {open && isClient && createPortal(
         <div
           role="listbox"
+          data-portal="true"
           style={dropdownStyle}
           className={cn(
             "z-[999999] overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",

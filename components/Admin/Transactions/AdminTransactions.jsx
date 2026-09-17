@@ -27,16 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 
 import {
   Popover,
@@ -723,9 +715,9 @@ export default function AdminTransactions() {
                   Date Range
                 </label>
 
-                <Select
+                <UnifiedSelect
                   value={dateFilter}
-                  onValueChange={(value) => {
+                  onChange={(value) => {
                     setDateFilter(value);
 
                     setCurrentPage(1);
@@ -736,31 +728,18 @@ export default function AdminTransactions() {
                       setCustomEndDate(undefined);
                     }
                   }}
-                >
-                  <SelectTrigger className="w-full">
-                    {/* <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" /> */}
-
-                    <SelectValue placeholder="Select date range" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="today">Today</SelectItem>
-
-                      <SelectItem value="yesterday">Yesterday</SelectItem>
-
-                      <SelectItem value="week">This Week</SelectItem>
-
-                      <SelectItem value="month">This Month</SelectItem>
-
-                      <SelectItem value="last-month">Last Month</SelectItem>
-
-                      <SelectItem value="custom">Custom Range</SelectItem>
-
-                      <SelectItem value="all">All Time</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                  searchable={false}
+                  items={[
+                    { id: "today", name: "Today" },
+                    { id: "yesterday", name: "Yesterday" },
+                    { id: "week", name: "This Week" },
+                    { id: "month", name: "This Month" },
+                    { id: "last-month", name: "Last Month" },
+                    { id: "custom", name: "Custom Range" },
+                    { id: "all", name: "All Time" },
+                  ]}
+                  placeholder="Select date range"
+                />
               </div>
 
               {/* EMPLOYEE */}
@@ -822,30 +801,34 @@ export default function AdminTransactions() {
                   Payment Method
                 </label>
 
-                <Select
+                <UnifiedSelect
                   value={paymentFilter}
-                  onValueChange={(value) => {
+                  onChange={(value) => {
                     setPaymentFilter(value);
 
                     setCurrentPage(1);
                   }}
-                >
-                  <SelectTrigger className="w-full">
-                    <Wallet className="mr-2 h-4 w-4 text-muted-foreground" />
-
-                    <SelectValue placeholder="All Methods" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Methods</SelectItem>
-
-                    {filterOptions.paymentMethods.map((method) => (
-                      <SelectItem key={String(method)} value={String(method)}>
-                        {method}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  searchable={false}
+                  items={[
+                    { id: "all", name: "All Methods" },
+                    ...filterOptions.paymentMethods.map((method) => ({
+                      id: String(method),
+                      name: String(method),
+                    })),
+                  ]}
+                  placeholder="All Methods"
+                  displayLabel={(item) => {
+                    if (item.id === "all") {
+                      return <span>{item.name}</span>;
+                    }
+                    return (
+                      <div className="flex items-center">
+                        <Wallet className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>{item.name}</span>
+                      </div>
+                    );
+                  }}
+                />
               </div>
             </div>
 

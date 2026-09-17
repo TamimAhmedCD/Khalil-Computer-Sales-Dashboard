@@ -35,13 +35,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import {
   Table,
   TableBody,
@@ -415,48 +409,57 @@ export function ExpenseList() {
             </div>
 
             {/* Date Filter */}
-            <Select value={dateFilter} onValueChange={(v) => { setDateFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-full lg:w-40">
-                <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Date" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="last-month">Last Month</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-              </SelectContent>
-            </Select>
+            <UnifiedSelect
+              value={dateFilter}
+              onChange={(v) => { setDateFilter(v); setCurrentPage(1); }}
+              searchable={false}
+              items={[
+                { id: "today", name: "Today" },
+                { id: "yesterday", name: "Yesterday" },
+                { id: "week", name: "This Week" },
+                { id: "month", name: "This Month" },
+                { id: "last-month", name: "Last Month" },
+                { id: "year", name: "This Year" },
+                { id: "all", name: "All Time" },
+              ]}
+              placeholder="Date"
+              displayLabel={(item) => (
+                <div className="flex items-center">
+                  <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{item.name}</span>
+                </div>
+              )}
+              className="w-full lg:w-40"
+            />
 
             {/* Category Filter */}
-            <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-full lg:w-44">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <UnifiedSelect
+              value={categoryFilter}
+              onChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}
+              searchable={true}
+              items={[
+                { id: "all", name: "All Categories" },
+                ...categories.map((cat) => ({ id: cat._id, name: cat.name })),
+              ]}
+              placeholder="All Categories"
+              className="w-full lg:w-44"
+            />
 
             {/* Scope Filter */}
-            <Select value={scopeFilter} onValueChange={(v) => { setScopeFilter(v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-full lg:w-36">
-                <SelectValue placeholder="All Scopes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Scopes</SelectItem>
-                <SelectItem value="Business">Business</SelectItem>
-                <SelectItem value="Household">Household</SelectItem>
-                <SelectItem value="Personal">Personal</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+            <UnifiedSelect
+              value={scopeFilter}
+              onChange={(v) => { setScopeFilter(v); setCurrentPage(1); }}
+              searchable={false}
+              items={[
+                { id: "all", name: "All Scopes" },
+                { id: "Business", name: "Business" },
+                { id: "Household", name: "Household" },
+                { id: "Personal", name: "Personal" },
+                { id: "Other", name: "Other" },
+              ]}
+              placeholder="All Scopes"
+              className="w-full lg:w-36"
+            />
 
             {/* Clear Filters */}
             {hasActiveFilters && (

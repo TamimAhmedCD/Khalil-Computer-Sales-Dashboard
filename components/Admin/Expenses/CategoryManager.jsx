@@ -7,13 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import {
   Dialog,
   DialogContent,
@@ -242,21 +236,36 @@ export function CategoryManager() {
 
             <div className="space-y-2">
               <Label htmlFor="cat-type">Category Type</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger id="cat-type" className="w-full">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORY_TYPES.map(({ value, label, icon: Icon }) => (
-                    <SelectItem key={value} value={value}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <UnifiedSelect
+                value={type}
+                onChange={setType}
+                searchable={false}
+                items={CATEGORY_TYPES.map(({ value, label }) => ({
+                  id: value,
+                  name: label,
+                }))}
+                placeholder="Select type"
+                renderItem={(item) => {
+                  const typeObj = CATEGORY_TYPES.find((t) => t.value === item.id);
+                  const Icon = typeObj?.icon;
+                  return (
+                    <div className="flex items-center gap-2">
+                      {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                      <span>{item.name}</span>
+                    </div>
+                  );
+                }}
+                displayLabel={(item) => {
+                  const typeObj = CATEGORY_TYPES.find((t) => t.value === item.id);
+                  const Icon = typeObj?.icon;
+                  return (
+                    <div className="flex items-center gap-2">
+                      {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                      <span>{item.name}</span>
+                    </div>
+                  );
+                }}
+              />
             </div>
 
             <div className="space-y-2">
