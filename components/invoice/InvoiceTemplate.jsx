@@ -47,7 +47,7 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
   .invoice-page { max-width: 210mm; margin: 0 auto; padding: 28px 32px; }
 
   /* ---- header ---- */
-  .inv-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #2563eb; margin-bottom: 24px; }
+  .inv-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #003E7E; margin-bottom: 24px; }
   .brand { display: flex; align-items: center; gap: 14px; }
   .brand-logo { width: 52px; height: 52px; border-radius: 10px; object-fit: contain; }
   .brand-name { font-size: 22px; font-weight: 800; color: #111; letter-spacing: -0.5px; }
@@ -55,7 +55,7 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
   .brand-contact { font-size: 11px; color: #6b7280; margin-top: 6px; line-height: 1.6; }
 
   .inv-badge { text-align: right; }
-  .inv-badge h2 { font-size: 28px; font-weight: 800; color: #2563eb; letter-spacing: 2px; }
+  .inv-badge h2 { font-size: 28px; font-weight: 800; color: #003E7E; letter-spacing: 2px; }
   .inv-badge .inv-num { font-size: 13px; font-weight: 600; color: #374151; margin-top: 4px; }
   .inv-badge .inv-date { font-size: 12px; color: #6b7280; margin-top: 2px; }
 
@@ -137,33 +137,33 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
       <div className="invoice-page" style={{ maxWidth: "210mm", margin: "0 auto", padding: "28px 32px", fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif", color: "#1a1a1a", fontSize: "13px", lineHeight: 1.5 }}>
 
         {/* ==================== HEADER ==================== */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 20, borderBottom: "2px solid #2563eb", marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 20, borderBottom: "2px solid #003E7E", marginBottom: 24 }}>
           {/* Brand */}
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             {/* Logo */}
             <img
               src="/logo.svg"
               alt="Khalil Computer"
-              style={{ width: 52, height: 52, borderRadius: 10, objectFit: "contain" }}
+              style={{ width: 68, height: 68, objectFit: "contain" }}
             />
             <div>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#111", letterSpacing: "-0.5px" }}>
                 Khalil Computer
               </div>
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>
-                Computer Sales &amp; Service Center
+                Reliable institution of technology, training and public service
               </div>
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6, lineHeight: 1.6 }}>
                 Barlekha, Moulvibazar, Bangladesh<br />
                 Phone: +880 1715 409109<br />
-                Email: info@khalilcomputer.com
+                Website: <a href="https://khalilcomputer.com" style={{ color: "#6b7280" }} target="_blank" rel="noopener noreferrer">khalilcomputer.com</a>
               </div>
             </div>
           </div>
 
           {/* Invoice badge */}
           <div style={{ textAlign: "right" }}>
-            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#2563eb", letterSpacing: 2, margin: 0 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#003E7E", letterSpacing: 2, margin: 0 }}>
               INVOICE
             </h2>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginTop: 4 }}>
