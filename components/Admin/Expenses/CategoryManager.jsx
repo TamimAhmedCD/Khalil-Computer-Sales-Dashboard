@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
+import { InPlaceCategorySelect } from "@/components/ui/InPlaceCategorySelect";
 import {
   Dialog,
   DialogContent,
@@ -236,35 +236,17 @@ export function CategoryManager() {
 
             <div className="space-y-2">
               <Label htmlFor="cat-type">Category Type</Label>
-              <UnifiedSelect
+              <InPlaceCategorySelect
                 value={type}
                 onChange={setType}
-                searchable={false}
-                items={CATEGORY_TYPES.map(({ value, label }) => ({
-                  id: value,
+                categories={CATEGORY_TYPES.map(({ value, label, icon: Icon }) => ({
+                  _id: value,
                   name: label,
+                  type: value,
                 }))}
                 placeholder="Select type"
-                renderItem={(item) => {
-                  const typeObj = CATEGORY_TYPES.find((t) => t.value === item.id);
-                  const Icon = typeObj?.icon;
-                  return (
-                    <div className="flex items-center gap-2">
-                      {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-                      <span>{item.name}</span>
-                    </div>
-                  );
-                }}
-                displayLabel={(item) => {
-                  const typeObj = CATEGORY_TYPES.find((t) => t.value === item.id);
-                  const Icon = typeObj?.icon;
-                  return (
-                    <div className="flex items-center gap-2">
-                      {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-                      <span>{item.name}</span>
-                    </div>
-                  );
-                }}
+                searchPlaceholder="Search types..."
+                emptyMessage="No types found"
               />
             </div>
 

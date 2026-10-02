@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CategorySelect } from "@/components/ui/CategorySelect";
+import { InPlaceCategorySelect } from "@/components/ui/InPlaceCategorySelect";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -256,7 +256,7 @@ export function ExpenseForm({
               control={control}
               name="categoryId"
               render={({ field }) => (
-                <CategorySelect
+                <InPlaceCategorySelect
                   value={field.value}
                   onChange={(v) => {
                     field.onChange(v);

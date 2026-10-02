@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 /**
- * CategorySelect - works both standalone and inside dialogs
- * Renders dropdown in-place with proper z-index
+ * In-place CategorySelect that works inside dialogs
+ * This version renders the dropdown in-place (not portaled) with proper z-index
+ * and uses a different click detection approach
  */
-export function CategorySelect({
+export function InPlaceCategorySelect({
   value,
   onChange,
   categories = [],
