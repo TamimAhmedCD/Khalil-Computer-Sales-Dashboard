@@ -431,6 +431,7 @@ export async function GET(request) {
           customerName: 1,
           customerPhone: 1,
 
+          items: 1,
           productName: 1,
 
           categoryId: 1,
@@ -638,47 +639,55 @@ export async function GET(request) {
     // 17. SERIALIZE DATA
     // =======================================================
 
-    const formattedTransactions = transactions.map((item) => ({
-      id: item._id.toString(),
+    const formattedTransactions = transactions.map((item) => {
+      // Handle multi-product sales - if items array exists, concatenate product names
+      let productDisplay = item.productName || "";
+      if (item.items && Array.isArray(item.items) && item.items.length > 0) {
+        productDisplay = item.items.map(i => i.productName).join(", ");
+      }
 
-      invoiceNumber: item.invoiceNumber || "",
+      return {
+        id: item._id.toString(),
 
-      employeeId: item.sellerId || "",
+        invoiceNumber: item.invoiceNumber || "",
 
-      employee: item.sellerName || "Unknown Employee",
+        employeeId: item.sellerId || "",
 
-      customer: item.customerName || "",
+        employee: item.sellerName || "Unknown Employee",
 
-      phone: item.customerPhone || "",
+        customer: item.customerName || "",
 
-      product: item.productName || "",
+        phone: item.customerPhone || "",
 
-      categoryId: item.categoryId ? item.categoryId.toString() : "",
+        product: productDisplay,
 
-      category: item.categoryName || "",
+        categoryId: item.categoryId ? item.categoryId.toString() : "",
 
-      quantity: Number(item.quantity) || 0,
+        category: item.categoryName || "",
 
-      revenue: Number(item.totalPrice ?? item.total) || 0,
+        quantity: Number(item.quantity) || 0,
 
-      expense:
-        Number(item.totalExpense ?? item.rawExpense ?? item.expenseCost ?? 0) ||
-        0,
+        revenue: Number(item.totalPrice ?? item.total) || 0,
 
-      profit: Number(item.netProfit) || 0,
+        expense:
+          Number(item.totalExpense ?? item.rawExpense ?? item.expenseCost ?? 0) ||
+          0,
 
-      commission: Number(item.commission) || 0,
+        profit: Number(item.netProfit) || 0,
 
-      paymentMethod: item.paymentMethod || "",
+        commission: Number(item.commission) || 0,
 
-      paidAmount: Number(item.paidAmount) || 0,
+        paymentMethod: item.paymentMethod || "",
 
-      due: Number(item.due) || 0,
+        paidAmount: Number(item.paidAmount) || 0,
 
-      date: item.createdAt,
+        due: Number(item.due) || 0,
 
-      note: item.note || "",
-    }));
+        date: item.createdAt,
+
+        note: item.note || "",
+      };
+    });
 
     // =======================================================
     // 18. RESPONSE

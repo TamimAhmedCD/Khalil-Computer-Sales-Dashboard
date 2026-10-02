@@ -775,22 +775,46 @@ export async function GET(request) {
         },
 
         {
+          // Unwind items array if it exists, otherwise create single item from productName
+          $project: {
+            items: {
+              $cond: {
+                if: { $isArray: "$items" },
+                then: "$items",
+                else: [{
+                  productName: "$productName",
+                  quantity: { $ifNull: ["$quantity", 1] },
+                  totalPrice: { $ifNull: [revenueExpression(), 0] },
+                  netProfit: { $ifNull: ["$netProfit", 0] }
+                }]
+              }
+            }
+          }
+        },
+
+        {
+          $unwind: "$items"
+        },
+
+        {
           $group: {
-            _id: "$productName",
+            _id: "$items.productName",
 
             quantity: {
               $sum: {
-                $ifNull: ["$quantity", 0],
+                $ifNull: ["$items.quantity", 1],
               },
             },
 
             revenue: {
-              $sum: revenueExpression(),
+              $sum: {
+                $ifNull: ["$items.totalPrice", 0],
+              },
             },
 
             profit: {
               $sum: {
-                $ifNull: ["$netProfit", 0],
+                $ifNull: ["$items.netProfit", 0],
               },
             },
 
@@ -901,6 +925,7 @@ export async function GET(request) {
         _id: 1,
         invoiceNumber: 1,
         productName: 1,
+        items: 1,
         sellerName: 1,
         totalPrice: 1,
         total: 1,
@@ -908,21 +933,29 @@ export async function GET(request) {
       })
       .toArray();
 
-    const recentTransactions = recentRaw.map((item) => ({
-      id: item._id.toString(),
+    const recentTransactions = recentRaw.map((item) => {
+      // Handle multi-product sales - if items array exists, concatenate product names
+      let productDisplay = item.productName || "";
+      if (item.items && Array.isArray(item.items) && item.items.length > 0) {
+        productDisplay = item.items.map(i => i.productName).join(", ");
+      }
 
-      invoice: item.invoiceNumber || "",
+      return {
+        id: item._id.toString(),
 
-      product: item.productName || "",
+        invoice: item.invoiceNumber || "",
 
-      seller: item.sellerName || "Unknown Seller",
+        product: productDisplay,
 
-      amount: number(item.totalPrice ?? item.total),
+        seller: item.sellerName || "Unknown Seller",
 
-      time: item.createdAt,
+        amount: number(item.totalPrice ?? item.total),
 
-      date: item.createdAt,
-    }));
+        time: item.createdAt,
+
+        date: item.createdAt,
+      };
+    });
 
     // =======================================================
     // 19. SELLER OPTIONS

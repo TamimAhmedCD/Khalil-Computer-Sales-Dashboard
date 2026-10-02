@@ -104,3 +104,77 @@ export async function GET() {
     );
   }
 }
+
+// 📝 CREATE NEW EMPLOYEE
+export async function POST(request) {
+  try {
+    // 🔐 AUTH CHECK
+    const session = await auth();
+
+    if (
+      !session ||
+      !session.user ||
+      !(session.user.role === "admin" || session.user.role === "superAdmin")
+    ) {
+      return Response.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const body = await request.json();
+    const { name, email, phone, password, role = "employee", status = true, description = "" } = body;
+
+    // Validate required fields
+    if (!name || !email || !phone || !password) {
+      return Response.json(
+        { success: false, message: "Name, email, phone, and password are required" },
+        { status: 400 },
+      );
+    }
+
+    const client = await clientPromise;
+    const authDb = client.db("auth");
+
+    // Check if email already exists
+    const existingUser = await authDb.collection("credentials").findOne({ email });
+
+    if (existingUser) {
+      return Response.json(
+        { success: false, message: "Email already exists" },
+        { status: 400 },
+      );
+    }
+
+    // Create new employee
+    const newEmployee = {
+      name,
+      email,
+      phone,
+      password, // In production, hash this password!
+      role,
+      status,
+      description,
+      createdAt: new Date(),
+      createdBy: session.user.id,
+    };
+
+    const result = await authDb.collection("credentials").insertOne(newEmployee);
+
+    return Response.json({
+      success: true,
+      message: "Employee created successfully",
+      data: {
+        _id: result.insertedId,
+        ...newEmployee,
+      },
+    });
+  } catch (error) {
+    console.error("CREATE EMPLOYEE ERROR:", error);
+
+    return Response.json(
+      { success: false, message: "Failed to create employee" },
+      { status: 500 },
+    );
+  }
+}

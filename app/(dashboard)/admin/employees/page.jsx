@@ -42,9 +42,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function EmployeesPage() {
+  const queryClient = useQueryClient();
+
   const fetchEmployees = async () => {
     const res = await axios.get("/api/admin/employees");
     return res.data;
@@ -68,14 +71,42 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     phone: "",
-    role: "Sales Executive",
-    joinDate: "",
-    totalSales: 0,
-    commissionEarned: 0,
+    password: "",
+    role: "employee",
     status: true,
     description: "",
   });
+
+  // Create employee mutation
+  const createEmployeeMutation = useMutation({
+    mutationFn: async (employeeData) => {
+      const res = await axios.post("/api/admin/employees", employeeData);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Employee created successfully");
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      setIsAddEditOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to create employee");
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      password: "",
+      role: "employee",
+      status: true,
+      description: "",
+    });
+  };
 
   // CRUD Handlers
   const handleOpenView = (emp) => {
@@ -85,16 +116,7 @@ export default function EmployeesPage() {
 
   const handleOpenAdd = () => {
     setSelectedEmployee(null);
-    setFormData({
-      name: "",
-      phone: "",
-      role: "Sales Executive",
-      joinDate: new Date().toISOString().split("T")[0],
-      totalSales: 0,
-      commissionEarned: 0,
-      status: true,
-      description: "",
-    });
+    resetForm();
     setIsAddEditOpen(true);
   };
 
@@ -106,11 +128,19 @@ export default function EmployeesPage() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    // Implementation placeholder for mutations
+
+    if (selectedEmployee) {
+      // Edit mode - not implemented yet
+      toast.info("Edit functionality coming soon");
+    } else {
+      // Create mode
+      createEmployeeMutation.mutate(formData);
+    }
   };
 
   const handleDeleteConfirm = () => {
     // Implementation placeholder for mutations
+    toast.info("Delete functionality coming soon");
   };
 
   return (
@@ -126,8 +156,7 @@ export default function EmployeesPage() {
         <Button
           onClick={handleOpenAdd}
           className="rounded-xl h-11 px-5 shadow-sm gap-2"
-          // disabled={isLoading}
-          disabled
+          disabled={isLoading}
         >
           <Plus className="w-4 h-4" /> Add Employee
         </Button>
@@ -474,6 +503,60 @@ export default function EmployeesPage() {
               />
             </div>
 
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Email Address
+              </Label>
+              <Input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="john.doe@example.com"
+                className="rounded-xl h-10"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Password
+                </Label>
+                <Input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="••••••••"
+                  className="rounded-xl h-10"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Role
+                </Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, role: value })
+                  }
+                >
+                  <SelectTrigger className="rounded-xl h-10">
+                    <SelectValue placeholder="Select Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="sales_executive">Sales Executive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -489,85 +572,7 @@ export default function EmployeesPage() {
                   className="rounded-xl h-10"
                 />
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Role
-                </Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, role: value })
-                  }
-                  defaultValue="Sales Executive"
-                >
-                  <SelectTrigger className="rounded-xl h-10">
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sales Executive">
-                      Sales Executive
-                    </SelectItem>
-                    <SelectItem value="Manager">Manager</SelectItem>
-                    <SelectItem value="Junior Associate">
-                      Junior Associate
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Total Sales (৳)
-                </Label>
-                <Input
-                  readOnly
-                  type="number"
-                  value={formData.totalSales}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      totalSales: Number(e.target.value),
-                    })
-                  }
-                  className="rounded-xl h-10"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Commission (৳)
-                </Label>
-                <Input
-                  readOnly
-                  type="number"
-                  value={formData.commissionEarned}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      commissionEarned: Number(e.target.value),
-                    })
-                  }
-                  className="rounded-xl h-10"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 items-center">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Join Date
-                </Label>
-                <Input
-                  type="date"
-                  value={formData.joinDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, joinDate: e.target.value })
-                  }
-                  className="rounded-xl h-10"
-                />
-              </div>
-              <div className="flex items-center gap-2 pt-5 pl-1">
+              <div className="flex items-center gap-2 pt-7 pl-1">
                 <Checkbox
                   id="status"
                   checked={formData.status}
@@ -608,8 +613,12 @@ export default function EmployeesPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="rounded-xl h-11">
-                Save Changes
+              <Button
+                type="submit"
+                className="rounded-xl h-11"
+                disabled={createEmployeeMutation.isPending}
+              >
+                {createEmployeeMutation.isPending ? "Creating..." : (selectedEmployee ? "Update Employee" : "Create Employee")}
               </Button>
             </DialogFooter>
           </form>

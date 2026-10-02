@@ -413,10 +413,21 @@ export function Reports() {
   const topProducts = useMemo(() => {
     const productMap = {};
     chartRawData.forEach((item) => {
-      const name = item.productName || "—";
-      if (!productMap[name]) productMap[name] = { name, quantity: 0, sales: 0 };
-      productMap[name].quantity += Number(item.quantity) || 0;
-      productMap[name].sales += Number(item.totalPrice) || 0;
+      // Handle multi-product sales by iterating through items array
+      if (item.items && Array.isArray(item.items) && item.items.length > 0) {
+        item.items.forEach((product) => {
+          const name = product.productName || "—";
+          if (!productMap[name]) productMap[name] = { name, quantity: 0, sales: 0 };
+          productMap[name].quantity += Number(product.quantity) || 0;
+          productMap[name].sales += Number(product.totalPrice) || 0;
+        });
+      } else {
+        // Fallback to legacy single-product format
+        const name = item.productName || "—";
+        if (!productMap[name]) productMap[name] = { name, quantity: 0, sales: 0 };
+        productMap[name].quantity += Number(item.quantity) || 0;
+        productMap[name].sales += Number(item.totalPrice) || 0;
+      }
     });
     return Object.values(productMap)
       .sort((a, b) => b.sales - a.sales)
@@ -885,8 +896,8 @@ export function Reports() {
                         minute: "2-digit",
                       })}
                     </TableCell>
-                    <TableCell className="max-w-45 truncate font-medium" title={item.productName}>
-                      {item.productName}
+                    <TableCell className="max-w-45 truncate font-medium" title={item.items && item.items.length > 1 ? item.items.map(i => i.productName).join(", ") : item.productName}>
+                      {item.items && item.items.length > 1 ? item.items.map(i => i.productName).join(", ") : item.productName}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal">
