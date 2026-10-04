@@ -26,6 +26,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SearchableDropdown } from "@/components/ui/SearchableDropdown";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
@@ -376,13 +377,103 @@ export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales"
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isValid, errors]);
 
-  return (
-    <div className="min-h-screen text-zinc-800 dark:text-zinc-100 py-8 transition-colors duration-200">
-      {/* Professional Ambient Soft Underlays */}
-      <div className="absolute top-0 left-1/4 w-150 h-75 bg-zinc-200/40 dark:bg-zinc-800/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-100 h-100 bg-zinc-300/30 dark:bg-zinc-900/20 rounded-full blur-[100px] pointer-events-none" />
+  // Show loading skeleton if categories or products are loading
+  if (loadingCategories || loadingProducts) {
+    return (
+      <div className="min-h-screen bg-muted/10 py-8 transition-colors duration-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Header Skeleton */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between pb-6 border-b border-border">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+            </div>
+          </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+          {/* Main Content Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column - Items */}
+            <div className="col-span-12 lg:col-span-8 space-y-4">
+              {/* Items Skeleton */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-20" />
+                </div>
+                {[1, 2].map((i) => (
+                  <Card key={i} className="border-border shadow-sm">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-6 w-12" />
+                        <Skeleton className="h-6 w-full" />
+                      </div>
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-5 space-y-1">
+                          <Skeleton className="h-3 w-10" />
+                          <Skeleton className="h-8 w-full" />
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                          <Skeleton className="h-3 w-8" />
+                          <Skeleton className="h-8 w-full" />
+                        </div>
+                        <div className="col-span-4 space-y-1">
+                          <Skeleton className="h-3 w-12" />
+                          <Skeleton className="h-8 w-full" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Customer & Payment Skeleton */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Card className="border-border shadow-sm">
+                  <CardContent className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="space-y-1">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                    ))}
+                    <div className="md:col-span-2 space-y-1">
+                      <Skeleton className="h-3 w-32" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Right Column - Cash Memo Skeleton */}
+            <div className="col-span-12 lg:col-span-4">
+              <Card className="border-border shadow-sm">
+                <CardContent className="p-4 space-y-3">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-8 w-full mt-4" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen text-foreground py-8 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <form
           onSubmit={handlePreSubmit}
           className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
