@@ -66,6 +66,7 @@ export function CategorySelect({
       left: rect.left,
       width: rect.width,
       zIndex: 99999,
+      pointerEvents: "auto",
     });
   }, []);
 
@@ -103,13 +104,43 @@ export function CategorySelect({
   // Click-outside detection — works even for the portaled dropdown
   useEffect(() => {
     if (!open) return;
+
     const onPointerDown = (e) => {
+      // Check if the click is inside the button or dropdown
       const inButton = buttonRef.current?.contains(e.target);
       const inDropdown = e.target.closest("[data-category-select-portal]");
-      if (!inButton && !inDropdown) handleClose();
+
+      // If clicking on the button itself, don't close - handleToggle will handle it
+      if (inButton) {
+        // Let the button click handle opening/closing
+        return;
+      }
+
+      // Check if click is inside a dialog/modal content area
+      // This prevents dropdown from closing when clicking inside dialog content
+      const inDialogContent = e.target.closest("[data-slot='dialog-content'], [data-slot='alert-dialog-content'], [role='dialog']");
+
+      // If clicking inside a dialog content area, don't close dropdown
+      // This allows users to click other inputs in the form without closing the category select
+      if (inDialogContent) {
+        return;
+      }
+
+      // Only close if clicking outside everything (button, dropdown, and dialog)
+      if (!inButton && !inDropdown && !inDialogContent) {
+        handleClose();
+      }
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+
+    // Use a small delay to ensure button click handlers run first
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("pointerdown", onPointerDown);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [open, handleClose]);
 
   // Reposition on scroll / resize so the dropdown follows the button

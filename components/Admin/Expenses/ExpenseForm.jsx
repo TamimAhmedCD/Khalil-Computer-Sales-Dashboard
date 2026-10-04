@@ -26,14 +26,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { InPlaceCategorySelect } from "@/components/ui/InPlaceCategorySelect";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -153,21 +152,21 @@ export function ExpenseForm({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="w-full sm:max-w-md">
-        <AlertDialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full sm:max-w-md">
+        <DialogHeader>
           <div className="flex items-center gap-2">
             <ReceiptText className="h-5 w-5 text-primary" />
-            <AlertDialogTitle className="text-lg">
+            <DialogTitle className="text-lg">
               {mode === "create" ? "Record Expense" : "Edit Expense"}
-            </AlertDialogTitle>
+            </DialogTitle>
           </div>
-          <AlertDialogDescription>
+          <DialogDescription>
             {mode === "create"
               ? "Add a new expense to your ledger."
               : "Update this expense record."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Title */}
@@ -295,10 +294,10 @@ export function ExpenseForm({
             />
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel type="button" disabled={loading}>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
-            </AlertDialogCancel>
+            </Button>
             <Button type="submit" disabled={loading}>
               {loading
                 ? mode === "create"
@@ -308,9 +307,9 @@ export function ExpenseForm({
                 ? "Record Expense"
                 : "Update Expense"}
             </Button>
-          </AlertDialogFooter>
+          </DialogFooter>
         </form>
-      </AlertDialogContent>
-    </AlertDialog>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -64,6 +64,7 @@ export function InPlaceCategorySelect({
       left: rect.left,
       width: rect.width,
       zIndex: 99999,
+      pointerEvents: "auto",
     });
   }, []);
 
@@ -101,13 +102,40 @@ export function InPlaceCategorySelect({
   // Click-outside detection
   useEffect(() => {
     if (!open) return;
+
     const onPointerDown = (e) => {
+      // Check if the click is inside the button or dropdown
       const inButton = buttonRef.current?.contains(e.target);
       const inDropdown = e.target.closest("[data-category-select-portal]");
-      if (!inButton && !inDropdown) handleClose();
+
+      // If clicking on the button or inside the dropdown, don't close
+      if (inButton || inDropdown) {
+        return;
+      }
+
+      // Check if click is on the dialog content itself (to prevent dropdown closing)
+      // Dialog content has specific data attributes we can check
+      const dialogContent = e.target.closest("[data-slot='dialog-content'], [data-slot='alert-dialog-content']");
+
+      // If clicking inside a dialog content area, don't close dropdown
+      // This allows users to click other inputs in the form without closing the category select
+      if (dialogContent) {
+        return;
+      }
+
+      // Only close if clicking outside everything (button, dropdown, and dialog)
+      handleClose();
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+
+    // Use a small delay to ensure button click handlers run first
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("pointerdown", onPointerDown);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [open, handleClose]);
 
   // Reposition on scroll / resize
