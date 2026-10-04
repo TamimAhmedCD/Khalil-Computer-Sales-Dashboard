@@ -38,6 +38,8 @@ import {
 } from "./ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
 
+const SIDEBAR_STORAGE_KEY = "sidebar_collapsed";
+
 export function Sidebar({ isCollapsed, setIsCollapsed }) {
   const { data: session } = useSession();
   const role = session?.user?.role;
@@ -45,9 +47,26 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Initialize collapsed state from localStorage on mount
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      const savedState = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (savedState !== null) {
+        const isCollapsedState = savedState === "true";
+        if (isCollapsedState !== isCollapsed) {
+          setIsCollapsed(isCollapsedState);
+        }
+      }
+    }
   }, []);
+
+  // Save collapsed state to localStorage when it changes
+  useEffect(() => {
+    if (mounted && typeof window !== "undefined") {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isCollapsed));
+    }
+  }, [isCollapsed, mounted]);
 
   const showFullSidebar = isMobileOpen || !isCollapsed;
 
