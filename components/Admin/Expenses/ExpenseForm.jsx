@@ -154,7 +154,7 @@ export function ExpenseForm({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="w-full sm:max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
             <ReceiptText className="h-5 w-5 text-primary" />

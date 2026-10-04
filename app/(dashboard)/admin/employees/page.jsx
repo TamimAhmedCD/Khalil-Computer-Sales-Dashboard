@@ -374,7 +374,7 @@ export default function EmployeesPage() {
       {/* 1. VIEW DETAILS DIALOG */}
       {/* ======================================================== */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
+        <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Layers className="w-5 h-5 text-primary" /> Employee Breakdown
@@ -479,7 +479,7 @@ export default function EmployeesPage() {
       {/* 2. ADD / EDIT DIALOG */}
       {/* ======================================================== */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
+        <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-muted-foreground" />
@@ -629,7 +629,7 @@ export default function EmployeesPage() {
       {/* 3. DELETE CONFIRMATION DIALOG */}
       {/* ======================================================== */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-sm rounded-2xl border-border p-6 shadow-2xl">
+        <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-sm rounded-2xl border-border p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle>Delete Employee</DialogTitle>
             <DialogDescription className="pt-2">

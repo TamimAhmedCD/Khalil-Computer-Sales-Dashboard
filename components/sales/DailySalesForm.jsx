@@ -1042,7 +1042,7 @@ export default function DailySalesForm({ redirectTo = "/employee/sales" } = {}) 
 
         {/* Confirmation Modal */}
         <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-          <AlertDialogContent className="w-[90%] max-w-md rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 shadow-2xl">
+          <AlertDialogContent className="w-full sm:max-w-md rounded-xl border-border p-6 shadow-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                 Record this sale?

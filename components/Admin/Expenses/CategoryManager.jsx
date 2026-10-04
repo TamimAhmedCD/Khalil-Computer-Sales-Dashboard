@@ -219,7 +219,7 @@ export function CategoryManager() {
         setOpen(value);
         if (!value) resetForm();
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-full sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{mode === "create" ? "Create Category" : "Edit Category"}</DialogTitle>
           </DialogHeader>

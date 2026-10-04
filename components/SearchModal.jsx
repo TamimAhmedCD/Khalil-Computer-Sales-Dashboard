@@ -92,7 +92,7 @@ export function SearchModal({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-full sm:max-w-2xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <span>Search Navigation</span>
         </DialogHeader>

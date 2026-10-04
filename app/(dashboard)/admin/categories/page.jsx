@@ -270,7 +270,7 @@ export default function CategoriesPage() {
         open={isFormOpen}
         onOpenChange={(open) => !open && closeFormDialog()}
       >
-        <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] flex flex-col rounded-2xl border-border p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="w-full sm:max-w-[600px] max-h-[90vh] flex flex-col rounded-2xl border-border p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="flex-shrink-0 p-4 sm:p-6 bg-muted/20 border-b border-border">
             <DialogTitle className="text-lg sm:text-xl font-bold">
               {editingCategory ? "Edit Category" : "New Category"}
@@ -413,7 +413,7 @@ export default function CategoriesPage() {
 
       {/* 2. Read-Only View Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
+        <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Layers className="w-5 h-5 text-primary" /> Category Breakdown
@@ -495,7 +495,7 @@ export default function CategoriesPage() {
 
       {/* 3. Delete Confirmation Alert Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
+        <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-md rounded-2xl border-border p-6 shadow-2xl">
           <DialogHeader className="flex flex-col items-center text-center">
             <div className="p-3 bg-red-500/10 text-red-600 rounded-full mb-2">
               <AlertTriangle className="w-6 h-6" />

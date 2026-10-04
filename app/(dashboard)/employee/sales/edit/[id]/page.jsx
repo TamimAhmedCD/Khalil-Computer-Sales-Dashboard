@@ -726,7 +726,7 @@ export default function UpdateSalesForm({ onSuccess }) {
 
         {/* Confirmation Modal */}
         <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-          <AlertDialogContent className="w-[90%] max-w-100 rounded-2xl">
+          <AlertDialogContent className="w-full sm:max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle>Confirm Updates?</AlertDialogTitle>
               <AlertDialogDescription>
