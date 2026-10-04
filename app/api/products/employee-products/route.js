@@ -55,10 +55,13 @@ export async function GET(request) {
     // 6. Get total count for pagination
     const totalProducts = await db.collection("products").countDocuments(query);
 
-    // 7. Fetch categories for dropdown
+    // 7. Fetch only categories that have at least one active product
+    const usedCategoryIds = await db
+      .collection("products")
+      .distinct("categoryId", { isActive: true });
     const categories = await db
       .collection("categories")
-      .find({})
+      .find({ _id: { $in: usedCategoryIds } })
       .sort({ name: 1 })
       .toArray();
 

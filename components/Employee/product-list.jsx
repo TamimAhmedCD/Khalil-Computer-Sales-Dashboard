@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Search,
@@ -20,11 +21,11 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  LayoutGrid,
   ImageIcon,
   SlidersHorizontal,
   X,
+  AlertTriangle,
+  CircleDollarSign,
 } from "lucide-react";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
@@ -32,6 +33,7 @@ import { useEmployeeProducts } from "@/lib/hooks/products/useEmployeeProducts";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { FormattedText } from "@/components/ui/FormattedText";
+import { Badge } from "@/components/ui/badge";
 
 export function EmployeeProductList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +45,7 @@ export function EmployeeProductList() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoSwapping, setIsAutoSwapping] = useState(true);
+
   // Reset image index when product changes
   useEffect(() => {
     if (selectedProduct) {
@@ -65,8 +68,6 @@ export function EmployeeProductList() {
 
     return () => clearInterval(interval);
   }, [selectedProduct, isAutoSwapping]);
-
-  // Auto-swap product card images logic is handled within ProductCard component
 
   // Navigate to next image
   const nextImage = () => {
@@ -99,7 +100,7 @@ export function EmployeeProductList() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [stockFilter, sortBy]);
+  }, [category, stockFilter, sortBy]);
 
   const { data, isLoading, isError, error } = useEmployeeProducts({
     search: debouncedSearch,
@@ -113,7 +114,7 @@ export function EmployeeProductList() {
   const pagination = data?.data?.pagination || { totalPages: 1, currentPage: 1, totalResults: 0 };
 
   // Client-side filtering and sorting
-  const filteredAndSortedProducts = React.useMemo(() => {
+  const filteredAndSortedProducts = useMemo(() => {
     let filtered = [...products];
 
     // Apply stock filter
@@ -160,147 +161,160 @@ export function EmployeeProductList() {
     setCurrentPage(1);
   };
 
+  // Calculate low stock count
+  const lowStockCount = useMemo(() => {
+    return products.filter((p) => {
+      const stock = p.stock || 0;
+      const lowStockAlert = p.lowStockAlert || 5;
+      return stock <= lowStockAlert;
+    }).length;
+  }, [products]);
+
   return (
-    <div className="min-h-screen text-zinc-800 dark:text-zinc-100 py-8 transition-colors duration-200 relative">
-      {/* Background Ambient */}
-      <div className="absolute top-0 left-1/4 w-150 h-75 bg-zinc-200/40 dark:bg-zinc-800/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-100 h-100 bg-zinc-300/30 dark:bg-zinc-900/20 rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200 dark:border-zinc-800/60 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-zinc-900 via-zinc-700 to-zinc-500 dark:from-zinc-50 dark:via-zinc-200 dark:to-zinc-400 bg-clip-text text-transparent">
-              Product Inventory
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Browse available products, check stock levels, and view details.
-            </p>
-          </div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Product Inventory
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Browse available products, check stock levels, and view details.
+          </p>
         </div>
+      </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
-            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
-              <LayoutGrid className="h-10 w-10" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                Active Products
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-border/70 shadow-sm">
+          <CardContent className="flex items-start justify-between p-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Active products
               </p>
               {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-300 dark:bg-zinc-700 rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-muted rounded animate-pulse mt-2"></div>
               ) : (
-                <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
+                <p className="mt-2 text-2xl font-bold tracking-tight">
                   {summary.activeProducts}
                 </p>
               )}
+              <p className="mt-2 text-xs text-muted-foreground">Items in catalog</p>
             </div>
-          </Card>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
-            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
-              <Box className="h-10 w-10" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                Total Stock Units
+        <Card className="border-border/70 shadow-sm">
+          <CardContent className="flex items-start justify-between p-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Low / out of stock
               </p>
               {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-300 dark:bg-zinc-700 rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-muted rounded animate-pulse mt-2"></div>
               ) : (
-                <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
+                <p className={cn(
+                  "mt-2 text-2xl font-bold tracking-tight",
+                  lowStockCount > 0 && "text-amber-600 dark:text-amber-400"
+                )}>
+                  {lowStockCount}
+                </p>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                {lowStockCount > 0 ? "Needs restocking soon" : "All levels healthy"}
+              </p>
+            </div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 shadow-sm">
+          <CardContent className="flex items-start justify-between p-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total stock units
+              </p>
+              {isLoading ? (
+                <div className="h-8 w-16 bg-muted rounded animate-pulse mt-2"></div>
+              ) : (
+                <p className="mt-2 text-2xl font-bold tracking-tight">
                   {summary.totalStock.toLocaleString()}
                 </p>
               )}
+              <p className="mt-2 text-xs text-muted-foreground">Units in inventory</p>
             </div>
-          </Card>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
+              <Box className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="group bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-xl border border-zinc-200/80 dark:border-zinc-800/50 p-6 relative overflow-hidden transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:bg-white/80 dark:hover:bg-zinc-900/40 shadow-xs">
-            <div className="absolute right-3 top-3 text-zinc-300/50 dark:text-zinc-700/20">
-              <TrendingUp className="h-10 w-10" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400 uppercase">
-                Total Inventory Value
+        <Card className="border-border/70 shadow-sm">
+          <CardContent className="flex items-start justify-between p-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total inventory value
               </p>
               {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-300 dark:bg-zinc-700 rounded animate-pulse"></div>
+                <div className="h-8 w-16 bg-muted rounded animate-pulse mt-2"></div>
               ) : (
-                <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-mono bg-linear-to-r from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text">
+                <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                   ৳{summary.totalValue.toLocaleString()}
                 </p>
               )}
+              <p className="mt-2 text-xs text-muted-foreground">Stock × sale price</p>
             </div>
-          </Card>
-        </div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+              <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Filters */}
-        <div className="space-y-4 bg-white/40 dark:bg-zinc-900/20 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/40 p-4 rounded-xl shadow-xs">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {/* Filters */}
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="space-y-5 p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
               <div>
-                <h2 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Filters</h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Search and refine products</p>
+                <h2 className="font-semibold leading-none">Filters</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Search and refine your product list.
+                </p>
               </div>
             </div>
             {hasActiveFilters && (
               <Button
                 variant="ghost"
                 size="sm"
+                className="w-fit gap-2"
                 onClick={clearFilters}
-                className="h-8 text-xs"
               >
-                <X className="h-3.5 w-3.5 mr-1" />
+                <X className="h-3.5 w-3.5" />
                 Clear filters
               </Button>
             )}
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-              <Input
-                placeholder="Search by name, brand, or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white/70 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 pl-9 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-700 focus-visible:border-zinc-400 dark:focus-visible:border-zinc-700 h-9 text-xs rounded-lg transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
-              />
-            </div>
-            {/* Stock Filter Dropdown */}
-            <div className="w-full md:w-40">
-              <UnifiedSelect
-                value={stockFilter}
-                onChange={setStockFilter}
-                searchable={false}
-                items={[
-                  { id: "all", name: "All Stock" },
-                  { id: "in", name: "In Stock" },
-                  { id: "low", name: "Low Stock" },
-                  { id: "out", name: "Out of Stock" },
-                ]}
-                placeholder="All Stock"
-              />
-            </div>
-            {/* Sort By Dropdown */}
-            <div className="w-full md:w-40">
-              <UnifiedSelect
-                value={sortBy}
-                onChange={setSortBy}
-                searchable={false}
-                items={[
-                  { id: "name", name: "Name (A-Z)" },
-                  { id: "price", name: "Price (High to Low)" },
-                  { id: "stock", name: "Stock (High to Low)" },
-                  { id: "profit", name: "Profit (High to Low)" },
-                ]}
-                placeholder="Sort by"
-              />
-            </div>
-            {/* Reusable Category Dropdown with Search */}
-            <div className="w-full md:w-48">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, brand, or description…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Category</label>
               <CategorySelect
                 value={category}
                 onChange={(val) => {
@@ -309,124 +323,182 @@ export function EmployeeProductList() {
                 }}
                 categories={categories}
                 includeAllCategories={true}
-                allCategoriesLabel="All Categories"
-                placeholder="All Categories"
+                allCategoriesLabel="All categories"
+                placeholder="All categories"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Stock</label>
+              <UnifiedSelect
+                value={stockFilter}
+                onChange={setStockFilter}
+                searchable={false}
+                items={[
+                  { id: "all", name: "All stock" },
+                  { id: "in", name: "In stock" },
+                  { id: "low", name: "Low stock" },
+                  { id: "out", name: "Out of stock" },
+                ]}
+                placeholder="All stock"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sort by</label>
+              <UnifiedSelect
+                value={sortBy}
+                onChange={setSortBy}
+                searchable={false}
+                items={[
+                  { id: "name", name: "Name (A–Z)" },
+                  { id: "price", name: "Price (high → low)" },
+                  { id: "stock", name: "Stock (high → low)" },
+                  { id: "profit", name: "Profit (high → low)" },
+                ]}
+                placeholder="Name"
               />
             </div>
           </div>
-        </div>
 
-        {/* Products Grid */}
-        <div className="space-y-4">
-          {isError ? (
-            <div className="p-8 rounded-2xl bg-card border border-border/60 text-center space-y-2 shadow-sm">
-              <AlertCircle className="h-6 w-6 text-muted-foreground mx-auto" />
-              <p className="text-sm font-semibold text-foreground">Error Loading Products</p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                {error ? error.message : "Could not fetch product data."}
-              </p>
-            </div>
-          ) : isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-80 bg-muted animate-pulse rounded-2xl" />
-              ))}
-            </div>
-          ) : filteredAndSortedProducts.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="font-medium text-sm text-foreground mb-0.5">No Products Found</p>
-              <p className="text-xs text-muted-foreground">
-                {hasActiveFilters
-                  ? "No products match your current filters."
-                  : "There are currently no products available."}
-              </p>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{filteredAndSortedProducts.length}</span>{" "}
+            product{filteredAndSortedProducts.length !== 1 ? "s" : ""} found
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Products Grid */}
+      <div className="space-y-4">
+        {isError ? (
+          <Card className="border-destructive/40">
+            <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-destructive">Failed to load products</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {error ? error.message : "Could not fetch product data."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="h-80 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : filteredAndSortedProducts.length === 0 ? (
+          <Card className="border-border/70 shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Package className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold">No products found</h3>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "No products match your current filters."
+                    : "There are currently no products available."}
+                </p>
+              </div>
               {hasActiveFilters && (
-                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-3">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
                   Clear filters
                 </Button>
               )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredAndSortedProducts.map((product) => (
-                <ProductCard
-                  key={product._id}
-                  product={product}
-                  onClick={() => setSelectedProduct(product)}
-                />
-              ))}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredAndSortedProducts.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+                onClick={() => setSelectedProduct(product)}
+              />
+            ))}
+          </div>
+        )}
 
-          {/* Pagination */}
-          {!isLoading && filteredAndSortedProducts.length > 0 && (
-            <div className="px-2 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-xs text-muted-foreground">
-                Showing <span className="text-foreground font-medium font-mono">{filteredAndSortedProducts.length}</span> of <span className="text-foreground font-medium font-mono">{pagination.totalResults}</span> products
-                {hasActiveFilters && <span className="ml-1">(filtered)</span>}
-              </div>
-              <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="h-7 text-xs border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-3 w-3 mr-1" /> Prev
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
-                  disabled={currentPage === pagination.totalPages}
-                  className="h-7 text-xs border-border bg-card text-muted-foreground hover:bg-muted disabled:opacity-40"
-                >
-                  Next <ChevronRight className="h-3 w-3 ml-1" />
-                </Button>
-              </div>
+        {/* Pagination */}
+        {!isLoading && filteredAndSortedProducts.length > 0 && (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing <span className="text-foreground font-medium">{filteredAndSortedProducts.length}</span> of <span className="text-foreground font-medium">{pagination.totalResults}</span> products
+              {hasActiveFilters && <span className="ml-1">(filtered)</span>}
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={currentPage === pagination.totalPages}
+                className="gap-2"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
-        {/* Product Details Modal - Mobile Responsive with Image Carousel */}
-        <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
-          <DialogContent
-            className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-2xl lg:max-w-4xl p-0 gap-0 overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col"
-            showCloseButton={false}
-          >
-            <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <DialogTitle className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Product Details
-                  </DialogTitle>
-                  {selectedProduct && (
-                    <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 truncate">
-                      SKU: {selectedProduct._id.slice(-8).toUpperCase()}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedProduct(null)}
-                  className="h-8 w-8 rounded-full flex-shrink-0 ml-2"
-                >
-                  ✕
-                </Button>
+      {/* Product Details Modal */}
+      <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
+        <DialogContent className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          {selectedProduct && (
+            <>
+              {/* Sticky header */}
+              <div className="flex-none border-b px-6 py-4">
+                <DialogHeader>
+                  <div className="flex items-start justify-between gap-4 pr-6">
+                    <div className="min-w-0">
+                      <DialogTitle className="truncate text-lg">
+                        {selectedProduct.name}
+                      </DialogTitle>
+                      <DialogDescription className="mt-0.5">
+                        {selectedProduct.categoryName || "Uncategorized"}
+                        {selectedProduct.brand ? ` · ${selectedProduct.brand}` : ""}
+                      </DialogDescription>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "shrink-0",
+                        selectedProduct.stock <= 0
+                          ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-transparent"
+                          : selectedProduct.stock <= (selectedProduct.lowStockAlert || 5)
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-transparent"
+                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-transparent"
+                      )}
+                    >
+                      {selectedProduct.stock <= 0
+                        ? "Out of Stock"
+                        : selectedProduct.stock <= (selectedProduct.lowStockAlert || 5)
+                        ? "Low Stock"
+                        : "In Stock"}
+                    </Badge>
+                  </div>
+                </DialogHeader>
               </div>
-            </DialogHeader>
 
-            {selectedProduct && (
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
-                <div className="space-y-4 sm:space-y-5">
-                  {/* Product Images Carousel with Framer Motion - Right to Left Slide */}
+              {/* Scrollable body */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                <div className="space-y-5">
+                  {/* Product Images Carousel */}
                   {selectedProduct.images && selectedProduct.images.length > 0 && (
                     <div className="relative">
-                      {/* Main Image Display - Full Width with Slide Animation - Responsive Height */}
-                      <div className="relative w-full h-48 sm:h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/40">
+                      <div className="relative w-full aspect-video overflow-hidden rounded-lg border bg-muted">
                         <AnimatePresence mode="wait">
                           {selectedProduct.images.map((img, idx) => (
                             currentImageIndex === idx && (
@@ -456,7 +528,7 @@ export function EmployeeProductList() {
                                   alt={`${selectedProduct.name} - Image ${idx + 1}`}
                                   fill
                                   className="object-cover"
-                                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 600px, 900px"
+                                  sizes="600px"
                                   priority={idx === 0}
                                 />
                               </motion.div>
@@ -464,35 +536,35 @@ export function EmployeeProductList() {
                           ))}
                         </AnimatePresence>
 
-                        {/* Navigation arrows - only show if multiple images */}
+                        {/* Navigation arrows */}
                         {selectedProduct.images.length > 1 && (
                           <>
                             <Button
-                              variant="ghost"
+                              variant="secondary"
                               size="icon"
                               onClick={prevImage}
-                              className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-white/95 dark:bg-zinc-900/95 hover:bg-white dark:hover:bg-zinc-900 shadow-lg border border-zinc-200 dark:border-zinc-800 z-10"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full shadow-lg"
                             >
-                              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                              <ChevronLeft className="h-5 w-5" />
                             </Button>
                             <Button
-                              variant="ghost"
+                              variant="secondary"
                               size="icon"
                               onClick={nextImage}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-white/95 dark:bg-zinc-900/95 hover:bg-white dark:hover:bg-zinc-900 shadow-lg border border-zinc-200 dark:border-zinc-800 z-10"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full shadow-lg"
                             >
-                              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                              <ChevronRight className="h-5 w-5" />
                             </Button>
 
-                            {/* Image counter and auto-swap indicator */}
+                            {/* Image counter */}
                             <div className="absolute bottom-3 right-3 flex items-center gap-2">
                               <button
                                 onClick={() => setIsAutoSwapping(!isAutoSwapping)}
-                                className="rounded-full bg-black/70 dark:bg-white/25 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/80 dark:hover:bg-white/30 transition-colors"
+                                className="rounded-full bg-black/70 dark:bg-white/20 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/80 dark:hover:bg-white/30 transition-colors"
                               >
                                 {isAutoSwapping ? "⏸ Pause" : "▶ Auto"}
                               </button>
-                              <div className="rounded-full bg-black/70 dark:bg-white/25 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+                              <div className="rounded-full bg-black/70 dark:bg-white/20 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
                                 {currentImageIndex + 1} / {selectedProduct.images.length}
                               </div>
                             </div>
@@ -500,9 +572,9 @@ export function EmployeeProductList() {
                         )}
                       </div>
 
-                      {/* Thumbnail Navigation - only show if multiple images */}
+                      {/* Thumbnail Navigation */}
                       {selectedProduct.images.length > 1 && (
-                        <div className="mt-3 flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                        <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
                           {selectedProduct.images.map((img, idx) => (
                             <button
                               key={idx}
@@ -511,10 +583,10 @@ export function EmployeeProductList() {
                                 setIsAutoSwapping(false);
                               }}
                               className={cn(
-                                "relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-300",
+                                "relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all",
                                 currentImageIndex === idx
-                                  ? "border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900/20 dark:ring-zinc-100/20 scale-105"
-                                  : "border-zinc-200 dark:border-zinc-800 opacity-60 hover:opacity-100 hover:scale-105"
+                                  ? "border-primary ring-2 ring-primary/20 scale-105"
+                                  : "border-border opacity-60 hover:opacity-100 hover:scale-105"
                               )}
                             >
                               <Image
@@ -531,95 +603,84 @@ export function EmployeeProductList() {
                     </div>
                   )}
 
-                  {/* Product name and brand */}
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-black text-zinc-900 dark:text-zinc-100">
-                      {selectedProduct.name}
-                    </h3>
-                    {selectedProduct.brand && (
-                      <p className="mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        by {selectedProduct.brand}
-                      </p>
-                    )}
-                  </div>
-
                   {/* Description */}
                   {selectedProduct.description && (
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                    <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Description
                       </p>
-                      <div className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                      <div className="text-sm leading-relaxed text-foreground">
                         <FormattedText text={selectedProduct.description} />
                       </div>
                     </div>
                   )}
 
-                  {/* Pricing grid - responsive */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        Buy Price
+                  {/* Pricing grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Buy price
                       </p>
-                      <p className="font-mono text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
+                      <p className="mt-1 text-base font-bold">
                         ৳{selectedProduct.buyRate?.toLocaleString() || 0}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        Expense / Unit
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Expense / unit
                       </p>
-                      <p className="font-mono text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
+                      <p className="mt-1 text-base font-bold">
                         ৳{selectedProduct.expense?.toLocaleString() || 0}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        Sale Price
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Sale price
                       </p>
-                      <p className="font-mono text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
+                      <p className="mt-1 text-base font-bold">
                         ৳{selectedProduct.saleRate.toLocaleString()}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        Stock Level
+                    <div className="rounded-lg border bg-muted/30 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Stock level
                       </p>
                       <p
-                        className={`font-mono text-base sm:text-lg font-black ${
+                        className={cn(
+                          "mt-1 text-base font-bold",
                           selectedProduct.stock <= (selectedProduct.lowStockAlert || 5)
                             ? "text-red-600 dark:text-red-500"
-                            : "text-zinc-900 dark:text-zinc-100"
-                        }`}
+                            : ""
+                        )}
                       >
                         {selectedProduct.stock} {selectedProduct.unit || "pcs"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Category tag */}
-                  <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 dark:border-zinc-800/60 dark:bg-zinc-950/40">
-                    <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-zinc-400" />
+                  {/* Category */}
+                  <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-4">
+                    <Tag className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                      <p className="text-xs font-medium text-muted-foreground">
                         Category
                       </p>
-                      <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                      <p className="text-sm font-bold">
                         {selectedProduct.categoryName || "Uncategorized"}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// Product Card Component with Auto-Swapping Images and Framer Motion Animations
+// Product Card Component
 function ProductCard({ product, onClick }) {
   const [imageIndex, setImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -636,6 +697,9 @@ function ProductCard({ product, onClick }) {
     return () => clearInterval(interval);
   }, [images.length]);
 
+  const isLowStock = product.stock <= (product.lowStockAlert || 5);
+  const isOutOfStock = product.stock <= 0;
+
   return (
     <motion.div
       whileHover={{ scale: 1.02, y: -4 }}
@@ -645,10 +709,10 @@ function ProductCard({ product, onClick }) {
     >
       <Card
         onClick={onClick}
-        className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl border-zinc-200/80 dark:border-zinc-800/50 rounded-2xl relative overflow-hidden shadow-sm cursor-pointer"
+        className="border-border/70 shadow-sm rounded-lg overflow-hidden cursor-pointer"
       >
-        {/* Product Image Carousel with Framer Motion */}
-        <div className="relative w-full h-48 bg-zinc-100 dark:bg-zinc-800/40 rounded-t-2xl overflow-hidden">
+        {/* Product Image */}
+        <div className="relative w-full h-48 bg-muted">
           {images.length > 0 ? (
             <div className="relative w-full h-full">
               <AnimatePresence mode="wait">
@@ -679,7 +743,7 @@ function ProductCard({ product, onClick }) {
                         alt={`${product.name} - Image ${idx + 1}`}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
                     </motion.div>
                   )
@@ -688,95 +752,73 @@ function ProductCard({ product, onClick }) {
 
               {/* Image counter */}
               {images.length > 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute bottom-2 right-2 rounded-full bg-black/70 dark:bg-white/30 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
-                >
+                <div className="absolute bottom-2 right-2 rounded-full bg-black/70 dark:bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
                   {imageIndex + 1} / {images.length}
-                </motion.div>
-              )}
-
-              {/* Next image indicator */}
-              {images.length > 1 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute top-2 right-2"
-                >
-                  <div className="flex space-x-1">
-                    {images.map((_, idx) => (
-                      <motion.div
-                        key={idx}
-                        animate={{
-                          scale: imageIndex === idx ? 1.2 : 1,
-                          backgroundColor: imageIndex === idx
-                            ? "rgba(0, 0, 0, 0.8)"
-                            : "rgba(0, 0, 0, 0.3)"
-                        }}
-                        transition={{ duration: 0.3 }}
-                        className="w-1.5 h-1.5 rounded-full"
-                      />
-                    ))}
-                  </div>
-                </motion.div>
+                </div>
               )}
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <ImageIcon className="h-16 w-16 text-zinc-300 dark:text-zinc-600" />
+              <ImageIcon className="h-16 w-16 text-muted-foreground/30" />
             </div>
           )}
         </div>
 
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-4">
-          <div className="space-y-1 flex-1 pr-4">
-            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
-              {product.name}
-            </h3>
-            <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              {product.brand || "No Brand"}
-            </p>
+        <CardContent className="p-5">
+          <div className="flex justify-between items-start mb-4">
+            <div className="space-y-1 flex-1 pr-4 min-w-0">
+              <h3 className="font-bold text-sm truncate">
+                {product.name}
+              </h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {product.brand || "No Brand"}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-xs font-medium text-muted-foreground">
+                Price
+              </p>
+              <p className="text-base font-bold">
+                ৳{product.saleRate.toLocaleString()}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">
-              Price
-            </p>
-            <p className="text-base font-black text-zinc-900 dark:text-zinc-100 font-mono">
-              ৳{product.saleRate.toLocaleString()}
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800 p-3 rounded-xl mb-4">
-          <div className="flex items-center gap-2">
-            <Tag className="h-3.5 w-3.5 text-zinc-400" />
-            <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-              {product.categoryName || "Uncategorized"}
-            </span>
+          <div className="flex items-center justify-between bg-muted p-3 rounded-lg mb-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs font-semibold text-muted-foreground truncate">
+                {product.categoryName || "Uncategorized"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Box className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className={cn(
+                "text-xs font-bold",
+                isOutOfStock
+                  ? "text-red-600 dark:text-red-500"
+                  : isLowStock
+                  ? "text-amber-600 dark:text-amber-400"
+                  : ""
+              )}>
+                {product.stock} {product.unit || "pcs"}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Box className="h-3.5 w-3.5 text-zinc-400" />
-            <span className={`text-[11px] font-bold font-mono ${product.stock <= (product.lowStockAlert || 5) ? "text-red-600 dark:text-red-500" : "text-zinc-900 dark:text-zinc-100"}`}>
-              {product.stock} {product.unit || "pcs"}
-            </span>
-          </div>
-        </div>
 
-        <div className="flex justify-between items-center pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono line-clamp-1">
-            ID: {product._id.slice(-6).toUpperCase()}
-          </p>
-          <motion.div
-            whileHover={{ x: 4 }}
-            className="h-7 w-7 flex items-center justify-center text-zinc-400"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </motion.div>
-        </div>
-      </div>
-    </Card>
+          <div className="flex justify-between items-center pt-3 border-t">
+            <p className="text-xs text-muted-foreground truncate">
+              ID: {product._id.slice(-6).toUpperCase()}
+            </p>
+            <motion.div
+              whileHover={{ x: 4 }}
+              className="h-7 w-7 flex items-center justify-center text-muted-foreground"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </motion.div>
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }
