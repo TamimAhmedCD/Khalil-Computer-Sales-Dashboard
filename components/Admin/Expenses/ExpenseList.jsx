@@ -201,10 +201,17 @@ export function ExpenseList() {
     queryClient.invalidateQueries({ queryKey: ["expenses"] });
   };
 
-  // Fetch expenses
+  // Fetch expenses (excludeSales: true to only show manually added expenses)
   const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ["expenses", { dateFilter, search: debouncedSearch, category: categoryFilter, scope: scopeFilter, page: currentPage }],
-    queryFn: () => getExpenses({ dateFilter, search: debouncedSearch, category: categoryFilter, scope: scopeFilter, page: currentPage }),
+    queryFn: () => getExpenses({
+      dateFilter,
+      search: debouncedSearch,
+      category: categoryFilter,
+      scope: scopeFilter,
+      page: currentPage,
+      excludeSales: true
+    }),
     staleTime: 30000,
   });
 
@@ -356,7 +363,7 @@ export function ExpenseList() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Expense Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Track all expenses — shop, household, personal, and sales-related
+            Track your business, household, and personal expenses
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -489,6 +496,38 @@ export function ExpenseList() {
         </CardContent>
       </Card>
 
+      {/* ===================== ACTIVE FILTERS ===================== */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-medium text-muted-foreground">Active filters:</span>
+          {dateFilter !== "today" && (
+            <Badge variant="secondary" className="text-xs font-medium">
+              {dateFilter === "yesterday" ? "Yesterday" :
+               dateFilter === "week" ? "This Week" :
+               dateFilter === "month" ? "This Month" :
+               dateFilter === "last-month" ? "Last Month" :
+               dateFilter === "year" ? "This Year" :
+               dateFilter === "all" ? "All Time" : dateFilter}
+            </Badge>
+          )}
+          {categoryFilter !== "all" && categories.find(c => c._id === categoryFilter) && (
+            <Badge variant="secondary" className="text-xs font-medium">
+              Category: {categories.find(c => c._id === categoryFilter)?.name}
+            </Badge>
+          )}
+          {scopeFilter !== "all" && (
+            <Badge variant="secondary" className="text-xs font-medium">
+              Scope: {scopeFilter}
+            </Badge>
+          )}
+          {searchTerm && (
+            <Badge variant="secondary" className="text-xs font-medium">
+              Search: "{searchTerm}"
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* ===================== KPIs ===================== */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -496,39 +535,35 @@ export function ExpenseList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {/* Card 1 — Filtered Total */}
+          {/* Card 1 — Current View Total */}
           <KpiCard
-            title="Filtered Total"
+            title="Current View"
             value={formatCurrency(summary.filteredTotal ?? 0)}
-            description={`${summary.filteredCount ?? 0} record${(summary.filteredCount ?? 0) !== 1 ? "s" : ""} in filtered period`}
+            description={`${summary.filteredCount ?? 0} expense${(summary.filteredCount ?? 0) !== 1 ? "s" : ""} shown`}
             icon={CircleDollarSign}
           />
-          {/* Card 2 — Today (filtered to today only if dateFilter is "today", otherwise shows static today's total) */}
+          {/* Card 2 — Today's Expenses (manual only) */}
           <KpiCard
-            title={dateFilter === "today" ? "Today (Filtered)" : "Today"}
-            value={formatCurrency(dateFilter === "today" ? (summary.filteredTotal ?? 0) : (summary.todayTotal || 0))}
-            description={dateFilter === "today" ? "Filtered expenses for today" : "Today's expenses (all categories)"}
+            title="Today"
+            value={formatCurrency(summary.todayTotal || 0)}
+            description="Today's manual expenses"
             icon={Receipt}
             iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
             valueClassName="text-emerald-600 dark:text-emerald-400"
           />
-          {/* Card 3 — This Month (filtered to month only if dateFilter is "month", otherwise shows static month's total) */}
+          {/* Card 3 — This Month's Expenses (manual only) */}
           <KpiCard
-            title={dateFilter === "month" ? "This Month (Filtered)" : "This Month"}
-            value={formatCurrency(dateFilter === "month" ? (summary.filteredTotal ?? 0) : (summary.monthTotal || 0))}
-            description={dateFilter === "month" ? "Filtered expenses for this month" : "This month's expenses (all categories)"}
+            title="This Month"
+            value={formatCurrency(summary.monthTotal || 0)}
+            description="This month's manual expenses"
             icon={TrendingUp}
             iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
           />
-          {/* Card 4 — Transactions (filtered count) */}
+          {/* Card 4 — Total Records */}
           <KpiCard
-            title="Transactions"
+            title="Total Records"
             value={formatNumber(summary.filteredCount ?? 0)}
-            description={
-              dateFilter !== "all" || scopeFilter !== "all" || categoryFilter !== "all"
-                ? "Matching records"
-                : "Total expense records"
-            }
+            description="Expense records"
             icon={Wallet}
             iconClassName="bg-violet-500/10 text-violet-600 dark:text-violet-400"
           />

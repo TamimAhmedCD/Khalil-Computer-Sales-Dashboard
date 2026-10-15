@@ -110,26 +110,23 @@ export function CategorySelect({
       const inButton = buttonRef.current?.contains(e.target);
       const inDropdown = e.target.closest("[data-category-select-portal]");
 
-      // If clicking on the button itself, don't close - handleToggle will handle it
-      if (inButton) {
-        // Let the button click handle opening/closing
+      // Only keep dropdown open if clicking on button or inside dropdown
+      if (inButton || inDropdown) {
+        // Also check if clicking on interactive elements inside dropdown
+        const isInteractive = e.target.tagName === "INPUT" ||
+                              e.target.tagName === "TEXTAREA" ||
+                              e.target.tagName === "SELECT" ||
+                              e.target.closest("button") !== null ||
+                              e.target.closest("a") !== null;
+
+        if (isInteractive) {
+          return;
+        }
         return;
       }
 
-      // Check if click is inside a dialog/modal content area
-      // This prevents dropdown from closing when clicking inside dialog content
-      const inDialogContent = e.target.closest("[data-slot='dialog-content'], [data-slot='alert-dialog-content'], [role='dialog']");
-
-      // If clicking inside a dialog content area, don't close dropdown
-      // This allows users to click other inputs in the form without closing the category select
-      if (inDialogContent) {
-        return;
-      }
-
-      // Only close if clicking outside everything (button, dropdown, and dialog)
-      if (!inButton && !inDropdown && !inDialogContent) {
-        handleClose();
-      }
+      // Otherwise, close the dropdown
+      handleClose();
     };
 
     // Use a small delay to ensure button click handlers run first
@@ -244,6 +241,8 @@ export function CategorySelect({
                   className="w-full rounded-sm border border-input bg-background py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                 />
               </div>
             </div>

@@ -163,7 +163,7 @@ export function ExpenseForm({
           </div>
           <DialogDescription>
             {mode === "create"
-              ? "Add a new expense to your ledger."
+              ? "Record a business, household, or personal expense."
               : "Update this expense record."}
           </DialogDescription>
         </DialogHeader>

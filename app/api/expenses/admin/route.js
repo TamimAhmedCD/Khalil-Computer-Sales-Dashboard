@@ -170,6 +170,7 @@ export async function GET(request) {
     const customEndDate = searchParams.get("customEndDate");
     const page = parseInt(searchParams.get("page")) || 1;
     const skip = (page - 1) * ITEMS_PER_PAGE;
+    const excludeSales = searchParams.get("excludeSales") === "true";
 
     // Date range
     const dateRange = getDateRange(dateFilter, customStartDate, customEndDate);
@@ -214,7 +215,7 @@ export async function GET(request) {
     }
 
     // Execute parallel queries with projections
-    const fetchSales = !skipSales && salesQuery._id !== null;
+    const fetchSales = !skipSales && salesQuery._id !== null && !excludeSales;
 
     const [manualExpenses, salesRecords] = await Promise.all([
       db.collection("expenses")
