@@ -2,9 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { generateInvoicePDF } from "@/lib/invoice/pdfGenerator";
+import QRCode from "qrcode";
 
 // =========================================================
 // Invoice Template — Professional A4 Print-Ready Layout
@@ -12,6 +13,7 @@ import { generateInvoicePDF } from "@/lib/invoice/pdfGenerator";
 
 export default function InvoiceTemplate({ invoice, mode = "view" }) {
   const printRef = useRef(null);
+  const [qrUrl, setQrUrl] = useState("data:image/svg+xml;base64,");
 
   if (!invoice) return null;
 
@@ -22,6 +24,14 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
   const paidAmount = Number(invoice.paidAmount) || 0;
   const dueAmount = Number(invoice.dueAmount) || 0;
   const items = invoice.items || [];
+
+  // ---- QR Code: verification URL ----
+  useEffect(() => {
+    const verifyUrl = `https://khalilcomputer.com/verify/invoice/${invoice.invoiceNumber}`;
+    QRCode.toDataURL(verifyUrl, { width: 120, margin: 1, color: { dark: "#003E7E", light: "#fff" } })
+      .then((url) => setQrUrl(url))
+      .catch((err) => console.error("QR generation failed:", err));
+  }, [invoice.invoiceNumber]);
 
   // ---- Print via hidden iframe (keeps app UI untouched) ----
   const handlePrint = () => {
@@ -100,9 +110,18 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
 
   /* ---- status stamp ---- */
   .status-stamp { text-align: center; margin: 20px 0; }
+  .qr-block { text-align: center; margin: 16px 0; padding: 16px 0; border-top: 1px dashed #d1d5db; border-bottom: 1px dashed #d1d5db; }
+  .qr-block img { width: 100px; height: 100px; object-fit: contain; }
+  .qr-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; font-weight: 700; margin-bottom: 8px; }
+  .qr-sub { font-size: 10px; color: #9ca3af; margin-top: 4px; }
   .stamp { display: inline-block; padding: 6px 24px; border: 2px solid; border-radius: 6px; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
   .stamp.paid { border-color: #16a34a; color: #16a34a; }
   .stamp.due  { border-color: #dc2626; color: #dc2626; }
+
+  .qr-block { text-align: center; margin: 16px 0; padding: 16px 0; border-top: 1px dashed #d1d5db; border-bottom: 1px dashed #d1d5db; }
+  .qr-block img { width: 100px; height: 100px; object-fit: contain; }
+  .qr-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; font-weight: 700; margin-bottom: 8px; }
+  .qr-sub { font-size: 10px; color: #9ca3af; margin-top: 4px; }
 
   /* ---- footer ---- */
   .inv-footer { border-top: 1px solid #e5e7eb; padding-top: 16px; display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af; }
@@ -344,6 +363,17 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
           }}>
             {dueAmount === 0 ? "PAID IN FULL" : `DUE: ${tk(dueAmount)}`}
           </span>
+        </div>
+
+        {/* ==================== QR CODE ==================== */}
+        <div style={{ textAlign: "center", margin: "16px 0", padding: "16px 0", borderTop: "1px dashed #d1d5db", borderBottom: "1px dashed #d1d5db" }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1, color: "#9ca3af", fontWeight: 700, marginBottom: 8 }}>
+            Verify Invoice
+          </div>
+          <img src={qrUrl} alt="Invoice QR" style={{ width: 100, height: 100, objectFit: "contain" }} />
+          <p style={{ fontSize: 10, color: "#9ca3af", marginTop: 4 }}>
+            Scan to verify: khalilcomputer.com/verify/invoice/{invoice.invoiceNumber}
+          </p>
         </div>
 
         {/* ==================== FOOTER ==================== */}
