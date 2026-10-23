@@ -1,0 +1,318 @@
+<title>Customer Data Debug</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #ffffff;
+    --surface: #f9fafb;
+    --text: #111827;
+    --text-secondary: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --text: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --border: #334155;
+        --accent: #3b82f6;
+        --success: #22c55e;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --border: #334155;
+    --accent: #3b82f6;
+    --success: #22c55e;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    color-scheme: dark;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+h1 {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+.section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+.input-group {
+    margin-bottom: 16px;
+}
+label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+input, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+}
+button {
+    padding: 10px 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+}
+button:hover {
+    opacity: 0.9;
+}
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.result {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    min-width: 0;
+}
+.result pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 13px;
+    font-family: 'SF Mono', Monaco, monospace;
+    overflow-x: auto;
+}
+.status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+.status.success { background: #dcfce7; color: #166534; }
+.status.error { background: #fee2e2; color: #991b1b; }
+.status.warning { background: #fef3c7; color: #92400e; }
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+}
+</style>
+
+<div class="header">
+    <h1>Customer Data Debug Tool</h1>
+    <div class="subtitle">Diagnose customer management issues</div>
+</div>
+
+<div class="section">
+    <div class="section-title">1. Test Customer Dashboard API</div>
+    <button onclick="testDashboard()">Test Dashboard</button>
+    <div id="dashboard-result"></div>
+</div>
+
+<div class="section">
+    <div class="section-title">2. Test Customer List API</div>
+    <div class="input-group">
+        <label>Search (optional)</label>
+        <input type="text" id="list-search" placeholder="Search by name or phone">
+    </div>
+    <button onclick="testList()">Test Customer List</button>
+    <div id="list-result"></div>
+</div>
+
+<div class="section">
+    <div class="section-title">3. Test Customer Detail API</div>
+    <div class="input-group">
+        <label>Customer Phone Number</label>
+        <input type="text" id="detail-phone" placeholder="Enter phone number from list above">
+    </div>
+    <button onclick="testDetail()">Test Customer Detail</button>
+    <div id="detail-result"></div>
+</div>
+
+<div class="section">
+    <div class="section-title">4. Quick Fixes</div>
+    <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+        Common solutions to customer detail issues
+    </p>
+    <div class="result">
+        <strong>If "Customer not found":</strong>
+        <ol style="margin-left: 20px; margin-top: 8px; font-size: 14px;">
+            <li>Check that sales have customerPhone field populated</li>
+            <li>Verify phone format matches exactly (no spaces/dashes)</li>
+            <li>Run Test Customer List to see available phones</li>
+            <li>Copy a phone from list and test in Customer Detail</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+async function testDashboard() {
+    const resultDiv = document.getElementById('dashboard-result');
+    resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+
+    try {
+        const response = await fetch('/api/admin/customers/dashboard');
+        const data = await response.json();
+
+        resultDiv.innerHTML = `
+            <div class="status ${response.ok ? 'success' : 'error'}">
+                ${response.ok ? 'Success' : 'Error'} - Status ${response.status}
+            </div>
+            <div class="result">
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+        `;
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="status error">Error</div>
+            <div class="result">
+                <pre>${error.message}</pre>
+            </div>
+        `;
+    }
+}
+
+async function testList() {
+    const resultDiv = document.getElementById('list-result');
+    const search = document.getElementById('list-search').value;
+    resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+
+    try {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        params.append('limit', '5');
+
+        const response = await fetch(`/api/admin/customers?${params.toString()}`);
+        const data = await response.json();
+
+        let html = `
+            <div class="status ${response.ok ? 'success' : 'error'}">
+                ${response.ok ? 'Success' : 'Error'} - Status ${response.status}
+            </div>
+            <div class="result">
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+        `;
+
+        if (response.ok && data.data?.customers?.length > 0) {
+            html += '<div style="margin-top: 16px; font-size: 14px;"><strong>Available phones:</strong><ul style="margin-left: 20px; margin-top: 8px;">';
+            data.data.customers.forEach(c => {
+                html += `<li><code style="cursor: pointer; color: var(--accent);" onclick="document.getElementById('detail-phone').value='${c.customerPhone}'">${c.customerPhone}</code> - ${c.customerName}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        resultDiv.innerHTML = html;
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="status error">Error</div>
+            <div class="result">
+                <pre>${error.message}</pre>
+            </div>
+        `;
+    }
+}
+
+async function testDetail() {
+    const resultDiv = document.getElementById('detail-result');
+    const phone = document.getElementById('detail-phone').value.trim();
+
+    if (!phone) {
+        resultDiv.innerHTML = `
+            <div class="status warning">Please enter a phone number</div>
+        `;
+        return;
+    }
+
+    resultDiv.innerHTML = '<div class="loading">Testing...</div>';
+
+    try {
+        const response = await fetch(`/api/admin/customers/${encodeURIComponent(phone)}`);
+        const data = await response.json();
+
+        resultDiv.innerHTML = `
+            <div class="status ${response.ok ? 'success' : 'error'}">
+                ${response.ok ? 'Success' : 'Error'} - Status ${response.status}
+            </div>
+            <div class="result">
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+        `;
+
+        if (!response.ok && response.status === 404) {
+            resultDiv.innerHTML += `
+                <div style="margin-top: 16px; padding: 12px; background: var(--surface); border-radius: 8px; font-size: 14px;">
+                    <strong>Troubleshooting:</strong>
+                    <ul style="margin-left: 20px; margin-top: 8px;">
+                        <li>This phone number has no sales records</li>
+                        <li>Check if sales collection has this customerPhone value</li>
+                        <li>Verify phone format matches exactly (check for spaces, dashes, or country codes)</li>
+                        <li>Try clicking a phone from the customer list test above</li>
+                    </ul>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="status error">Error</div>
+            <div class="result">
+                <pre>${error.message}</pre>
+            </div>
+        `;
+    }
+}
+
+// Auto-test on load
+window.addEventListener('load', () => {
+    testDashboard();
+});
+</script>

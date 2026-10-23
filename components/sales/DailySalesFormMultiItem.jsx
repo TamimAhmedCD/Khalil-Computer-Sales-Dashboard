@@ -94,6 +94,24 @@ const formSchema = z.object({
     .number({ invalid_type_error: "Paid amount is required" })
     .min(0, "Amount cannot be negative"),
   note: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // If payment method is "Due", customer name and phone are required
+  if (data.paymentMethod === "Due") {
+    if (!data.customerName || data.customerName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["customerName"],
+        message: "Customer name is required for due sales",
+      });
+    }
+    if (!data.customerPhone || data.customerPhone.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["customerPhone"],
+        message: "Phone number is required for due sales",
+      });
+    }
+  }
 });
 
 const PAYMENT_METHODS = ["Cash", "bKash", "Nagad", "Bank", "Due"];

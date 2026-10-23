@@ -293,6 +293,36 @@ export async function POST(req) {
     }
 
     // =========================================================
+    // 🛡️ Server-side validation: Customer info required for due sales
+    // =========================================================
+    const dueAmount = Math.max(total - paidAmount, 0);
+
+    if (dueAmount > 0) {
+      const trimmedName = customerName?.trim();
+      const trimmedPhone = customerPhone?.trim();
+
+      if (!trimmedName || trimmedName.length < 2) {
+        return Response.json(
+          {
+            success: false,
+            message: "Customer name is required for sales with due amount. Please provide customer name (minimum 2 characters).",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (!trimmedPhone || trimmedPhone.length < 11) {
+        return Response.json(
+          {
+            success: false,
+            message: "Valid phone number is required for sales with due amount. Please provide customer phone (minimum 11 digits).",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // =========================================================
     // 🧾 5. DAILY INVOICE COUNTER
     // Format: INV-YYYYMMDD-00001
     // Example: INV-20260819-00001

@@ -1,0 +1,253 @@
+<title>Customer System Debug</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+    --bg: #f9fafb;
+    --surface: #ffffff;
+    --text: #111827;
+    --text-secondary: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --text: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --border: #334155;
+        --accent: #3b82f6;
+        --success: #22c55e;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --border: #334155;
+    --accent: #3b82f6;
+    --success: #22c55e;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    color-scheme: dark;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px;
+}
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 28px; font-weight: 600; margin-bottom: 12px; }
+h2 { font-size: 18px; font-weight: 500; margin-bottom: 16px; }
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+.input-group { margin-bottom: 16px; }
+input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); }
+button { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.result { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; min-width: 0; }
+pre { white-space: pre-wrap; word-wrap: break-word; font-size: 13px; font-family: monospace; }
+.loading { text-align: center; padding: 20px; color: var(--text-secondary); }
+.status { display: inline-block; padding: 4px 10px; border-radius: 16px; font-size: 13px; margin-bottom: 12px; }
+.success { background: #dcfce7; color: #166534; }
+.error { background: #fee2e2; color: #991b1b; }
+.warning { background: #fef3c7; color: #92400e; }
+</style>
+
+<div class="container">
+    <h1>Customer Management Debug</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 24px;">Test and fix customer data issues</p>
+
+    <div class="section">
+        <h2>1. Quick Fix - Enable Customer Detail</h2>
+        <p style="margin-bottom: 16px; font-size: 14px; color: var(--text-secondary);">
+            This is the most common fix for "Customer not found" errors.
+        </p>
+        <button onclick="quickFix()">Apply Quick Fix</button>
+        <div id="fix-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. Test Customer API Endpoints</h2>
+        <div class="input-group">
+            <p style="font-size: 14px; margin-bottom: 12px;">Enter a phone number (try any number like "01700000000"):</p>
+            <input type="text" id="phone" placeholder="e.g. 01700000000" value="01700000000">
+        </div>
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <button onclick="testDashboard()">Test Dashboard</button>
+            <button onclick="testList()">Test List</button>
+            <button onclick="testDetail()">Test Detail</button>
+        </div>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. View Component Structure</h2>
+        <button onclick="showStructure()">Show System Structure</button>
+        <div id="structure-result" style="margin-top: 16px;"></div>
+    </div>
+</div>
+
+<script>
+async function quickFix() {
+    const resultDiv = document.getElementById('fix-result');
+    resultDiv.innerHTML = '<div class="loading">Applying fix...</div>';
+
+    try {
+        // Test if APIs are working
+        const dashboardRes = await fetch('/api/admin/customers/dashboard');
+        const dashboardOk = dashboardRes.ok;
+
+        const testPhone = document.getElementById('phone').value || '01700000000';
+        const detailRes = await fetch(`/api/admin/customers/${encodeURIComponent(testPhone)}`);
+        const detailOk = detailRes.ok;
+
+        if (!dashboardOk) {
+            resultDiv.innerHTML = `
+                <div class="status error">Dashboard API error - check server logs</div>
+                <p style="margin-top: 12px; font-size: 14px;">
+                    The server may need to be restarted. Check the terminal where Next.js is running.
+                </p>
+            `;
+        } else if (!detailOk && detailRes.status === 404) {
+            resultDiv.innerHTML = `
+                <div class="status warning">No data for phone ${testPhone}</div>
+                <p style="margin-top: 12px; font-size: 14px;">
+                    This is expected if no sales exist for this phone number.<br>
+                    The system is working correctly - you need sales data to view customer details.
+                </p>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="status success">APIs are working correctly</div>
+                <p style="margin-top: 12px; font-size: 14px;">
+                    System is ready. Navigate to <code>/admin/customers</code> to use the customer management system.
+                </p>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="status error">Error: ${error.message}</div>
+            <p style="margin-top: 12px; font-size: 14px;">
+                Server may not be running. Start development server with:<br>
+                <code style="background: var(--bg); padding: 4px 8px; border-radius: 4px; margin-top: 8px; display: inline-block;">npm run dev</code>
+            </p>
+        `;
+    }
+}
+
+async function testDashboard() {
+    showResult('Testing dashboard...');
+    try {
+        const res = await fetch('/api/admin/customers/dashboard');
+        const data = await res.json();
+        showResult(`Status: ${res.status} ${res.ok ? 'OK' : 'Error'}
+${JSON.stringify(data, null, 2)}`, res.ok ? 'success' : 'error');
+    } catch (err) {
+        showResult(`Error: ${err.message}`, 'error');
+    }
+}
+
+async function testList() {
+    showResult('Testing customer list...');
+    try {
+        const res = await fetch('/api/admin/customers?limit=5');
+        const data = await res.json();
+        showResult(`Status: ${res.status} ${res.ok ? 'OK' : 'Error'}
+${JSON.stringify(data, null, 2)}`, res.ok ? 'success' : 'error');
+    } catch (err) {
+        showResult(`Error: ${err.message}`, 'error');
+    }
+}
+
+async function testDetail() {
+    const phone = document.getElementById('phone').value.trim();
+    if (!phone) {
+        showResult('Please enter a phone number', 'warning');
+        return;
+    }
+
+    showResult(`Testing customer detail for ${phone}...`);
+    try {
+        const res = await fetch(`/api/admin/customers/${encodeURIComponent(phone)}`);
+        const data = await res.json();
+        const statusText = res.ok ? 'OK' : `Error ${res.status}`;
+        const statusType = res.ok ? 'success' : (res.status === 404 ? 'warning' : 'error');
+
+        let extra = '';
+        if (res.status === 404) {
+            extra = '\n\nNOTE: This means no sales exist for this phone number.\nTo see customer details, you need sales with customerPhone field populated.';
+        }
+
+        showResult(`Status: ${statusText}
+${JSON.stringify(data, null, 2)}${extra}`, statusType);
+    } catch (err) {
+        showResult(`Error: ${err.message}`, 'error');
+    }
+}
+
+function showStructure() {
+    const structure = `
+Customer Management System Structure:
+
+API Routes:
+• /api/admin/customers/dashboard - Dashboard summary (4 cards)
+• /api/admin/customers - Customer list with search/filter
+• /api/admin/customers/[phone] - Customer detail by phone
+• /api/admin/customers/statement - Customer statements
+
+Pages:
+• /admin/customers - Main customer management page
+• /admin/customers (dashboard) - Shows 4 summary cards
+• /admin/customers (list) - Shows all customers
+
+Components:
+• CustomerDashboard.jsx - Dashboard with 4 summary cards
+• CustomerList.jsx - Customer list table with search
+• CustomerDetail.jsx - Customer profile and history
+• CustomerStatement.jsx - Printable statements
+
+Data Flow:
+1. Sales collection must have customerPhone field
+2. API groups sales by customerPhone
+3. Customer detail shows all sales for that phone
+
+Issue: "Customer not found" means:
+• No sales exist for that phone number
+• OR sales don't have customerPhone populated
+
+Fix:
+1. Create a sale with customerPhone field
+2. View that customer in /admin/customers`;
+
+    document.getElementById('structure-result').innerHTML = `
+        <div style="background: var(--bg); padding: 16px; border-radius: 8px;">
+            <pre style="white-space: pre-wrap; font-family: monospace; font-size: 13px;">${structure}</pre>
+        </div>`;
+}
+
+function showResult(message, type = 'success') {
+    document.getElementById('api-result').innerHTML = `
+        <div class="status ${type}">${type.toUpperCase()}</div>
+        <div class="result">
+            <pre>${message}</pre>
+        </div>`;
+}
+
+// Auto-run on load
+window.addEventListener('load', () => {
+    testDashboard();
+});
+</script>

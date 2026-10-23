@@ -24,6 +24,7 @@ import {
   ListPlus,
   Wallet,
   Receipt,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, cloneElement, useEffect } from "react";
@@ -96,6 +97,10 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
       { href: "/admin/sales", label: "Sales List", icon: <List /> },
       { href: "/admin/invoices", label: "Invoices", icon: <Receipt /> },
       { href: "/admin/transactions", label: "Transactions", icon: <Store /> },
+      { href: "/admin/dues", label: "Customer Dues", icon: <CreditCard /> },
+    ]},
+    { section: "Customers", links: [
+      { href: "/admin/customers", label: "Customer Management", icon: <Users /> },
     ]},
     { section: "Expenses", links: [
       { href: "/admin/expenses", label: "Manage Expenses", icon: <Wallet /> },
