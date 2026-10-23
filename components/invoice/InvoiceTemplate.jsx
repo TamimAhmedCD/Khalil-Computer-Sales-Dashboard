@@ -34,9 +34,26 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
   }, [invoice.invoiceNumber]);
 
   // ---- Print via hidden iframe (keeps app UI untouched) ----
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const el = printRef.current;
     if (!el) return;
+
+    // Ensure QR code is generated before printing
+    if (!qrUrl || qrUrl === "data:image/svg+xml;base64,") {
+      try {
+        const verifyUrl = `https://khalilcomputer.com/verify/invoice/${invoice.invoiceNumber}`;
+        const url = await QRCode.toDataURL(verifyUrl, {
+          width: 120,
+          margin: 1,
+          color: { dark: "#003E7E", light: "#fff" }
+        });
+        setQrUrl(url);
+        // Wait a tick for React to update the img src
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (err) {
+        console.error("QR generation failed:", err);
+      }
+    }
 
     const iframe = document.createElement("iframe");
     iframe.style.cssText =
@@ -117,11 +134,6 @@ export default function InvoiceTemplate({ invoice, mode = "view" }) {
   .stamp { display: inline-block; padding: 6px 24px; border: 2px solid; border-radius: 6px; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
   .stamp.paid { border-color: #16a34a; color: #16a34a; }
   .stamp.due  { border-color: #dc2626; color: #dc2626; }
-
-  .qr-block { text-align: center; margin: 16px 0; padding: 16px 0; border-top: 1px dashed #d1d5db; border-bottom: 1px dashed #d1d5db; }
-  .qr-block img { width: 100px; height: 100px; object-fit: contain; }
-  .qr-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; font-weight: 700; margin-bottom: 8px; }
-  .qr-sub { font-size: 10px; color: #9ca3af; margin-top: 4px; }
 
   /* ---- footer ---- */
   .inv-footer { border-top: 1px solid #e5e7eb; padding-top: 16px; display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af; }

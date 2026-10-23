@@ -1,0 +1,582 @@
+<title>Invoice Verification</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --brand: #003E7E;
+  --brand-light: #1e5aaa;
+  --bg: #fafbfc;
+  --bg-card: #ffffff;
+  --fg: #1a1a1a;
+  --fg-muted: #6b7280;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --border: #e5e7eb;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1114;
+    --bg-card: #1a1d21;
+    --fg: #f3f4f5;
+    --fg-muted: #9ca3af;
+    --border: #2d3139;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1114;
+  --bg-card: #1a1d21;
+  --fg: #f3f4f5;
+  --fg-muted: #9ca3af;
+  --border: #2d3139;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+/* Layout */
+.container {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo-mark {
+  width: 56px;
+  height: 56px;
+  background: var(--brand);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.brand-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: -0.3px;
+}
+
+.tagline {
+  font-size: 13px;
+  color: var(--fg-muted);
+  margin-top: 4px;
+}
+
+/* Card */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+}
+
+/* Invoice Number */
+.invoice-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--brand);
+  text-align: center;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed var(--border);
+  margin-bottom: 20px;
+  letter-spacing: 0.3px;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 auto 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.status-badge.paid {
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--success);
+  border: 1.5px solid var(--success);
+}
+
+.status-badge.due {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--danger);
+  border: 1.5px solid var(--danger);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Details Grid */
+.details {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  text-align: right;
+}
+
+.detail-value.paid { color: var(--success); }
+.detail-value.due { color: var(--danger); }
+
+/* Amount Box */
+.amount-box {
+  background: linear-gradient(135deg, var(--brand) 0%, #004a99 100%);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.amount-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.amount-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.amount-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 4px;
+}
+
+/* Verified Footer */
+.verified-by {
+  text-align: center;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.verified-icon {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.verified-text {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.verified-time {
+  font-size: 11px;
+  color: var(--fg-muted);
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 48px 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--fg-muted);
+  font-size: 14px;
+}
+
+/* Error State */
+.error {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.error-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+}
+
+.error-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.error-text {
+  color: var(--fg-muted);
+  font-size: 14px;
+}
+
+/* Input Form */
+.input-card {
+  text-align: center;
+}
+
+.input-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.input-subtitle {
+  color: var(--fg-muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.input-field {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  border-color: var(--brand);
+}
+
+.input-btn {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.input-btn:hover {
+  background: var(--brand-light);
+}
+
+.input-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.footer-link {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.footer-link a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.footer-link a:hover {
+  text-decoration: underline;
+}
+</style>
+
+<script>
+// Configuration - Change this to your admin API URL
+const API_BASE = "https://admin.khalilcomputer.com/api/public/invoice";
+
+// Get invoice number from URL query parameter
+function getInvoiceFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('inv') || params.get('invoice');
+}
+
+// Format currency
+function formatMoney(amount) {
+  return '৳' + Number(amount || 0).toLocaleString('en-BD');
+}
+
+// Format date
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-BD', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+// Show loading state
+function showLoading() {
+  document.getElementById('app').innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Verifying invoice...</div>
+    </div>
+  `;
+}
+
+// Show error state
+function showError(title, message) {
+  document.getElementById('app').innerHTML = `
+    <div class="card">
+      <div class="error">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">${title}</div>
+        <div class="error-text">${message}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Show invoice verified
+function showInvoice(data) {
+  const invoice = data.invoice;
+  const isPaid = invoice.status === 'PAID';
+  const statusClass = isPaid ? 'paid' : 'due';
+  const statusText = isPaid ? '✓ PAID' : `DUE: ${formatMoney(invoice.dueAmount)}`;
+
+  document.getElementById('app').innerHTML = `
+    <div class="card">
+      <div class="invoice-num">${invoice.invoiceNumber}</div>
+
+      <div class="status-badge ${statusClass}">
+        <span class="status-dot"></span>
+        ${statusText}
+      </div>
+
+      <div class="amount-box">
+        <div class="amount-label">Total Amount</div>
+        <div class="amount-value">${formatMoney(invoice.grandTotal)}</div>
+        <div class="amount-sub">${isPaid ? 'Full payment received' : `Outstanding: ${formatMoney(invoice.dueAmount)}`}</div>
+      </div>
+
+      <div class="details">
+        <div class="detail-row">
+          <span class="detail-label">Customer</span>
+          <span class="detail-value">${invoice.customerName || 'N/A'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Invoice Date</span>
+          <span class="detail-value">${invoice.invoiceDate || 'N/A'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Payment Method</span>
+          <span class="detail-value">${invoice.paymentMethod || 'Cash'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Amount Paid</span>
+          <span class="detail-value paid">${formatMoney(invoice.paidAmount)}</span>
+        </div>
+        ${!isPaid ? `<div class="detail-row">
+          <span class="detail-label">Due Amount</span>
+          <span class="detail-value due">${formatMoney(invoice.dueAmount)}</span>
+        </div>` : ''}
+      </div>
+
+      <div class="verified-by">
+        <div class="verified-icon">🛡️</div>
+        <div class="verified-text">Verified by Khalil Computer</div>
+        <div class="verified-time">Verified on ${new Date().toLocaleString('en-BD', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        })}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Show input form
+function showInputForm() {
+  document.getElementById('app').innerHTML = `
+    <div class="card input-card">
+      <div class="input-title">Verify Your Invoice</div>
+      <div class="input-subtitle">Enter your invoice number to verify payment status</div>
+      <div class="input-group">
+        <input type="text" class="input-field" id="invoiceInput" placeholder="e.g. INV-2026-00001" />
+        <button class="input-btn" onclick="verifyFromInput()">Verify</button>
+      </div>
+    </div>
+  `;
+
+  // Handle enter key
+  document.getElementById('invoiceInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') verifyFromInput();
+  });
+}
+
+// Verify from input field
+function verifyFromInput() {
+  const input = document.getElementById('invoiceInput');
+  const invoiceNum = input.value.trim();
+  if (invoiceNum) {
+    loadInvoice(invoiceNum);
+  }
+}
+
+// Main: Load invoice data
+async function loadInvoice(invoiceNumber) {
+  if (!invoiceNumber) {
+    showInputForm();
+    return;
+  }
+
+  showLoading();
+
+  try {
+    const response = await fetch(`${API_BASE}/${encodeURIComponent(invoiceNumber)}`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 404) {
+        showError('Invoice Not Found', 'This invoice number does not exist in our records.');
+      } else {
+        showError('Verification Failed', errorData.message || 'Unable to verify invoice. Please try again.');
+      }
+      return;
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      showInvoice(data);
+    } else {
+      showError('Verification Failed', data.message || 'Unable to verify invoice.');
+    }
+  } catch (err) {
+    console.error('Verification error:', err);
+    showError('Connection Error', 'Unable to connect to verification server. Please check your internet connection.');
+  }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  const invoiceNum = getInvoiceFromURL();
+  loadInvoice(invoiceNum);
+});
+</script>
+
+<div class="container">
+  <header class="header">
+    <div class="logo-mark">KC</div>
+    <div class="brand-name">Khalil Computer</div>
+    <div class="tagline">Invoice Verification Portal</div>
+  </header>
+
+  <main id="app">
+    <!-- Content loads here -->
+  </main>
+
+  <footer class="footer">
+    <div class="footer-link">
+      Need help? <a href="https://khalilcomputer.com/contact" target="_blank">Contact Support</a>
+    </div>
+  </footer>
+</div>
