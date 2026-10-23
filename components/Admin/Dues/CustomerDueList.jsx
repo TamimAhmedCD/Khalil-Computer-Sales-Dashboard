@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Search,
   ChevronLeft,
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 import { useDueCustomers } from "@/lib/hooks/dues/useDueCustomers";
+import { useCollectDue } from "@/lib/hooks/dues/useCollectDue";
 import { Skeleton } from "@/components/ui/skeleton";
 import CollectDueModal from "@/components/Admin/Dues/CollectDueModal";
 import CustomerDueDetail from "@/components/Admin/Dues/CustomerDueDetail";
@@ -75,10 +78,23 @@ export default function CustomerDueList({ session }) {
     setDetailModalOpen(true);
   }, []);
 
-  const handleCollectSuccess = useCallback(() => {
-    setCollectModalOpen(false);
-    setSelectedCustomer(null);
-  }, []);
+  const queryClient = useQueryClient();
+
+  const handleCollectSuccess = useCallback(
+    async (result) => {
+      setCollectModalOpen(false);
+      setSelectedCustomer(null);
+
+      // Invalidate all due-related queries to refetch fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["dueCustomers"] }),
+        queryClient.invalidateQueries({ queryKey: ["dueDashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["customerDueDetail"] }),
+        queryClient.invalidateQueries({ queryKey: ["dueCollections"] }),
+      ]);
+    },
+    [queryClient]
+  );
 
   const showingFrom =
     pagination.totalCustomers === 0

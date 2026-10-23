@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   X,
   Phone,
@@ -80,15 +80,24 @@ export default function CustomerDueDetail({ customer, open, onOpenChange }) {
     collections: [],
   };
 
+  const queryClient = useQueryClient();
+
   const handleCollectForSale = (sale) => {
     setSelectedSale(sale);
     setCollectModalOpen(true);
   };
 
-  const handleCollectSuccess = () => {
+  const handleCollectSuccess = useCallback(async () => {
     setCollectModalOpen(false);
     setSelectedSale(null);
-  };
+
+    // Invalidate this customer's detail and parent list
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["customerDueDetail", customer?.customerPhone] }),
+      queryClient.invalidateQueries({ queryKey: ["dueCustomers"] }),
+      queryClient.invalidateQueries({ queryKey: ["dueDashboard"] }),
+    ]);
+  }, [customer?.customerPhone, queryClient]);
 
   return (
     <>
