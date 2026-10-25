@@ -6,13 +6,7 @@ import axios from "axios";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import {
   Eye,
   Plus,
@@ -223,7 +217,7 @@ export function SalesList() {
       <Card className="border-border/70 shadow-sm">
         <CardContent className="space-y-5 p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex-1 relative">
+            <div className="flex-1 min-w-0 relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by product name, invoice code, or customer..."
@@ -232,24 +226,23 @@ export function SalesList() {
                 className="pl-9"
               />
             </div>
-            <Select
+            <CustomSelect
+              className="w-[180px]"
               value={dateFilter}
-              onValueChange={(value) => {
+              onChange={(value) => {
                 setDateFilter(value);
                 setCurrentPage(1);
               }}
-            >
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
+              items={[
+                { value: "today", label: "Today" },
+                { value: "yesterday", label: "Yesterday" },
+                { value: "week", label: "This Week" },
+                { value: "month", label: "This Month" },
+                { value: "lastMonth", label: "Last Month" },
+                { value: "custom", label: "Custom Range" },
+              ]}
+              placeholder="Select date range"
+            />
           </div>
 
           {/* Date Range Panel */}

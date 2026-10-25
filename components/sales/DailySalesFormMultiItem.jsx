@@ -193,6 +193,10 @@ function MemoRow({ label, value, tone = "default", strong = false }) {
 export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales" } = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerResults, setCustomerResults] = useState([]);
+  const [phoneSearch, setPhoneSearch] = useState("");
+  const [phoneResults, setPhoneResults] = useState([]);
 
   const router = useRouter();
 
@@ -316,6 +320,76 @@ export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales"
       );
     }
   }, [setValue]);
+
+  // Customer Search - Fetch suggestions when user types
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const fetchCustomers = async () => {
+      if (!customerSearch || customerSearch.length < 2) {
+        setCustomerResults([]);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `/api/admin/customers?search=${encodeURIComponent(customerSearch)}&limit=10`,
+          { signal: controller.signal }
+        );
+        if (!cancelled && response.data.success) {
+          setCustomerResults(response.data.data.customers || []);
+        }
+      } catch (err) {
+        if (!cancelled && err.name !== "AbortError") {
+          console.error("Customer search failed:", err);
+        }
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchCustomers, 200);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(debounceTimer);
+    };
+  }, [customerSearch]);
+
+  // Phone Search - Fetch suggestions when user types phone number
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const fetchPhoneCustomers = async () => {
+      if (!phoneSearch || phoneSearch.length < 2) {
+        setPhoneResults([]);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `/api/admin/customers?search=${encodeURIComponent(phoneSearch)}&limit=10`,
+          { signal: controller.signal }
+        );
+        if (!cancelled && response.data.success) {
+          setPhoneResults(response.data.data.customers || []);
+        }
+      } catch (err) {
+        if (!cancelled && err.name !== "AbortError") {
+          console.error("Phone customer search failed:", err);
+        }
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchPhoneCustomers, 200);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(debounceTimer);
+    };
+  }, [phoneSearch]);
 
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -600,13 +674,47 @@ export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales"
               </div>
               <Card className="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-xl rounded-lg border border-zinc-200/80 dark:border-zinc-800/50 shadow-xs">
                 <CardContent className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
+                  <div className="space-y-1 relative">
                     <label className={CAPTION}>Customer Name (Optional)</label>
                     <Input
                       className="h-9"
                       {...register("customerName")}
                       placeholder="John Doe"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        register("customerName").onChange(e);
+                        // Trigger customer search when typing
+                        if (val.length >= 2) {
+                          setCustomerSearch(val);
+                        } else {
+                          setCustomerSearch("");
+                        }
+                      }}
+                      autoComplete="off"
                     />
+                    {/* Customer Suggestions Dropdown */}
+                    {customerSearch && customerResults.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 bg-card border border-border rounded-lg shadow-xl mt-1 overflow-hidden">
+                        {customerResults.map((c) => (
+                          <button
+                            key={c.customerPhone || c.customerName}
+                            type="button"
+                            className="w-full text-left px-3 py-2.5 hover:bg-accent text-sm border-b border-border last:border-0 flex items-center gap-2"
+                            onClick={() => {
+                              setValue("customerName", c.customerName || "", { shouldValidate: true });
+                              setValue("customerPhone", c.customerPhone ? `***${c.customerPhone.slice(-4)}` : "", { shouldValidate: true });
+                              setCustomerSearch("");
+                            }}
+                          >
+                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{c.customerName || "Unknown"}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{c.customerPhone ? `***${c.customerPhone.slice(-4)}` : "No phone"}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {errors.customerName && (
                       <p className="text-[10px] text-red-500 mt-0.5">
                         {errors.customerName.message}
@@ -614,13 +722,48 @@ export default function DailySalesFormMultiItem({ redirectTo = "/employee/sales"
                     )}
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1 relative">
                     <label className={CAPTION}>Phone (Optional)</label>
                     <Input
                       className="h-9"
                       {...register("customerPhone")}
                       placeholder="01xxxxxxxxx"
+                      onChange={(e) => {
+                        register("customerPhone").onChange(e);
+                        const val = e.target.value;
+                        // Trigger customer search when typing
+                        if (val.length >= 2) {
+                          setPhoneSearch(val);
+                        } else {
+                          setPhoneResults([]);
+                        }
+                      }}
+                      autoComplete="off"
                     />
+                    {/* Phone Customer Suggestions Dropdown */}
+                    {phoneResults.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 bg-card border border-border rounded-lg shadow-xl mt-1 overflow-hidden">
+                        {phoneResults.map((c) => (
+                          <button
+                            key={c.customerPhone || c.customerName}
+                            type="button"
+                            className="w-full text-left px-3 py-2.5 hover:bg-accent text-sm border-b border-border last:border-0 flex items-center gap-2"
+                            onClick={() => {
+                              setValue("customerName", c.customerName || "", { shouldValidate: true });
+                              setValue("customerPhone", c.customerPhone || "", { shouldValidate: true });
+                              setPhoneSearch("");
+                              setPhoneResults([]);
+                            }}
+                          >
+                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{c.customerName || "Unknown"}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{c.customerPhone}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {errors.customerPhone && (
                       <p className="text-[10px] text-red-500 mt-0.5">
                         {errors.customerPhone.message}

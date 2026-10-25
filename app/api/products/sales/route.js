@@ -597,6 +597,14 @@ export async function GET(request) {
       case "month":
         startDate.setMonth(today.getMonth(), 1);
         break;
+      case "lastMonth":
+        // Set to first day of last month
+        startDate.setMonth(today.getMonth() - 1, 1);
+        startDate.setHours(0, 0, 0, 0);
+        // Set to last day of last month
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
       case "custom":
         if (customStartDate && customEndDate) {
           startDate = new Date(customStartDate);

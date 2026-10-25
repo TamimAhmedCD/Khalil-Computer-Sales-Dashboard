@@ -48,8 +48,10 @@ export function UnifiedSelect({
   const [search, setSearch] = useState("");
   const [mounted, setMounted] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
+  const optionRefs = useRef([]);
   const [isClient, setIsClient] = useState(false);
 
   // Ensure portal only renders on client
@@ -78,6 +80,10 @@ export function UnifiedSelect({
         return searchIn.includes(search.toLowerCase());
       })
     : items;
+
+  // Total navigable options count (includes "All" option if shown)
+  const allOptionOffset = includeAllOption ? 1 : 0;
+  const totalOptions = filtered.length + allOptionOffset;
 
   // Update dropdown position
   const updatePosition = () => {
@@ -140,15 +146,61 @@ export function UnifiedSelect({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
-  // Escape key to close
+  // Arrow keys, Enter, Escape
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === "Escape") handleClose();
+      if (e.key === "Escape") {
+        handleClose();
+        return;
+      }
+
+      if (totalOptions === 0) return;
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev < totalOptions - 1 ? prev + 1 : 0));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : totalOptions - 1));
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (focusedIndex < 0) break;
+          if (includeAllOption && focusedIndex === 0) {
+            // "All" option selected
+            onChange("");
+            handleClose();
+          } else {
+            const itemIndex = focusedIndex - allOptionOffset;
+            if (itemIndex >= 0 && itemIndex < filtered.length) {
+              handleSelect(filtered[itemIndex]);
+            }
+          }
+          break;
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, focusedIndex, filtered, totalOptions, includeAllOption, allOptionOffset]);
+
+  // Scroll focused option into view
+  useEffect(() => {
+    if (focusedIndex >= 0 && optionRefs.current[focusedIndex]) {
+      optionRefs.current[focusedIndex].scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [focusedIndex]);
+
+  // Reset focus when dropdown opens or search changes
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [open, search]);
 
   // Reposition on scroll/resize while open
   useEffect(() => {
@@ -280,6 +332,7 @@ export function UnifiedSelect({
             {/* "All" option */}
             {includeAllOption && (
               <button
+                ref={(el) => (optionRefs.current[0] = el)}
                 type="button"
                 role="option"
                 aria-selected={!value}
@@ -287,9 +340,11 @@ export function UnifiedSelect({
                   onChange("");
                   handleClose();
                 }}
+                onMouseEnter={() => setFocusedIndex(0)}
                 className={cn(
                   "flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground",
-                  !value && "bg-accent/60 font-medium"
+                  !value && "bg-accent/60 font-medium",
+                  focusedIndex === 0 && "bg-accent text-accent-foreground"
                 )}
               >
                 <span className="flex-1 truncate">{allOptionLabel}</span>
@@ -302,19 +357,24 @@ export function UnifiedSelect({
                 {emptyMessage}
               </div>
             ) : (
-              filtered.map((item) => {
+              filtered.map((item, index) => {
                 const itemId = typeof item === 'object' ? item._id || item.id : item;
                 const isSelected = itemId === value;
+                const refIndex = index + allOptionOffset;
+                const isFocused = refIndex === focusedIndex;
                 return (
                   <button
                     key={itemId}
+                    ref={(el) => (optionRefs.current[refIndex] = el)}
                     type="button"
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setFocusedIndex(refIndex)}
                     className={cn(
                       "flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground",
-                      isSelected && "bg-accent/60 font-medium"
+                      isSelected && "bg-accent/60 font-medium",
+                      isFocused && "bg-accent text-accent-foreground"
                     )}
                   >
                     {renderItem ? renderItem(item) : defaultRenderItem(item)}

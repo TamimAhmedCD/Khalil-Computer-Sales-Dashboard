@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDueDashboard } from "@/lib/hooks/dues/useDueDashboard";
 import CustomerDueList from "@/components/Admin/Dues/CustomerDueList";
 
@@ -127,9 +128,13 @@ export default function DueDashboard({ session }) {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Outstanding Due
                 </p>
-                <p className="mt-2 text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {formatCurrency(data.totalOutstandingDue)}
-                </p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-28 my-2" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {formatCurrency(data.totalOutstandingDue)}
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-muted-foreground">
                   Across all customers
                 </p>
@@ -147,9 +152,13 @@ export default function DueDashboard({ session }) {
                 <p className="text-sm font-medium text-muted-foreground">
                   Collected Today
                 </p>
-                <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {formatCurrency(data.collectedToday)}
-                </p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-28 my-2" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(data.collectedToday)}
+                  </p>
+                )}
                 <p className="mt-2 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                   <TrendingUp className="h-3.5 w-3.5" />
                   Today's collection
@@ -168,9 +177,13 @@ export default function DueDashboard({ session }) {
                 <p className="text-sm font-medium text-muted-foreground">
                   Collected This Month
                 </p>
-                <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {formatCurrency(data.collectedThisMonth)}
-                </p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-28 my-2" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {formatCurrency(data.collectedThisMonth)}
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-muted-foreground">
                   Month-to-date
                 </p>
@@ -188,9 +201,13 @@ export default function DueDashboard({ session }) {
                 <p className="text-sm font-medium text-muted-foreground">
                   Customers with Due
                 </p>
-                <p className="mt-2 text-2xl font-bold text-violet-600 dark:text-violet-400">
-                  {formatNumber(data.customersWithDue)}
-                </p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-20 my-2" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold text-violet-600 dark:text-violet-400">
+                    {formatNumber(data.customersWithDue)}
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-muted-foreground">
                   Active accounts
                 </p>

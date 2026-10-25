@@ -12,10 +12,13 @@ export function CustomSelect({
   disabled = false,
   placeholder = "Select...",
   icon: Icon,
+  className = "",
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const containerRef = useRef(null);
+  const optionRefs = useRef([]);
 
   const selected = items.find((i) => String(i.value) === String(value));
 
@@ -61,18 +64,58 @@ export function CustomSelect({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
-  // Escape key to close
+  // Escape key and arrow key navigation
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === "Escape") handleClose();
+      if (e.key === "Escape") {
+        handleClose();
+        return;
+      }
+
+      if (items.length === 0) return;
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (focusedIndex >= 0 && focusedIndex < items.length) {
+            handleSelect(items[focusedIndex]);
+          }
+          break;
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+  }, [open, focusedIndex, items]);
+
+  // Scroll focused option into view
+  useEffect(() => {
+    if (focusedIndex >= 0 && optionRefs.current[focusedIndex]) {
+      optionRefs.current[focusedIndex].scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [focusedIndex]);
+
+  // Reset focus when dropdown opens
+  useEffect(() => {
+    if (open) {
+      setFocusedIndex(-1);
+    }
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative w-full text-left">
+    <div ref={containerRef} className={cn("relative text-left", className)}>
       {/* Trigger button */}
       <button
         type="button"
@@ -128,19 +171,23 @@ export function CustomSelect({
                 No items found
               </div>
             ) : (
-              items.map((item) => {
+              items.map((item, index) => {
                 const itemValue = String(item.value);
                 const isSelected = itemValue === String(value);
+                const isFocused = index === focusedIndex;
                 return (
                   <button
                     key={itemValue}
+                    ref={(el) => (optionRefs.current[index] = el)}
                     type="button"
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => handleSelect(item)}
+                    onMouseEnter={() => setFocusedIndex(index)}
                     className={cn(
                       "flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground",
-                      isSelected && "bg-accent/60 font-medium"
+                      isSelected && "bg-accent/60 font-medium",
+                      isFocused && "bg-accent text-accent-foreground"
                     )}
                   >
                     <span className="flex-1 truncate">{item.label}</span>

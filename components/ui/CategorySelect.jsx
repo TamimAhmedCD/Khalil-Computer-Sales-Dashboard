@@ -29,9 +29,12 @@ export function CategorySelect({
   const [mounted, setMounted] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
   const [isClient, setIsClient] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const buttonRef = useRef(null);
   const containerRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const optionRefs = useRef([]);
 
   // SSR guard — portal only works client-side
   useEffect(() => {
@@ -55,6 +58,11 @@ export function CategorySelect({
         );
       })
     : categories;
+
+  // Reset focused index when search changes
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [search]);
 
   // Compute & store dropdown position using fixed coords
   const updatePosition = useCallback(() => {
@@ -152,15 +160,49 @@ export function CategorySelect({
     };
   }, [open, updatePosition]);
 
-  // Escape key
+  // Escape key and arrow key navigation
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === "Escape") handleClose();
+      if (e.key === "Escape") {
+        handleClose();
+        return;
+      }
+
+      const options = filtered;
+      if (options.length === 0) return;
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev < options.length - 1 ? prev + 1 : 0));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : options.length - 1));
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (focusedIndex >= 0 && focusedIndex < options.length) {
+            handleSelect(options[focusedIndex]);
+          }
+          break;
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, handleClose]);
+  }, [open, handleClose, filtered, focusedIndex]);
+
+  // Scroll focused option into view
+  useEffect(() => {
+    if (focusedIndex >= 0 && optionRefs.current[focusedIndex]) {
+      optionRefs.current[focusedIndex].scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [focusedIndex]);
 
   return (
     <div
@@ -275,7 +317,7 @@ export function CategorySelect({
                   {emptyMessage}
                 </div>
               ) : (
-                filtered.map((category) => {
+                filtered.map((category, index) => {
                   const categoryId =
                     typeof category === "object"
                       ? category._id || category.id
@@ -285,9 +327,11 @@ export function CategorySelect({
                       ? category.name || category.label
                       : category;
                   const isSelected = categoryId === value;
+                  const isFocused = index === focusedIndex;
                   return (
                     <button
                       key={categoryId}
+                      ref={(el) => (optionRefs.current[index] = el)}
                       type="button"
                       role="option"
                       aria-selected={isSelected}
@@ -295,9 +339,11 @@ export function CategorySelect({
                         e.stopPropagation();
                         handleSelect(category);
                       }}
+                      onMouseEnter={() => setFocusedIndex(index)}
                       className={cn(
                         "flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground",
-                        isSelected && "bg-accent/60 font-medium"
+                        isSelected && "bg-accent/60 font-medium",
+                        isFocused && "bg-accent text-accent-foreground"
                       )}
                     >
                       <div className="flex-1 min-w-0">

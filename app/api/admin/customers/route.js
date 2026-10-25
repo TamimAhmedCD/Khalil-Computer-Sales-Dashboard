@@ -37,6 +37,11 @@ export async function GET(request) {
 
     const pipeline = [];
 
+    // 🔒 Employee: only see own customers
+    if (session.user.role === "employee") {
+      pipeline.push({ $match: { sellerId: session.user.id } });
+    }
+
     // Step 1: Match sales with customer info
     pipeline.push({
       $match: {

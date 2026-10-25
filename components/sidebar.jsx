@@ -134,6 +134,10 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
       { href: "/employee/invoices", label: "Invoices", icon: <Receipt /> },
       { href: "/employee/sales", label: "My Sales", icon: <List /> },
     ]},
+    { section: "Customers", links: [
+      { href: "/employee/customers", label: "Customer Management", icon: <Users /> },
+      { href: "/employee/dues", label: "Customer Dues", icon: <CreditCard /> },
+    ]},
     { section: "Reports", links: [
       { href: "/employee/reports", label: "My Reports", icon: <ClipboardList /> },
     ]},
