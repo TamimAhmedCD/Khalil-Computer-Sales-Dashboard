@@ -573,10 +573,13 @@ export async function GET(request) {
       .toArray();
 
     // Get seller filter options
-    const sellers = await db
-      .collection("sales")
-      .find({})
-      .distinct("sellerName");
+    const sellers = await salesCollection
+      .aggregate([
+        { $group: { _id: "$sellerName" } },
+        { $project: { _id: 0, name: "$_id" } },
+      ])
+      .toArray();
+    const sellerNames = sellers.map((s) => s.name || s._id).filter(Boolean);
 
     // Get product categories for filter
     const productCategories = await db
