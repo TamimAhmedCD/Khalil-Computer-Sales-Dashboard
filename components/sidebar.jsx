@@ -25,6 +25,7 @@ import {
   Wallet,
   Receipt,
   CreditCard,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, cloneElement, useEffect } from "react";
@@ -115,6 +116,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }) {
     ]},
     { section: "Reports", links: [
       { href: "/admin/reports", label: "Business Reports", icon: <FileText /> },
+      { href: "/admin/reports/pages/profit-loss", label: "Profit & Loss", icon: <TrendingUp /> },
     ]},
     { section: "System", links: [
       { href: "/settings", label: "Settings", icon: <Settings /> },
