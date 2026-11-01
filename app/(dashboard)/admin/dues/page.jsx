@@ -1,53 +1,34 @@
 "use client";
 
-import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import DueDashboard from "@/components/Admin/Dues/DueDashboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// =========================================================
-// Customer Dues Page
-// =========================================================
-
-export default function CustomerDuesPage() {
+export default function AdminDuesPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-
-  // Check authentication and authorization
-  useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session?.user?.id) {
-      router.push("/auth/login");
-      return;
-    }
-
-    const allowedRoles = ["admin", "superAdmin", "employee"];
-    if (!allowedRoles.includes(session.user.role)) {
-      router.push("/admin/dashboard");
-    }
-  }, [session, status, router]);
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Checking permissions...</p>
-        </div>
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-12 w-64" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
-  if (!session?.user?.id) {
-    return null; // Router will handle redirect
+  if (!session?.user?.id || !(session.user.role === "admin" || session.user.role === "superAdmin")) {
+    return (
+      <div className="p-12 text-center">
+        <h1 className="text-xl font-bold text-destructive">Unauthorized Access</h1>
+        <p className="text-sm text-muted-foreground mt-2">You do not have permission to view customer dues.</p>
+      </div>
+    );
   }
 
-  const allowedRoles = ["admin", "superAdmin", "employee"];
-  if (!allowedRoles.includes(session.user.role)) {
-    return null; // Router will handle redirect
-  }
-
-  return <DueDashboard session={session} />;
+  return (
+    <div className="p-6">
+      <DueDashboard />
+    </div>
+  );
 }

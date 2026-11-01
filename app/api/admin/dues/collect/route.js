@@ -3,204 +3,118 @@ import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-// =========================================================
-// POST /api/admin/dues/collect - Record a Due Collection
-// =========================================================
-
 export async function POST(request) {
   try {
-    // 🔐 Authentication - Allow admin and employees
     const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
+    if (!session?.user?.id || !(session.user.role === "admin" || session.user.role === "superAdmin" || session.user.role === "employee")) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const allowedRoles = ["admin", "superAdmin", "employee"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Access denied" },
-        { status: 403 }
-      );
+    const body = await request.json();
+    const { saleId, collectionAmount, paymentMethod, collectionDate, note } = body;
+
+    if (!saleId || !collectionAmount) {
+      return NextResponse.json({ success: false, message: "saleId and collectionAmount are required" }, { status: 400 });
+    }
+
+    const amount = Number(collectionAmount);
+    if (Number.isNaN(amount) || amount <= 0) {
+      return NextResponse.json({ success: false, message: "Invalid collection amount" }, { status: 400 });
     }
 
     const client = await clientPromise;
     const db = client.db("products");
 
-    const body = await request.json();
-    const { saleId, collectionAmount, paymentMethod, collectionDate, note } = body;
-
-    // Validation
-    if (!saleId) {
-      return NextResponse.json(
-        { success: false, message: "Sale ID is required" },
-        { status: 400 }
-      );
+    let saleObjectId;
+    try {
+      saleObjectId = new ObjectId(saleId);
+    } catch {
+      return NextResponse.json({ success: false, message: "Invalid sale ID" }, { status: 400 });
     }
 
-    if (!collectionAmount || collectionAmount <= 0) {
-      return NextResponse.json(
-        { success: false, message: "Collection amount must be greater than 0" },
-        { status: 400 }
-      );
+    const sale = await db.collection("sales").findOne({ _id: saleObjectId });
+    if (!sale) {
+      return NextResponse.json({ success: false, message: "Sale not found" }, { status: 404 });
     }
 
-    if (!collectionDate) {
-      return NextResponse.json(
-        { success: false, message: "Collection date is required" },
-        { status: 400 }
-      );
+    // Compute current remaining due for this sale
+    const totalPrice = Number(sale.totalPrice || sale.total || 0);
+    const originalPaid = Number(sale.paidAmount || 0);
+
+    const priorCollections = await db.collection("dueCollections").find({ saleId: saleObjectId }).toArray();
+    const collectedSoFar = priorCollections.reduce((sum, c) => sum + Number(c.collectionAmount || 0), 0);
+    const currentPaid = originalPaid + collectedSoFar;
+    const remainingDue = Math.max(0, totalPrice - currentPaid);
+
+    if (amount > remainingDue) {
+      return NextResponse.json({
+        success: false,
+        message: `Collection amount exceeds remaining due (৳${remainingDue})`,
+      }, { status: 400 });
     }
 
-    // Helper: Bangladesh timezone
-    const getBDDate = () => {
-      const now = new Date();
-      return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+    // Generate unique receipt number: RCP-YYYYMMDD-XXXXX
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const dateKey = `${year}${month}${day}`;
+
+    const counterResult = await db.collection("counters").findOneAndUpdate(
+      { _id: `due_rcpt_${dateKey}` },
+      { $inc: { sequence: 1 }, $set: { updatedAt: now } },
+      { upsert: true, returnDocument: "after" }
+    );
+
+    if (!counterResult) {
+      throw new Error("Failed to generate receipt counter");
+    }
+
+    const sequence = counterResult.sequence;
+    const receiptNumber = `RCP-${dateKey}-${String(sequence).padStart(5, "0")}`;
+
+    const newPaidTotal = currentPaid + amount;
+    const newRemainingDue = Math.max(0, totalPrice - newPaidTotal);
+
+    const collectionDoc = {
+      receiptNumber,
+      saleId: saleObjectId,
+      invoiceNumber: sale.invoiceNumber || "",
+      customerName: sale.customerName || "Walk-in",
+      customerPhone: sale.customerPhone || "",
+      collectionAmount: amount,
+      paymentMethod: paymentMethod || "Cash",
+      collectionDate: collectionDate ? new Date(collectionDate) : now,
+      note: note || "",
+      collectedBy: session.user.name || "Admin",
+      collectedById: session.user.id,
+      createdAt: now,
     };
 
-    const bdNow = getBDDate();
-    const todayStr = bdNow.toISOString().split("T")[0];
+    const insertResult = await db.collection("dueCollections").insertOne(collectionDoc);
 
-    // MongoDB session for atomicity
-    const sessionMongo = client.startSession();
-
-    let responseData;
-
-    try {
-      await sessionMongo.withTransaction(async () => {
-        // =========================================================
-        // 1. Get the sale document
-        // =========================================================
-        const sale = await db.collection("sales").findOne({ _id: new ObjectId(saleId) });
-
-        if (!sale) {
-          throw new Error("Sale not found");
-        }
-
-        // =========================================================
-        // 2. Calculate remaining due
-        // =========================================================
-        const collections = await db
-          .collection("dueCollections")
-          .find({ saleId: new ObjectId(saleId) })
-          .toArray();
-
-        const collectedSoFar = collections.reduce(
-          (sum, c) => sum + (c.collectionAmount || 0),
-          0
-        );
-        const originalDue = sale.due || 0;
-        const remainingDue = Math.max(originalDue - collectedSoFar, 0);
-
-        if (collectionAmount > remainingDue) {
-          throw new Error(
-            `Collection amount (${collectionAmount}) cannot exceed remaining due (${remainingDue})`
-          );
-        }
-
-        // =========================================================
-        // 3. Generate unique receipt number
-        // =========================================================
-        const dateStr = todayStr.replace(/-/g, "");
-        const counterDoc = await db.collection("counters").findOneAndUpdate(
-          { _id: `receipt_${dateStr}` },
-          { $inc: { seq: 1 } },
-          { upsert: true, returnDocument: "after" }
-        );
-
-        const seq = counterDoc.seq;
-        const receiptNumber = `RCP-${dateStr}-${String(seq).padStart(5, "0")}`;
-
-        // =========================================================
-        // 4. Insert collection record
-        // =========================================================
-        const collectionRecord = {
-          saleId: new ObjectId(saleId),
-          invoiceNumber: sale.invoiceNumber,
-          customerName: sale.customerName,
-          customerPhone: sale.customerPhone,
-          collectionAmount: collectionAmount,
-          paymentMethod: paymentMethod || "Cash",
-          collectionDate: collectionDate,
-          note: note || "",
-          receiptNumber: receiptNumber,
-          collectedBy: session.user.name || "Unknown",
-          collectedById: session.user.id,
-          createdAt: bdNow,
-          updatedAt: bdNow,
-        };
-
-        const insertResult = await db.collection("dueCollections").insertOne(collectionRecord);
-
-        // =========================================================
-        // 5. Update sale's paidAmount and due
-        // =========================================================
-        const newPaidAmount = (sale.paidAmount || 0) + collectionAmount;
-        const newDue = sale.totalPrice - newPaidAmount;
-
-        await db.collection("sales").updateOne(
-          { _id: new ObjectId(saleId) },
-          {
-            $set: {
-              paidAmount: newPaidAmount,
-              due: newDue,
-              updatedAt: bdNow,
-            },
-          }
-        );
-
-        // =========================================================
-        // 6. Prepare response data
-        // =========================================================
-        const finalRemainingDue = Math.max(newDue, 0);
-
-        responseData = {
-          success: true,
-          message: "Due collection recorded successfully",
-          data: {
-            receiptNumber,
-            collectionId: insertResult.insertedId.toString(),
-            remainingDue: finalRemainingDue,
-          },
-        };
-      });
-
-      // Transaction succeeded, return the response
-      return NextResponse.json(responseData, { status: 200 });
-    } catch (transactionError) {
-      // Re-throw to rollback transaction
-      throw transactionError;
-    } finally {
-      await sessionMongo.endSession();
-    }
-  } catch (error) {
-    console.error("Due Collection API Error:", error);
-
-    // Check if error is from validation
-    if (error.message.includes("cannot exceed")) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: 400 }
-      );
-    }
-
-    if (error.message.includes("Sale not found")) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
+    // Update sale paidAmount and due
+    await db.collection("sales").updateOne(
+      { _id: saleObjectId },
       {
-        success: false,
-        message: "Failed to record collection",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      },
-      { status: 500 }
+        $set: {
+          paidAmount: newPaidTotal,
+          due: newRemainingDue,
+          updatedAt: now,
+        },
+      }
     );
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        collectionId: insertResult.insertedId.toString(),
+        receiptNumber,
+        remainingDue: newRemainingDue,
+      },
+    });
+  } catch (error) {
+    console.error("COLLECT DUE ERROR:", error);
+    return NextResponse.json({ success: false, message: error.message || "Failed to collect due" }, { status: 500 });
   }
 }

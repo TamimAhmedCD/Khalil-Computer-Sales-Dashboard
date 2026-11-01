@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -147,12 +148,12 @@ export function CustomSelect({
         />
       </button>
 
-      {/* Dropdown panel - Using fixed positioning */}
-      {open && (
+      {/* Dropdown panel - Using portal to escape stacking context */}
+      {open && typeof window !== "undefined" && createPortal(
         <div
           role="listbox"
           className={cn(
-            "fixed z-[9999] mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
+            "fixed z-[9999] overflow-hidden rounded-md border bg-popover shadow-md ring-1 ring-black/5",
             "transition-all duration-200 ease-out origin-top",
             mounted
               ? "opacity-100 scale-y-100 translate-y-0"
@@ -199,7 +200,8 @@ export function CustomSelect({
               })
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

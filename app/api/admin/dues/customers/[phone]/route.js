@@ -2,173 +2,100 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 
-// =========================================================
-// GET /api/admin/dues/customers/[phone] - Customer Due Detail
-// =========================================================
-
-export async function GET(request, { params: paramsPromise }) {
-  const params = await paramsPromise;
-
+export async function GET(request, { params }) {
   try {
-    // 🔐 Authentication - Allow admin and employees
     const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
+    if (!session?.user?.id || !(session.user.role === "admin" || session.user.role === "superAdmin")) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const allowedRoles = ["admin", "superAdmin", "employee"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Access denied" },
-        { status: 403 }
-      );
+    const resolvedParams = await params;
+    const phoneParam = decodeURIComponent(resolvedParams?.phone || "");
+    if (!phoneParam) {
+      return NextResponse.json({ success: false, message: "Customer phone is required" }, { status: 400 });
     }
 
-    const { phone } = params;
-    const customerPhone = decodeURIComponent(phone);
-
-    if (!customerPhone) {
-      return NextResponse.json(
-        { success: false, message: "Customer phone is required" },
-        { status: 400 }
-      );
-    }
-
-    // 📦 Database Connection
     const client = await clientPromise;
     const db = client.db("products");
 
-    console.log("Fetching customer due detail for phone:", customerPhone);
-
-    // =========================================================
-    // Fetch Customer Sales with Due
-    // =========================================================
-
-    const sales = await db
-      .collection("sales")
-      .find({ customerPhone: { $eq: customerPhone } })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    console.log("Found sales:", sales.length);
+    const sales = await db.collection("sales").find({
+      $or: [{ customerPhone: phoneParam }, { customerName: phoneParam }]
+    }).toArray();
 
     if (sales.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Customer not found",
-          customerPhone,
-          salesCount: 0,
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Customer not found" }, { status: 404 });
     }
 
-    const customerName = sales[0].customerName || "Unknown";
-
-    // =========================================================
-    // Fetch All Collections for These Sales
-    // =========================================================
-
     const saleIds = sales.map((s) => s._id);
-    const collections = await db
-      .collection("dueCollections")
-      .find({ saleId: { $in: saleIds } })
-      .sort({ createdAt: -1 })
-      .toArray();
+    const collections = await db.collection("dueCollections").find({
+      saleId: { $in: saleIds }
+    }).sort({ createdAt: -1 }).toArray();
 
-    // =========================================================
-    // Calculate Remaining Due Per Sale
-    // =========================================================
+    const collectedBySale = {};
+    for (const c of collections) {
+      const sid = c.saleId?.toString();
+      if (sid) {
+        collectedBySale[sid] = (collectedBySale[sid] || 0) + Number(c.collectionAmount || 0);
+      }
+    }
 
-    const salesWithDue = sales.map((sale) => {
-      const saleCollections = collections.filter(
-        (c) => c.saleId.toString() === sale._id.toString()
-      );
-      const collectedSoFar = saleCollections.reduce(
-        (sum, c) => sum + (c.collectionAmount || 0),
-        0
-      );
-      const originalDue = sale.due || 0;
-      const remainingDue = Math.max(originalDue - collectedSoFar, 0);
+    let totalPurchase = 0;
+    let totalPaid = 0;
+    let outstandingDue = 0;
+
+    const formattedSales = sales.map((s) => {
+      const sid = s._id.toString();
+      const totalPrice = Number(s.totalPrice || s.total || 0);
+      const originalPaid = Number(s.paidAmount || 0);
+      const collected = collectedBySale[sid] || 0;
+      const paidSoFar = originalPaid + collected;
+      const remaining = Math.max(0, totalPrice - paidSoFar);
+
+      totalPurchase += totalPrice;
+      totalPaid += paidSoFar;
+      outstandingDue += remaining;
 
       return {
-        saleId: sale._id.toString(),
-        invoiceNumber: sale.invoiceNumber,
-        date: sale.createdAt,
-        totalPrice: sale.totalPrice || 0,
-        paidAmount: sale.paidAmount || 0,
-        originalDue: originalDue,
-        collectedSoFar,
-        remainingDue,
+        _id: s._id,
+        invoiceNumber: s.invoiceNumber || "",
+        total: totalPrice,
+        paidAmount: paidSoFar,
+        originalDue: Number(s.due || 0),
+        collectedSoFar: collected,
+        remainingDue: remaining,
+        date: s.createdAt ? new Date(s.createdAt).toISOString() : null,
       };
     });
 
-    // =========================================================
-    // Format Collection History
-    // =========================================================
+    const customerName = sales[0]?.customerName || "Customer";
+    const customerPhone = sales[0]?.customerPhone || phoneParam;
 
-    const collectionHistory = collections.map((c) => {
-      const relatedSale = sales.find(
-        (s) => s._id.toString() === c.saleId.toString()
-      );
-      return {
-        collectionId: c._id.toString(),
-        receiptNumber: c.receiptNumber,
-        invoiceNumber: relatedSale?.invoiceNumber || "N/A",
-        collectionAmount: c.collectionAmount || 0,
-        paymentMethod: c.paymentMethod || "Cash",
-        collectionDate: c.collectionDate,
-        note: c.note || "",
-        collectedBy: c.collectedBy || "Unknown",
-        createdAt: c.createdAt,
-      };
-    });
-
-    // =========================================================
-    // Calculate Totals
-    // =========================================================
-
-    const totalPurchase = sales.reduce(
-      (sum, s) => sum + (s.totalPrice || 0),
-      0
-    );
-    const totalPaid = sales.reduce((sum, s) => sum + (s.paidAmount || 0), 0);
-    const totalOutstanding = salesWithDue.reduce(
-      (sum, s) => sum + s.remainingDue,
-      0
-    );
-
-    // ✅ Success Response
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          customerName,
-          customerPhone,
-          totalPurchase: Number(totalPurchase) || 0,
-          totalPaid: Number(totalPaid) || 0,
-          totalOutstanding: Number(totalOutstanding) || 0,
+    return NextResponse.json({
+      success: true,
+      data: {
+        customer: {
+          name: customerName,
+          phone: customerPhone,
+          totalPurchase,
+          totalPaid,
+          outstandingDue,
           salesCount: sales.length,
-          sales: salesWithDue,
-          collections: collectionHistory,
         },
+        sales: formattedSales,
+        collections: collections.map((c) => ({
+          _id: c._id,
+          receiptNumber: c.receiptNumber || "",
+          invoiceNumber: c.invoiceNumber || "",
+          collectionAmount: Number(c.collectionAmount || 0),
+          paymentMethod: c.paymentMethod || "Cash",
+          note: c.note || "",
+          collectedBy: c.collectedBy || "",
+          createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : null,
+        })),
       },
-      { status: 200 }
-    );
+    });
   } catch (error) {
-    console.error("Customer Due Detail API Error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to load customer due details",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      },
-      { status: 500 }
-    );
+    console.error("CUSTOMER DUE DETAIL ERROR:", error);
+    return NextResponse.json({ success: false, message: "Failed to load customer due details" }, { status: 500 });
   }
 }

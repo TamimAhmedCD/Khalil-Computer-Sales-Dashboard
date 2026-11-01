@@ -2,215 +2,125 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 
-// =========================================================
-// GET /api/admin/dues/customers - Customers with Outstanding Dues
-// =========================================================
-
 export async function GET(request) {
   try {
-    // 🔐 Authentication - Allow admin and employees
     const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
+    if (!session?.user?.id || !(session.user.role === "admin" || session.user.role === "superAdmin")) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const allowedRoles = ["admin", "superAdmin", "employee"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Access denied" },
-        { status: 403 }
-      );
-    }
-
-    // 📦 Parse Query Parameters
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
-    const status = searchParams.get("status") || "all"; // all, outstanding, partial, paid
+    const status = searchParams.get("status") || "outstanding"; // outstanding, paid, all
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
-    const skip = (page - 1) * limit;
 
-    // 📦 Database Connection
     const client = await clientPromise;
     const db = client.db("products");
 
-    // =========================================================
-    // Build Aggregation Pipeline
-    // =========================================================
+    const sales = await db.collection("sales").find({}).toArray();
+    const collections = await db.collection("dueCollections").find({}).toArray();
 
-    const pipeline = [];
+    const collectedBySale = {};
+    for (const c of collections) {
+      const sid = c.saleId?.toString();
+      if (sid) {
+        collectedBySale[sid] = (collectedBySale[sid] || 0) + Number(c.collectionAmount || 0);
+      }
+    }
 
-    // Step 1: Match sales with customer info and due > 0
-    pipeline.push({
-      $match: {
-        customerPhone: { $ne: "", $exists: true },
-      },
-    });
+    // Group sales by customer phone (or name if phone is missing)
+    const customerMap = {};
 
-    // Step 2: Lookup collections for each sale
-    pipeline.push({
-      $lookup: {
-        from: "dueCollections",
-        localField: "_id",
-        foreignField: "saleId",
-        as: "collections",
-      },
-    });
+    for (const s of sales) {
+      const phone = (s.customerPhone || "walk-in").trim();
+      const name = (s.customerName || "Walk-in Customer").trim();
+      const key = phone || name;
 
-    // Step 3: Calculate original due and collected amount
-    pipeline.push({
-      $addFields: {
-        originalDue: { $ifNull: ["$due", 0] },
-        collectedSoFar: { $sum: "$collections.collectionAmount" },
-      },
-    });
+      if (!customerMap[key]) {
+        customerMap[key] = {
+          customerName: name,
+          customerPhone: s.customerPhone || "",
+          totalPurchase: 0,
+          totalPaid: 0,
+          outstandingDue: 0,
+          salesCount: 0,
+          lastTransactionDate: s.createdAt ? new Date(s.createdAt).getTime() : 0,
+          sales: [],
+        };
+      }
 
-    // Step 4: Calculate remaining due
-    pipeline.push({
-      $addFields: {
-        remainingDue: {
-          $subtract: ["$originalDue", "$collectedSoFar"],
-        },
-      },
-    });
+      const sid = s._id.toString();
+      const totalPrice = Number(s.totalPrice || s.total || 0);
+      const originalPaid = Number(s.paidAmount || 0);
+      const collected = collectedBySale[sid] || 0;
+      const totalPaidForSale = originalPaid + collected;
+      const remainingDue = Math.max(0, totalPrice - totalPaidForSale);
 
-    // Step 5: Filter to only sales with remaining due > 0
-    pipeline.push({
-      $match: {
-        remainingDue: { $gt: 0 },
-      },
-    });
+      customerMap[key].totalPurchase += totalPrice;
+      customerMap[key].totalPaid += totalPaidForSale;
+      customerMap[key].outstandingDue += remainingDue;
+      customerMap[key].salesCount += 1;
 
-    // Step 6: Group by customer phone
-    pipeline.push({
-      $group: {
-        _id: "$customerPhone",
-        customerName: {
-          $first: {
-            $cond: {
-              if: { $ne: ["$customerName", null] },
-              then: "$customerName",
-              else: "Unknown",
-            },
-          },
-        },
-        customerPhone: { $first: "$customerPhone" },
-        totalPurchase: { $sum: { $ifNull: ["$totalPrice", 0] } },
-        totalPaid: { $sum: { $ifNull: ["$paidAmount", 0] } },
-        totalOriginalDue: { $sum: "$originalDue" },
-        totalCollected: { $sum: "$collectedSoFar" },
-        totalOutstanding: {
-          $sum: {
-            $cond: {
-              if: { $gt: ["$remainingDue", 0] },
-              then: "$remainingDue",
-              else: 0,
-            },
-          },
-        },
-        salesCount: { $sum: 1 },
-        lastTransaction: { $max: "$createdAt" },
-        firstTransaction: { $min: "$createdAt" },
-      },
-    });
+      const saleTime = s.createdAt ? new Date(s.createdAt).getTime() : 0;
+      if (saleTime > customerMap[key].lastTransactionDate) {
+        customerMap[key].lastTransactionDate = saleTime;
+      }
 
-    // Step 7: Apply search filter
-    if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { customerName: { $regex: search, $options: "i" } },
-            { customerPhone: { $regex: search, $options: "i" } },
-          ],
-        },
+      customerMap[key].sales.push({
+        _id: s._id,
+        invoiceNumber: s.invoiceNumber || "",
+        totalPrice,
+        paidAmount: totalPaidForSale,
+        remainingDue,
+        date: s.createdAt ? new Date(s.createdAt).toISOString() : null,
       });
     }
 
-    // Step 8: Apply status filter
+    let customers = Object.values(customerMap).map((c) => ({
+      ...c,
+      lastTransactionDate: c.lastTransactionDate ? new Date(c.lastTransactionDate).toISOString() : null,
+      status: c.outstandingDue > 0 ? "outstanding" : "paid",
+    }));
+
+    // Filter by status
     if (status === "outstanding") {
-      // Has outstanding due
-      pipeline.push({
-        $match: {
-          totalOutstanding: { $gt: 0 },
-        },
-      });
-    } else if (status === "partial") {
-      // Partial payments made but still outstanding
-      pipeline.push({
-        $match: {
-          totalOutstanding: { $gt: 0 },
-        },
-      });
+      customers = customers.filter((c) => c.outstandingDue > 0);
     } else if (status === "paid") {
-      // All dues collected
-      pipeline.push({
-        $match: {
-          totalOutstanding: { $eq: 0 },
-        },
-      });
+      customers = customers.filter((c) => c.outstandingDue <= 0);
     }
 
-    // Step 9: Sort by last transaction (recent first)
-    pipeline.push({
-      $sort: { lastTransaction: -1 },
-    });
+    // Filter by search
+    if (search) {
+      const q = search.toLowerCase();
+      customers = customers.filter(
+        (c) =>
+          c.customerName.toLowerCase().includes(q) ||
+          c.customerPhone.toLowerCase().includes(q) ||
+          c.sales.some((s) => s.invoiceNumber.toLowerCase().includes(q))
+      );
+    }
 
-    // Get total count before pagination
-    const countPipeline = [...pipeline, { $count: "total" }];
-    const countResult = await db
-      .collection("sales")
-      .aggregate(countPipeline)
-      .toArray();
-    const totalCustomers = countResult[0]?.total || 0;
+    // Sort by outstanding due descending
+    customers.sort((a, b) => b.outstandingDue - a.outstandingDue);
 
-    // Step 10: Pagination
-    pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: limit });
+    const total = customers.length;
+    const paginated = customers.slice((page - 1) * limit, page * limit);
 
-    // Execute aggregation
-    const customers = await db
-      .collection("sales")
-      .aggregate(pipeline)
-      .toArray();
-
-    // ✅ Success Response
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          customers: customers.map((c) => ({
-            customerPhone: c._id,
-            customerName: c.customerName || "Unknown",
-            totalPurchase: Number(c.totalPurchase) || 0,
-            totalPaid: Number(c.totalPaid) || 0,
-            totalOutstanding: Number(c.totalOutstanding) || 0,
-            salesCount: Number(c.salesCount) || 0,
-            lastTransaction: c.lastTransaction,
-            firstTransaction: c.firstTransaction,
-          })),
-          pagination: {
-            page,
-            limit,
-            totalCustomers,
-            totalPages: Math.ceil(totalCustomers / limit),
-          },
+    return NextResponse.json({
+      success: true,
+      data: {
+        customers: paginated,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit) || 1,
         },
       },
-      { status: 200 }
-    );
+    });
   } catch (error) {
-    console.error("Due Customers API Error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to load customers with dues",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      },
-      { status: 500 }
-    );
+    console.error("DUE CUSTOMERS ERROR:", error);
+    return NextResponse.json({ success: false, message: "Failed to load due customers" }, { status: 500 });
   }
 }

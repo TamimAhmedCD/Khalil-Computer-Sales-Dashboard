@@ -39,9 +39,8 @@ export default function RootLayout({ children }) {
       )}
     >
       <body
-        className="h-full transition-colors duration-500 bg-white dark:bg-[#09090b]"
-        cz-shortcut-listen="true"
-      >
+      className="h-full transition-colors duration-500 bg-white dark:bg-[#09090b]"
+    >
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {/* DYNAMIC TECHNICAL BACKGROUND 

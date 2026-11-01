@@ -591,7 +591,25 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       data: {
-        // Summary metrics
+        // Flat summary for direct access (matches frontend expectations)
+        summary: {
+          netSalesRevenue,
+          totalDirectCost,
+          grossProfit,
+          totalExpenses,
+          netProfitOrLoss,
+          totalSalesRevenue,
+          totalSalesDiscount,
+          totalSalesRefund,
+          totalOutstandingDue,
+          collectedDue,
+          dueCount,
+          transactionCount,
+          expenseCount,
+          profitMargin: netSalesRevenue ? (grossProfit / netSalesRevenue) * 100 : 0,
+        },
+
+        // Summary metrics (backward compat)
         totalSalesRevenue,
         totalDirectCost,
         netSalesRevenue,
